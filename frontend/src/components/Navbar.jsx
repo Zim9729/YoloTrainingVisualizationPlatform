@@ -1,4 +1,10 @@
+import { api } from "../api";
+import { useState, useEffect } from "react";
+import CONFIGS from "../config";
+
 function Navbar({ setPageUrl }) {
+    const [helperComponents, setHelperComponents] = useState("null");
+
     const navbarItem = [
         {
             id: '1',
@@ -17,6 +23,17 @@ function Navbar({ setPageUrl }) {
         }
     ]
 
+    useEffect(() => {
+        api.get("/info", { params: {} })
+            .then(data => {
+                setHelperComponents(data.data.version);
+                console.log("助手版本:", data.data.version);
+            })
+            .catch(err => {
+                console.error("获取助手版本失败:", err);
+            });
+    }, []);
+
     return (
         <div className="navbar">
             {navbarItem.map((item) => (
@@ -30,9 +47,9 @@ function Navbar({ setPageUrl }) {
             ))}
 
             <p className="navbar-version">
-                前端版本: 1.0.0
+                前端版本: {CONFIGS.FRONTEND_VERSION}
                 <br />
-                助手版本: 1.0.0
+                助手版本: {helperComponents}
             </p>
         </div>
     );

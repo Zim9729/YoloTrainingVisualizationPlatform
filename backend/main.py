@@ -1,18 +1,27 @@
 from flask import Flask
+from flask_cors import CORS
+from tools.format_output import format_output
 
 app = Flask(__name__)
-
-from jobs.routes import jobs_bp
-
-# 注册蓝图
-app.register_blueprint(
-    jobs_bp,
-    url_prefix='/jobs',
-)
+CORS(app)
 
 @app.route("/")
 def hello_world():
     return "OK"
 
+@app.route("/info")
+def info():
+    return format_output(data={
+        "version": "1.0.0"
+    })
+    
+from IDataset.routes import IDataset_bp
+
+# 注册蓝图
+app.register_blueprint(
+    IDataset_bp,
+    url_prefix='/IDataset',
+)
+
 if __name__ == '__main__':
-    app.run(debug=True, port=1024, host='0.0.0.0')
+    app.run(debug=True, port=10799, host='0.0.0.0')
