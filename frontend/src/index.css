@@ -1,0 +1,149 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+:root {
+    --main-color: #234B7E;
+    --secondary-color: #F0F0F0;
+    --light-color: #E0E0E0;
+    --text-color: #333;
+    --hover-color: #1A3A6D;
+    --active-color: #162A4D;
+    --background-color: #ffffff;
+}
+
+.btn {
+    cursor: pointer;
+    background-color: var(--main-color);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+}
+
+.btn:hover {
+    background-color: var(--hover-color);
+}
+
+.btn.sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.title-bar {
+    position: fixed;
+    top: 0;
+    app-region: drag;
+    width: 100%;
+    height: 32px;
+    background-color: var(--main-color);
+    text-align: center;
+}
+
+.title-bar .title {
+    font-size: 16px;
+    margin-top: 4px;
+    color: #ffffff;
+}
+
+.app {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+}
+
+.navbar {
+    width: 200px;
+    padding: 45px 10px;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    border-right: 2px solid var(--secondary-color);
+}
+
+.navbar-item {
+    margin-bottom: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-color);
+    border: 1.8px solid var(--main-color);
+    border-radius: 8px;
+    text-decoration: none;
+}
+
+.navbar-item:hover {
+    background-color: var(--hover-color);
+    color: #ffffff;
+}
+
+.navbar-version {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    font-size: 12px;
+    color: var(--light-color);
+}
+
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--background-color);
+    padding: 40px;
+    overflow-y: auto;
+}
+
+.card-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.card {
+    color: var(--text-color);
+    background-color: var(--background-color);
+    border-radius: 15px;
+    border: 1px solid var(--main-color);
+    padding: 5px 20px;
+}
+
+.card-group .card {
+    flex: 1;
+}
+
+.card .btn {
+    margin-bottom: 10px;
+}
+
+.card .title {
+    font-size: 18px;
+    margin-bottom: -10px;
+    color: var(--main-color);
+}
+
+.card .content {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.card .tag {
+    position: relative;
+    left: -30px;
+    top: -15px;
+    width: 32px;
+    height: 32px;
+    color: var(--background-color);
+    background-color: var(--main-color);
+    border-radius: 50%;
+    text-align: center;
+    font-size: 21px;
+    font-weight: bold;
+    margin-bottom: -20px;
+}

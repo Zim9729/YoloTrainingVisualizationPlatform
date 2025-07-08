@@ -31,4 +31,8 @@ pip install flask
 python main.py
 ```
 
-## 第三方库
+对于APP
+```bash
+cd app
+yarn dev
+```
