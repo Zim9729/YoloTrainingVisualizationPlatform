@@ -1,0 +1,14 @@
+{
+  "name": "yolo_training_visualization_app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/chzane/YoloTrainingVisualizationPlatform/",
+  "author": "chzane",
+  "scripts": {
+    "dev": "electron ."
+  },
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^37.2.0"
+  }
+}
