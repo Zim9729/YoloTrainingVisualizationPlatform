@@ -5,18 +5,18 @@ import os
 from glob import glob
 import yaml
 from pathlib import Path
+import time
+import zipfile
 
 
 IDataset_bp = Blueprint('IDataset', __name__)
 
 def count_images_and_labels(image_dir, label_dir):
     """
-    统计指定目录下的图片和标签数量
+    统计 YOLO 格式下的图片数量和标签数量
     """
-    image_paths = glob(os.path.join(image_dir, "*.jpg")) + \
-                  glob(os.path.join(image_dir, "*.png"))
-    label_paths = [p.replace("/images/", "/labels/").replace(".jpg", ".txt").replace(".png", ".txt")
-                   for p in image_paths]
+    image_paths = glob(os.path.join(image_dir, "*.jpg")) + glob(os.path.join(image_dir, "*.png"))
+    label_paths = [p.replace("/images/", "/labels/").replace(".jpg", ".txt").replace(".png", ".txt") for p in image_paths]
     num_labels = 0
     for label_file in label_paths:
         if os.path.exists(label_file):
@@ -25,36 +25,56 @@ def count_images_and_labels(image_dir, label_dir):
                 num_labels += len(lines)
     return len(image_paths), num_labels
 
-def load_dataset_yoloinfofile(yaml_path):
+def count_images(image_dir):
+    return len(glob(os.path.join(image_dir, "*.jpg")) + glob(os.path.join(image_dir, "*.png")))
+
+def count_annotations_in_coco(json_path):
+    import json
+    if not os.path.exists(json_path):
+        return 0
+    with open(json_path, "r") as f:
+        data = json.load(f)
+    return len(data.get("annotations", []))
+
+def load_dataset_yoloinfofile(dataset_path, yaml_path, dataset_type):
     """
-    加载数据集的yaml文件
+    加载数据集的yaml文件，支持 YOLO 和 COCO
     """
     with open(yaml_path, "r") as f:
         data = yaml.safe_load(f)
 
-    root_path = Path(data["path"])
-    train_path = Path(data["train"])
-    val_path = Path(data["val"])
-    test_path = Path(data.get("test", None))
-    class_names = data["names"]
+    root_path = str(data.get("path", Path(yaml_path).parent)) 
+    train_path = str(data["train"])
+    val_path = str(data["val"])
+    test_path = str(data.get("test", ""))
+    class_names = data.get("names", [])
     num_classes = data.get("nc", len(class_names))
-    
-    train_img_count, train_label_count = count_images_and_labels(str(train_path), str(train_path).replace("/images", "/labels"))
-    
+    download_url_or_script = data.get("download", "")
+
+    if dataset_type.upper() == "YOLO":
+        train_img_count, train_label_count = count_images_and_labels(os.path.join(dataset_path, train_path), train_path.replace("/images", "/labels"))
+    elif dataset_type.upper() == "COCO":
+        train_img_count = count_images(os.path.join(dataset_path, train_path))
+        ann_file = os.path.join(Path(train_path).parent.parent, "annotations", "instances_train.json")
+        train_label_count = count_annotations_in_coco(ann_file)
+    else:
+        train_img_count, train_label_count = 0, 0
+
     return {
-        "root_path": str(root_path),
-        "train_path": str(train_path),
-        "val_path": str(val_path),
-        "test_path": str(test_path) if test_path else None,
+        "root_path": root_path,
+        "train_path": train_path,
+        "val_path": val_path,
+        "test_path": test_path,
         "class_names": class_names,
         "num_classes": num_classes,
         "train_img_count": train_img_count,
-        "train_label_count": train_label_count
+        "train_label_count": train_label_count,
+        "download_url_or_script": download_url_or_script
     }
-    
+
 def load_dataset_platforminfofile(info_file):
     """
-    加载数据集的平台info文件
+    加载平台 info 文件
     """
     with open(info_file, "r") as f:
         data = yaml.safe_load(f)
@@ -64,15 +84,32 @@ def load_dataset_platforminfofile(info_file):
         "description": data.get("description", ""),
         "version": data.get("version", "Unknown"),
         "author": data.get("author", "Unknown"),
-        "type": data.get("type", "COCO"),
+        "type": data.get("type", "YOLO"),
         "created_at": data.get("created_at", ""),
         "yaml_file_path": data.get("yaml_file_path", None)
     }
+    
+def extract_zip_flat(zip_path, extract_to):
+    """
+    将 zip 文件中的所有内容解压到指定目录，并移除 zip 包中的第一层目录
+    """
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        members = zip_ref.namelist()
+
+        for member in members:
+            if member.endswith("/"):
+                continue
+
+            member_path = "/".join(member.split('/')[1:])
+            target_path = os.path.join(extract_to, member_path)
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            with zip_ref.open(member) as source, open(target_path, 'wb') as target:
+                target.write(source.read())
         
 @IDataset_bp.route('/getAllDatasets')
 def get_all_datasets():
     """
-    获取所有数据集
+    获取所有数据集，支持 YOLO / COCO 格式
     """
     dataset_path = get_dataset_path()
 
@@ -85,17 +122,91 @@ def get_all_datasets():
             
             if os.path.exists(info_file):
                 info_file_data = load_dataset_platforminfofile(info_file)
+                dataset_type = info_file_data.get("type", "YOLO")
                 
-                yolo_file = os.path.join(item_path, info_file_data["yaml_file_path"])
-                if os.path.exists(yolo_file):
+                yolo_yaml_file = os.path.join(item_path, info_file_data["yaml_file_path"])
+                if os.path.exists(yolo_yaml_file):
+                    yaml_info = load_dataset_yoloinfofile(item_path, yolo_yaml_file, dataset_type)
                     dataset_info = {
                         "name": item,
                         "path": item_path,
-                        "yaml_info": load_dataset_yoloinfofile(yolo_file),
-                        "platform_info": info_file_data
+                        "platform_info": info_file_data,
+                        "yaml_info": yaml_info
                     }
                     datasets.append(dataset_info)
+    
+    return format_output(data={"datasets": datasets})
+
+@IDataset_bp.route('/uploadDataset', methods=["POST"])
+def upload_dataset():
+    dataset_path = get_dataset_path()
+
+    file = request.files.get("file")
+    if not file:
+        return format_output(code=400, msg="未上传文件")
+
+    # 表单信息
+    name = request.form.get("name")
+    description = request.form.get("description", "")
+    version = request.form.get("version", "v1.0.0")
+    dataset_type = request.form.get("type", "YOLO")
+    include_yaml = request.form.get("include_yaml", "1") == "1"
+
+    # 创建目录
+    save_dir = os.path.join(dataset_path, name)
+    os.makedirs(save_dir, exist_ok=True)
+
+    # 保存压缩包
+    zip_path = os.path.join(save_dir, file.filename)
+    file.save(zip_path)
+
+    # 解压文件
+    extract_zip_flat(zip_path, save_dir)
+    
+    # 删除文件
+    os.remove(zip_path)
+
+    yaml_path = ""
+    if include_yaml:
+        # 自动搜索 yaml 文件
+        for root, dirs, files in os.walk(save_dir):
+            for f in files:
+                if f.endswith(".yaml") and "info" not in f and not f.startswith("._"):
+                    yaml_path = os.path.relpath(os.path.join(root, f), save_dir)
+                    break
+        if not yaml_path:
+            return format_output(400, "未在压缩包中找到 YAML 文件")
+    else:
+        # 用户手动填写
+        train = request.form.get("train", "")
+        val = request.form.get("val", "")
+        test = request.form.get("test", "")
+        nc = int(request.form.get("nc", "1"))
+        names = request.form.get("names", "").split(",")
+
+        yaml_data = {
+            "train": train,
+            "val": val,
+            "test": test if test else None,
+            "nc": nc,
+            "names": names
+        }
+
+        yaml_path = "dataset.yaml"
+        with open(os.path.join(save_dir, yaml_path), "w") as f:
+            yaml.safe_dump(yaml_data, f, allow_unicode=True)
+
+    # 创建 info 文件
+    info_data = {
+        "name": name,
+        "description": description,
+        "version": version,
+        "author": "unknown",
+        "created_at": int(time.time()),
+        "type": dataset_type,
+        "yaml_file_path": yaml_path
+    }
+    with open(os.path.join(save_dir, "yolo_training_visualization_info.yaml"), "w") as f:
+        yaml.safe_dump(info_data, f, allow_unicode=True)
         
-    return format_output(data={
-        "datasets": datasets
-    })
+    return format_output(data={"message": "数据集上传成功"})

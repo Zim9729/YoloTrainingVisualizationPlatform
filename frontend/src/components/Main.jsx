@@ -26,7 +26,6 @@ function Main({ page_url = "home", setPageUrl }) {
             }
             setParameter(params)
         } else {
-            console.log(1)
             setPageType(page_url)
             setParameter({})
         }
@@ -39,7 +38,7 @@ function Main({ page_url = "home", setPageUrl }) {
             );
         case "dataset":
             return (
-                <DatasetPage setPageUrl={setPageType} parameter={parameter} />
+                <DatasetPage setPageUrl={setPageUrl} parameter={parameter} />
             );
         default:
             return (

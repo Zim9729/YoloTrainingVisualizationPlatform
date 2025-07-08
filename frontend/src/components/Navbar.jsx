@@ -20,6 +20,16 @@ function Navbar({ setPageUrl }) {
             id: '3',
             name: '训练任务',
             pageUrl: 'tasks'
+        },
+        {
+            id: '4',
+            name: '模型',
+            pageUrl: 'models'
+        },
+        {
+            id: '5',
+            name: '设置',
+            pageUrl: 'settings'
         }
     ]
 
