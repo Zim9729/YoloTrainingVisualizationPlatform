@@ -3,6 +3,7 @@ import hljs from 'highlight.js';
 
 import HomePage from "../page/HomePage";
 import DatasetPage from "../page/DatasetPage";
+import TasksPage from "../page/TasksPage";
 
 function Main({ page_url = "home", setPageUrl }) {
     const [pageType, setPageType] = useState("")
@@ -39,6 +40,10 @@ function Main({ page_url = "home", setPageUrl }) {
         case "dataset":
             return (
                 <DatasetPage setPageUrl={setPageUrl} parameter={parameter} />
+            );
+        case "tasks":
+            return (
+                <TasksPage setPageUrl={setPageUrl} parameter={parameter} />
             );
         default:
             return (

@@ -37,6 +37,15 @@ body {
     font-size: 12px;
 }
 
+a {
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+a:hover {
+    color: var(--hover-color);
+}
+
 .title-bar {
     position: fixed;
     top: 0;
@@ -152,7 +161,7 @@ body {
 .page-title {
     font-size: 20px;
     color: var(--text-color);
-    margin-bottom: 20px;
+    margin-bottom: -13px;
 }
 
 .page-des {
@@ -172,10 +181,37 @@ body {
     color: var(--secondary-text-color);
 }
 
-.form-group {
+.form-group,
+.form-group-title {
     display: flex;
     flex-direction: column;
     margin-bottom: 16px;
+}
+
+.form-group-title {
+    display: flex;
+    /* border-bottom: 1px solid var(--main-color); */
+}
+
+.form-group-title .step-tag {
+    font-size: 16px;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--background-color);
+    background-color: var(--main-color);
+    border-radius: 4px;
+    margin-right: 10px;
+    margin-bottom: -33px;
+}
+
+.form-group-title .title {
+    font-size: 18px;
+    color: var(--text-color);
+    line-height: 1;
+    margin-left: 35px;
 }
 
 input[type="text"],

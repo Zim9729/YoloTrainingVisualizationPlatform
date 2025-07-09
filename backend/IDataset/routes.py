@@ -118,6 +118,7 @@ def get_all_datasets():
         item_path = os.path.join(dataset_path, item)
         
         if os.path.isdir(item_path):
+            # 获取平台Info文件
             info_file = os.path.join(item_path, "yolo_training_visualization_info.yaml")
             
             if os.path.exists(info_file):
@@ -145,15 +146,21 @@ def upload_dataset():
     if not file:
         return format_output(code=400, msg="未上传文件")
 
-    # 表单信息
-    name = request.form.get("name")
+    name = request.form.get("name", None)
     description = request.form.get("description", "")
     version = request.form.get("version", "v1.0.0")
-    dataset_type = request.form.get("type", "YOLO")
-    include_yaml = request.form.get("include_yaml", "1") == "1"
+    dataset_type = request.form.get("type", None)
+    include_yaml = request.form.get("include_yaml", None)
+    
+    if name == None or dataset_type == None or include_yaml == None:
+        return format_output(code=400, msg="缺少必要的参数")
+    
+    include_yaml = (include_yaml == "1")
 
-    # 创建目录
-    save_dir = os.path.join(dataset_path, name)
+    save_dir = os.path.join(dataset_path, f"{name}_{version}")
+    if os.path.exists(save_dir) and os.listdir(save_dir):
+        return format_output(code=400, msg=f"名为 '{name}' 且版本为 '{version}' 的数据集已存在，请更换名称或版本。")
+
     os.makedirs(save_dir, exist_ok=True)
 
     # 保存压缩包
@@ -175,7 +182,7 @@ def upload_dataset():
                     yaml_path = os.path.relpath(os.path.join(root, f), save_dir)
                     break
         if not yaml_path:
-            return format_output(400, "未在压缩包中找到 YAML 文件")
+            return format_output(code=400, msg="未在压缩包中找到 YAML 文件")
     else:
         # 用户手动填写
         train = request.form.get("train", "")
@@ -196,7 +203,7 @@ def upload_dataset():
         with open(os.path.join(save_dir, yaml_path), "w") as f:
             yaml.safe_dump(yaml_data, f, allow_unicode=True)
 
-    # 创建 info 文件
+    # 平台 Info 文件
     info_data = {
         "name": name,
         "description": description,
@@ -209,4 +216,4 @@ def upload_dataset():
     with open(os.path.join(save_dir, "yolo_training_visualization_info.yaml"), "w") as f:
         yaml.safe_dump(info_data, f, allow_unicode=True)
         
-    return format_output(data={"message": "数据集上传成功"})
+    return format_output(msg="数据集上传成功")

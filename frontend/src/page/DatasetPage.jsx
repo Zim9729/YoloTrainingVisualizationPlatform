@@ -17,7 +17,7 @@ function uploadDataset({ datasetType, includeYaml, trainPath, valPath, testPath,
     formData.append("include_yaml", includeYaml);
     formData.append("file", file);
 
-    if (!includeYaml == 0) {
+    if (includeYaml == 0) {
         formData.append("train", trainPath);
         formData.append("val", valPath);
         formData.append("test", testPath || "");
@@ -34,8 +34,8 @@ function uploadDataset({ datasetType, includeYaml, trainPath, valPath, testPath,
             return res.json();
         })
         .then(data => {
-            alert("数据集上传成功！");
-            window.location.reload();
+            alert(data.msg);
+            if (data.code == 200) window.location.reload();
         })
         .catch(err => {
             alert("上传失败：" + err);
@@ -52,6 +52,8 @@ function DatasetPage({ setPageUrl, parameter }) {
     const [testPath, setTestPath] = useState("");
     const [nc, setNc] = useState(1);
     const [names, setNames] = useState("");
+    const [isUploading, setIsUploading] = useState(false);
+    const [showDetailsInfo, setShowDetailsInfo] = useState([]);
 
     useEffect(() => {
         api.get("/IDataset/getAllDatasets", { params: {} })
@@ -69,7 +71,7 @@ function DatasetPage({ setPageUrl, parameter }) {
         case "uploadDataset":
             return (
                 <div className="main">
-                    <h1 className="page-title" style={{ marginBottom: '-13px' }}>上传数据集</h1>
+                    <h1 className="page-title">上传数据集</h1>
                     <p className="page-des">上传 Yolo 数据集以供模型使用</p>
 
                     <div className="form-group">
@@ -124,39 +126,38 @@ function DatasetPage({ setPageUrl, parameter }) {
                                 <div className="tip-box">
                                     <p>
                                         请确保您的 <code>.yaml</code> 文件格式正确，即包含以下字段:
-                                        <br />
-                                        <table>
-                                            <thead>
-                                                <tr>
-                                                    <th>字段</th>
-                                                    <th>类型</th>
-                                                    <th>说明</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>train</td>
-                                                    <td>str</td>
-                                                    <td>训练集图像路径（可以是文件夹或 <code>.txt</code> 路径列表）</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>val</td>
-                                                    <td>str</td>
-                                                    <td>验证集图像路径（同上）</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>nc</td>
-                                                    <td>int</td>
-                                                    <td>类别总数（必须与 <code>names</code> 数量一致）</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>names</td>
-                                                    <td>list[str]</td>
-                                                    <td>类别名称列表，索引即为标签 ID（如 0 表示第一个名字）</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
                                     </p>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>字段</th>
+                                                <th>类型</th>
+                                                <th>说明</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>train</td>
+                                                <td>str</td>
+                                                <td>训练集图像路径（可以是文件夹或 <code>.txt</code> 路径列表）</td>
+                                            </tr>
+                                            <tr>
+                                                <td>val</td>
+                                                <td>str</td>
+                                                <td>验证集图像路径（同上）</td>
+                                            </tr>
+                                            <tr>
+                                                <td>nc</td>
+                                                <td>int</td>
+                                                <td>类别总数（必须与 <code>names</code> 数量一致）</td>
+                                            </tr>
+                                            <tr>
+                                                <td>names</td>
+                                                <td>list[str]</td>
+                                                <td>类别名称列表，索引即为标签 ID（如 0 表示第一个名字）</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             }
 
@@ -204,8 +205,10 @@ function DatasetPage({ setPageUrl, parameter }) {
                     {datasetType != "null" &&
                         <div className="tip-box">
                             {datasetType == "yolo" &&
-                                <p>
-                                    Yolo 数据集压缩包格式示例:
+                                <>
+                                    <p>
+                                        Yolo 数据集压缩包格式示例:
+                                    </p>
                                     <pre>
                                         <code>
                                             your_dataset/<br />
@@ -216,10 +219,12 @@ function DatasetPage({ setPageUrl, parameter }) {
                                             ├── dataset.yaml<br />
                                         </code>
                                     </pre>
-                                </p>}
+                                </>}
                             {datasetType == "coco" &&
-                                <p>
-                                    COCO 数据集压缩包格式示例:
+                                <>
+                                    <p>
+                                        COCO 数据集压缩包格式示例
+                                    </p>
                                     <pre>
                                         <code>
                                             your_dataset/<br />
@@ -230,18 +235,23 @@ function DatasetPage({ setPageUrl, parameter }) {
                                             ├── dataset.yaml<br />
                                         </code>
                                     </pre>
-                                </p>}
+                                </>}
                         </div>
                     }
 
-                    <button className="btn sm upload-btn" onClick={() => uploadDataset({ datasetType, includeYaml, trainPath, valPath, testPath, nc, names })}>上传数据集</button>
+                    <button className="btn sm upload-btn" onClick={() => {
+                        setIsUploading(true);
+                        uploadDataset({ datasetType, includeYaml, trainPath, valPath, testPath, nc, names });
+                    }}>
+                        {isUploading ? (<>正在上传中</>) : (<>上传数据集</>)}
+                    </button>
                 </div>
             );
         default:
             return (
                 <div className="main">
-                    <h1 className="page-title" style={{ marginBottom: '-13px' }}>数据集</h1>
-                    <p className="page-des">在这里，您可以查看和管理您的数据集。</p>
+                    <h1 className="page-title">数据集</h1>
+                    <p className="page-des">查看和管理您的数据集。</p>
                     <button className="btn sm" onClick={() => setPageUrl("dataset?type=uploadDataset")} style={{ marginBottom: '10px' }}>创建数据集</button>
                     {datasetsList.map((dataset, index) => (
                         <div key={index} className="card" style={{ marginBottom: '10px' }}>
@@ -251,25 +261,36 @@ function DatasetPage({ setPageUrl, parameter }) {
                             </p>
                             <p className="dataset-des">{dataset.platform_info.description || "无描述"}</p>
                             <p className="dataset-info">
-                                数据集路径: {dataset.path}
+                                标记数量: {dataset.yaml_info.num_classes}
                                 <br />
                                 创建时间: {new Date(dataset.platform_info.created_at * 1000).toLocaleString()}
                                 <br />
-                                {dataset.platform_info.type != "null" &&
+                                {dataset.platform_info.type != "null" && showDetailsInfo.includes(index) &&
                                     <>
-                                        标记数量: {dataset.yaml_info.num_classes}
+                                        数据集路径: {dataset.path}
+                                        <br />
+                                        标记类别: {dataset.yaml_info.class_names.join(', ')}
                                         <br />
                                         训练集图片数量: {dataset.yaml_info.train_img_count}
                                         <br />
                                         训练集标注数量: {dataset.yaml_info.train_label_count}
                                         <br />
                                         {(dataset.yaml_info.train_img_count == 0 || dataset.yaml_info.train_label_count == 0) &&
-                                            <span>训练集图片/标注数量为0可能是因为格式有误，如您确定数据集内包含数据，请检查您的数据集格式是否正确。</span>
+                                            <span>Tip: 训练集图片/标注数量为0可能是因为格式有误，如您确定数据集内包含数据，请检查您的数据集格式是否正确。</span>
                                         }
                                     </>
                                 }
                             </p>
-                            <button className="btn sm" onClick={() => setPageUrl(`dataset?type=datasetDetail&datasetPath=${dataset.path}`)}>查看详情</button>
+                            <a className="dataset-info" style={{ marginRight: '10px' }} onClick={() => {
+                                if (showDetailsInfo.includes(index)) {
+                                    setShowDetailsInfo(prev => prev.filter(item => item !== index));
+                                } else {
+                                    setShowDetailsInfo(prev => [...prev, index]);
+                                }
+                            }}>
+                                {showDetailsInfo.includes(index) ? <>隐藏详细</> : <>查看详情</>}
+                            </a>
+                            <button className="btn sm" onClick={() => { setPageUrl(`tasks?type=newTask&datasetPath=${dataset.path}`) }}>从该数据集开始创建任务</button>
                         </div>
                     ))}
                 </div>

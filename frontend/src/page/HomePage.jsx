@@ -1,14 +1,14 @@
 function HomePage({ setPageUrl, parameter }) {
     return (
         <div className="main">
-            <h1 className="page-title" style={{ marginBottom: '-13px' }}>👋 欢迎</h1>
-            <p className="page-des">快速开始训练 Yolo 模型</p>
+            <h1 className="page-title">👋 欢迎</h1>
+            <p className="page-des">快速开始训练视觉模型</p>
             <div className="card-group" style={{ marginTop: '10px' }}>
                 <div className="card">
                     <div className="top-tag">1</div>
                     <h1 className="title">上传数据集</h1>
-                    <p className="content">支持 YOLO 格式的数据集，系统会自动解析标注信息并生成预览。</p>
-                    <button className="btn sm" onClick={() => { setPageUrl("dataset?type=uploadDataset") }} style={{ marginRight: '5px' }}>上传数据集</button>
+                    <p className="content">支持 YOLO / COCO 格式的数据集，系统会自动解析标注信息并生成预览。</p>
+                    <button className="btn sm" onClick={() => { setPageUrl("dataset?type=uploadDataset") }} style={{ marginRight: '5px' }}>创建数据集</button>
                     <button className="btn sm" onClick={() => { setPageUrl("dataset") }}>从已有的数据集开始</button>
                 </div>
                 <div className="card">
