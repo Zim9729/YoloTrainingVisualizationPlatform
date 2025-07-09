@@ -106,8 +106,12 @@ a:hover {
     display: flex;
     flex-direction: column;
     background-color: var(--background-color);
-    padding: 40px;
     overflow-y: auto;
+    padding: 40px;
+}
+
+.main.nopadding {
+    padding: 0 !important;
 }
 
 .card-group {
@@ -178,14 +182,19 @@ a:hover {
     margin-bottom: -20px;
 }
 
+.banner {
+    height: 140px;
+    padding: 40px;
+}
+
 .page-title {
-    font-size: 20px;
+    font-size: 24px;
     color: var(--text-color);
-    margin-bottom: -13px;
+    margin-bottom: -16px;
 }
 
 .page-des {
-    font-size: 16px;
+    font-size: 18px;
     color: var(--secondary-text-color);
     margin-bottom: 20px;
 }

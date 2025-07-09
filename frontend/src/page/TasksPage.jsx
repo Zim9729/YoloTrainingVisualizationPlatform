@@ -9,6 +9,8 @@ function TasksPage({ setPageUrl, parameter }) {
     const [modelList, setModelList] = useState([]);
 
     const [tabIndex, setTabIndex] = useState(0);
+    const tabIndexCount = 5;
+    const [canBackLastTab, setCanBackLastTab] = useState(false);
     const [taskName, setTaskName] = useState("");
     const [taskDescription, setTaskDescription] = useState("");
     const [datasetPath, setDatasetPath] = useState("");
@@ -33,13 +35,10 @@ function TasksPage({ setPageUrl, parameter }) {
 
     const [cache, setCache] = useState("disk");
 
-    const [canBackLastTab, setCanBackLastTab] = useState(false);
-
     const [isUploading, setIsUploading] = useState(false);
-
-    const tabIndexCount = 5;
-
     const [showDetailsInfo, setShowDetailsInfo] = useState([]);
+
+    const [errorList, setErrorList] = useState([]);
 
     useEffect(() => {
         api.get("/ITraining/getAllTasks", { params: {} })
@@ -88,7 +87,9 @@ function TasksPage({ setPageUrl, parameter }) {
             })
             .catch(err => {
                 console.error("模型拉取失败: ", err);
-                alert(err);
+                console.log("启用本地模型索引文件");
+                setModelList(CONFIGS.YOLO_MODELS_LIST.assets.filter(asset => asset.name.endsWith(".pt")));
+                setBaseModelID(196201276);
             });
     }, []);
 
@@ -100,6 +101,29 @@ function TasksPage({ setPageUrl, parameter }) {
     useEffect(() => {
         if (tabIndex == 5) {
             setCanBackLastTab(true);
+
+            setErrorList([]);
+            if (taskName == "") {
+                setErrorList(prev => [...prev, "taskName"]);
+            }
+            if (epochs < 1) {
+                setErrorList(prev => [...prev, "epochs"]);
+            }
+            if (batchSize < 1) {
+                setErrorList(prev => [...prev, "batchSize"]);
+            }
+            if (imgSize < 1) {
+                setErrorList(prev => [...prev, "imgSize"]);
+            }
+            if (device == "gpu" && gpuCUDAIndex == "") {
+                setErrorList(prev => [...prev, "gpuCUDAIndex"]);
+            }
+            if (device == "gpu_idlefirst" && gpuCUDANum < 1) {
+                setErrorList(prev => [...prev, "gpuCUDANum"]);
+            }
+            if (!(trainSeed === "" || /^\d+$/.test(String(trainSeed)))) {
+                setErrorList(prev => [...prev, "trainSeed"]);
+            }
         }
     }, [tabIndex]);
 
@@ -133,6 +157,12 @@ function TasksPage({ setPageUrl, parameter }) {
                 alert("创建失败：" + err.message);
                 setIsUploading(false);
             });
+    };
+
+    const renderCheckIcon = (key) => {
+        return errorList.includes(key) ? (
+            <span style={{ color: 'red', fontWeight: 'bold' }}>*</span>
+        ) : "";
     };
 
     switch (parameter.type) {
@@ -431,7 +461,7 @@ function TasksPage({ setPageUrl, parameter }) {
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="trainSeed">设置训练种子(seed)</label>
+                            <label htmlFor="trainSeed">设置训练种子(seed，默认请留空)</label>
                             <input type="text" id="trainSeed" value={trainSeed} onChange={(e) => { setTrainSeed(e.target.value) }} placeholder="默认: 0" />
                         </div>
 
@@ -466,50 +496,89 @@ function TasksPage({ setPageUrl, parameter }) {
                             <b>需要修改配置项？</b>点击对应的配置项以修改值。
                         </div>
 
+                        {errorList.length !== 0 && (
+                            <div className="tip-box">
+                                请检查<span style={{ color: 'red', fontWeight: 'bold' }}>{errorList.map(key => CONFIGS.TASK_CONFIGURATiON_ITEMS[key]).join(", ")}</span>配置项是否正确
+                            </div>
+                        )}
+
                         <table className="config-table">
                             <tbody>
                                 <tr onClick={() => setTabIndex(0)}>
-                                    <td><strong>任务名称</strong></td>
+                                    <td>{renderCheckIcon("taskName")} <strong>任务名称</strong></td>
                                     <td>{taskName}</td>
                                 </tr>
                                 <tr onClick={() => setTabIndex(0)}>
-                                    <td><strong>任务描述</strong></td>
-                                    <td>{taskDescription}</td>
+                                    <td>{renderCheckIcon("taskDescription")} <strong>任务描述</strong></td>
+                                    <td>{taskDescription || "无"}</td>
                                 </tr>
                                 <tr onClick={() => setTabIndex(1)}>
-                                    <td><strong>数据集路径</strong></td>
+                                    <td>{renderCheckIcon("datasetPath")} <strong>数据集路径</strong></td>
                                     <td>{datasetPath}</td>
                                 </tr>
                                 <tr onClick={() => setTabIndex(2)}>
-                                    <td><strong>训练方式</strong></td>
+                                    <td>{renderCheckIcon("trainingType")} <strong>训练方式</strong></td>
                                     <td>{trainingType == 0 ? "微调预训练模型" : "自定义结构"}</td>
                                 </tr>
 
                                 {trainingType == 0 && selectedBaseModel && (
                                     <>
-                                        <tr onClick={() => setTabIndex(3)}><td><strong>基准模型</strong></td><td>{selectedBaseModel.name}</td></tr>
-                                        <tr onClick={() => setTabIndex(3)}><td><strong>模型大小</strong></td><td>{Math.round(selectedBaseModel.size / 1024 / 1024)} MB</td></tr>
+                                        <tr onClick={() => setTabIndex(3)}>
+                                            <td>{renderCheckIcon("baseModelID")} <strong>基准模型</strong></td>
+                                            <td>{selectedBaseModel.name}</td>
+                                        </tr>
+                                        <tr onClick={() => setTabIndex(3)}>
+                                            <td><strong>模型大小</strong></td>
+                                            <td>{Math.round(selectedBaseModel.size / 1024 / 1024)} MB</td>
+                                        </tr>
                                     </>
                                 )}
 
                                 {trainingType == 1 && (
-                                    <tr onClick={() => setTabIndex(3)}><td><strong>模型结构定义</strong></td><td><pre style={{ whiteSpace: 'pre-wrap' }}>{modelYamlFile}</pre></td></tr>
+                                    <tr onClick={() => setTabIndex(3)}>
+                                        <td>{renderCheckIcon("modelYamlFile")} <strong>模型结构定义</strong></td>
+                                        <td><pre style={{ whiteSpace: 'pre-wrap' }}>{modelYamlFile}</pre></td>
+                                    </tr>
                                 )}
 
-                                <tr onClick={() => setTabIndex(3)}><td><strong>训练轮数</strong></td><td>{epochs}</td></tr>
-                                <tr onClick={() => setTabIndex(3)}><td><strong>Batch Size</strong></td><td>{batchSize}</td></tr>
-                                <tr onClick={() => setTabIndex(3)}><td><strong>图像尺寸</strong></td><td>{imgSize}</td></tr>
-                                <tr onClick={() => setTabIndex(4)}><td><strong>训练设备</strong></td><td>{device}</td></tr>
+                                <tr onClick={() => setTabIndex(3)}>
+                                    <td>{renderCheckIcon("epochs")} <strong>训练轮数</strong></td>
+                                    <td>{epochs}</td>
+                                </tr>
+                                <tr onClick={() => setTabIndex(3)}>
+                                    <td>{renderCheckIcon("batchSize")} <strong>每批训练样本数量</strong></td>
+                                    <td>{batchSize}</td>
+                                </tr>
+                                <tr onClick={() => setTabIndex(3)}>
+                                    <td>{renderCheckIcon("imgSize")} <strong>图像尺寸</strong></td>
+                                    <td>{imgSize}</td>
+                                </tr>
+                                <tr onClick={() => setTabIndex(4)}>
+                                    <td>{renderCheckIcon("device")} <strong>训练设备</strong></td>
+                                    <td>{device}</td>
+                                </tr>
 
                                 {device === "gpu" && (
-                                    <tr onClick={() => setTabIndex(4)}><td><strong>GPU Index</strong></td><td>{gpuCUDAIndex}</td></tr>
+                                    <tr onClick={() => setTabIndex(4)}>
+                                        <td>{renderCheckIcon("gpuCUDAIndex")} <strong>CUDA设备编号</strong></td>
+                                        <td>{gpuCUDAIndex}</td>
+                                    </tr>
                                 )}
                                 {device === "gpu_idlefirst" && (
-                                    <tr onClick={() => setTabIndex(4)}><td><strong>GPU 数量</strong></td><td>{gpuCUDANum}</td></tr>
+                                    <tr onClick={() => setTabIndex(4)}>
+                                        <td>{renderCheckIcon("gpuCUDANum")} <strong>GPU 数量</strong></td>
+                                        <td>{gpuCUDANum}</td>
+                                    </tr>
                                 )}
 
-                                <tr onClick={() => setTabIndex(4)}><td><strong>训练种子</strong></td><td>{trainSeed || "默认(0)"}</td></tr>
-                                <tr onClick={() => setTabIndex(4)}><td><strong>数据缓存位置</strong></td><td>{cache}</td></tr>
+                                <tr onClick={() => setTabIndex(4)}>
+                                    <td>{renderCheckIcon("trainSeed")} <strong>训练种子</strong></td>
+                                    <td>{trainSeed || "默认(0)"}</td>
+                                </tr>
+                                <tr onClick={() => setTabIndex(4)}>
+                                    <td>{renderCheckIcon("cache")} <strong>数据缓存位置</strong></td>
+                                    <td>{cache}</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>

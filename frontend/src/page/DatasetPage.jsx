@@ -184,7 +184,7 @@ function DatasetPage({ setPageUrl, parameter }) {
                                     </div>
 
                                     <div className="form-group">
-                                        <label htmlFor="names">类别名称（用逗号分隔）</label>
+                                        <label htmlFor="names">类别名称（请使用英文逗号","分割）</label>
                                         <input type="text" id="names" placeholder="如：cat,dog,person" value={names} onChange={(e) => setNames(e.target.value)} />
                                     </div>
                                 </div>

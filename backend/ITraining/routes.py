@@ -46,13 +46,15 @@ def create_task():
     
     if taskName == None or datasetPath == None or trainingType == None:
         return format_output(code=400, msg="缺少必要的参数(step:1)")
+    if taskName == "":
+        return format_output(code=400, msg="训练任务名称不能为空[参数非法(step:2)]")
     
     extra_params = {}
     match int(trainingType):
         case 0:
             baseModelID = data.get("baseModelID", None)
             if baseModelID == None:
-                return format_output(code=400, msg="缺少必要的参数(step:2)")
+                return format_output(code=400, msg="缺少必要的参数(step:3)")
             extra_params["baseModelID"] = str(baseModelID)
             
             try:
@@ -85,7 +87,7 @@ def create_task():
         case 1:
             modelYamlFile = data.get("modelYamlFile", "")
             if modelYamlFile == "":
-                return format_output(code=400, msg="缺少必要的参数(step:3)")
+                return format_output(code=400, msg="缺少必要的参数(step:4)")
             extra_params["modelYamlFile"] = modelYamlFile
     
     # 通用参数
@@ -106,7 +108,7 @@ def create_task():
     try:
         trainSeed = int(data.get("trainSeed", 0))
     except:
-        return format_output(code=400, msg="参数非法(step:4)")
+        return format_output(code=400, msg="参数非法(step:5)")
     
     timestamp = int(time.time())
     
