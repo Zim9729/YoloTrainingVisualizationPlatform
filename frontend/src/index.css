@@ -47,6 +47,7 @@ a:hover {
 }
 
 .title-bar {
+    z-index: 999;
     position: fixed;
     top: 0;
     app-region: drag;
@@ -82,14 +83,14 @@ a:hover {
     cursor: pointer;
     font-size: 14px;
     color: var(--text-color);
-    border: 1.8px solid var(--main-color);
+    border: 1.8px solid var(--light-color);
     border-radius: 8px;
     text-decoration: none;
 }
 
 .navbar-item:hover {
     background-color: var(--hover-color);
-    color: #ffffff;
+    color: var(--background-color);
 }
 
 .navbar-version {
@@ -122,6 +123,24 @@ a:hover {
     border-radius: 15px;
     border: 1px solid var(--main-color);
     padding: 5px 20px;
+    transition: all 0.2s ease;
+}
+
+.card.hover-enabled:hover {
+    cursor: pointer;
+    color: var(--background-color);
+    background-color: var(--hover-color);
+}
+
+.card.click {
+    cursor: pointer;
+    color: var(--background-color);
+    background-color: var(--main-color);
+}
+
+.card.hover-enabled:hover .title,
+.card.click .title {
+    color: var(--background-color);
 }
 
 .card-group .card {
@@ -136,6 +155,7 @@ a:hover {
     font-size: 18px;
     margin-bottom: -10px;
     color: var(--main-color);
+    transition: all 0.2s ease;
 }
 
 .card .content {
@@ -223,7 +243,7 @@ input[type="file"] {
     font-size: 14px;
     border: 1px solid var(--secondary-color);
     border-radius: 6px;
-    background-color: #fff;
+    background-color: var(--background-color);
     color: var(--text-color);
     outline: none;
     transition: border-color 0.2s ease;
@@ -273,4 +293,47 @@ td {
     color: var(--background-color);
     background-color: var(--main-color);
     border-radius: 8px;
+}
+
+.tab-content {
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.4s ease;
+    position: absolute;
+    width: 100%;
+}
+
+.tab-content.active {
+    opacity: 1;
+    transform: translateX(0);
+    position: relative;
+}
+
+.tab-content.hidden {
+    pointer-events: none;
+    height: 0;
+    overflow: hidden;
+}
+
+.config-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.config-table tr:hover {
+    cursor: pointer;
+}
+
+.config-table td {
+    border: 1px solid var(--light-color);
+    padding: 8px 12px;
+    vertical-align: top;
+}
+
+.config-table td:first-child {
+    font-weight: bold;
+    width: 180px;
+    color: var(--text-color);
+    background-color: var(--background-color);
 }

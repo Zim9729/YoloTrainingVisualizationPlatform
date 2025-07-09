@@ -10,7 +10,7 @@ function Main({ page_url = "home", setPageUrl }) {
     const [parameter, setParameter] = useState({})
 
     useEffect(() => {
-        hljs.highlightAll()
+        hljs.highlightAll();
 
         if (page_url.includes("?")) {
             const [type, queryString] = page_url.split("?")
