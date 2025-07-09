@@ -140,6 +140,9 @@ def get_all_datasets():
 
 @IDataset_bp.route('/uploadDataset', methods=["POST"])
 def upload_dataset():
+    """
+    创建新数据集
+    """
     dataset_path = get_dataset_path()
 
     file = request.files.get("file")

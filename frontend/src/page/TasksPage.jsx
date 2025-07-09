@@ -3,6 +3,8 @@ import { api } from "../api";
 import CONFIGS from "../config";
 
 function TasksPage({ setPageUrl, parameter }) {
+    const [tasksList, setTasksList] = useState([]);
+
     const [datasetsList, setDatasetsList] = useState([]);
     const [modelList, setModelList] = useState([]);
 
@@ -33,7 +35,23 @@ function TasksPage({ setPageUrl, parameter }) {
 
     const [canBackLastTab, setCanBackLastTab] = useState(false);
 
+    const [isUploading, setIsUploading] = useState(false);
+
     const tabIndexCount = 5;
+
+    const [showDetailsInfo, setShowDetailsInfo] = useState([]);
+
+    useEffect(() => {
+        api.get("/ITraining/getAllTasks", { params: {} })
+            .then(data => {
+                console.log("获取训练任务:", data.data);
+                setTasksList(data.data.tasks);
+            })
+            .catch(err => {
+                console.error("获取训练任务失败:", err);
+                alert(err);
+            });
+    }, [])
 
     useEffect(() => {
         api.get("/IDataset/getAllDatasets", { params: {} })
@@ -58,7 +76,7 @@ function TasksPage({ setPageUrl, parameter }) {
     }, [])
 
     useEffect(() => {
-        fetch("https://api.github.com/repos/ultralytics/assets/releases/latest")
+        fetch(CONFIGS.YOLO_MODLES_LIST)
             .then(res => res.json())
             .then(data => {
                 const models = data.assets.filter(asset => asset.name.endsWith(".pt"));
@@ -85,6 +103,38 @@ function TasksPage({ setPageUrl, parameter }) {
         }
     }, [tabIndex]);
 
+    const createTask = () => {
+        setIsUploading(true);
+
+        const data = {
+            taskName: taskName,   // 任务名称
+            taskDescription: taskDescription,   // 任务描述
+            datasetPath: datasetPath,   // 数据集路径
+            trainingType: trainingType,   // 训练类型
+            baseModelID: baseModelID,   // 基础模型ID
+            modelYamlFile: modelYamlFile,   // 模型Yaml文件
+            epochs: epochs,   // epochs
+            batchSize: batchSize,   // batch_size
+            imgSize: imgSize,   // 图像大小
+            device: device,   // 设备
+            gpuCUDAIndex: gpuCUDAIndex,   // cuda设备id
+            gpuCUDANum: gpuCUDANum,   // cuda数量
+            trainSeed: trainSeed || 0,   // 种子
+            cache: cache   // 缓存位置
+        };
+
+        api.post("/ITraining/createTask", { data: data, params: {} })
+            .then(data => {
+                setIsUploading(false);
+                alert(data.msg);
+                if (data.code == 200) setPageUrl("home");
+            })
+            .catch(err => {
+                alert("创建失败：" + err.message);
+                setIsUploading(false);
+            });
+    };
+
     switch (parameter.type) {
         case "newTask":
             return (
@@ -107,7 +157,7 @@ function TasksPage({ setPageUrl, parameter }) {
 
                         <div className="form-group">
                             <label htmlFor="taskDescription">任务描述</label>
-                            <textarea id="taskDescription" value={taskDescription} onChange={(e) => { setTaskDescription(e.target.value) }} placeholder="请输入任务描述"></textarea>
+                            <textarea id="taskDescription" value={taskDescription} rows={7} onChange={(e) => { setTaskDescription(e.target.value) }} placeholder="请输入任务描述"></textarea>
                         </div>
                     </div>
 
@@ -466,8 +516,14 @@ function TasksPage({ setPageUrl, parameter }) {
 
                     <div style={{ display: 'flex', gap: '20px', marginTop: '20px', marginBottom: '20px' }}>
                         <button className="btn" style={{ flex: '1' }} onClick={() => { setTabIndex(Math.max(tabIndex - 1, 0)) }}>上一步</button>
-                        <button className="btn" style={{ flex: '1' }} onClick={() => { setTabIndex(Math.min(tabIndex + 1, tabIndexCount)) }}>
-                            {tabIndex == tabIndexCount ? "完成" : "下一步"}
+                        <button className="btn" style={{ flex: '1' }} onClick={() => {
+                            if (tabIndex === tabIndexCount) {
+                                createTask();
+                            } else {
+                                setTabIndex(Math.min(tabIndex + 1, tabIndexCount));
+                            }
+                        }}>
+                            {isUploading ? "正在上传中" : ((tabIndex == tabIndexCount && !isUploading) ? "完成" : "下一步")}
                         </button>
                         {canBackLastTab &&
                             <button className="btn" style={{ flex: '1' }} onClick={() => { setTabIndex(5) }}>返回配置确认</button>
@@ -481,6 +537,55 @@ function TasksPage({ setPageUrl, parameter }) {
                     <h1 className="page-title">训练任务</h1>
                     <p className="page-des">管理所有模型训练任务。</p>
                     <button className="btn sm" onClick={() => setPageUrl("tasks?type=newTask")} style={{ marginBottom: '10px' }}>新建训练任务</button>
+                    {tasksList.map((task, index) => (
+                        <div key={index} className="card" style={{ marginBottom: '10px' }}>
+                            <p className="title" style={{ fontWeight: 'bold' }}>
+                                <span className="tag" style={{ fontSize: '12px', marginRight: '10px' }}>{CONFIGS.TRAINING_TYPE[task.trainingType]}</span>
+                                {task.taskName}
+                            </p>
+                            <p className="dataset-des">{task.taskDescription || "无描述"}</p>
+                            <p className="dataset-info">
+                                创建时间: {new Date(task.createTime * 1000).toLocaleString()}
+                                {showDetailsInfo.includes(index) &&
+                                    <>
+                                        <br />
+                                        数据集: {task.datasetPath}
+                                        <br />
+                                        训练设备: {CONFIGS.DEVICE_TYPE[task.device]} {task.device == "gpu" ? `(CUDA 编号: ${task.gpuCUDAIndex})` : (task.device == "gpu_idlefirst" ? `(将要唤起的 GPU 数量: ${task.gpuCUDANum})` : "")}
+                                        <br />
+                                        训练轮数(epochs): {task.epochs}
+                                        <br />
+                                        每批训练样本数量(batch_size): {task.batchSize}
+                                        <br />
+                                        输入图像尺寸 (imgsz): {task.imgSize}
+                                        <br />
+                                        {task.trainingType == '0' && (
+                                            <>
+                                                基础模型ID: {task.baseModelID}
+                                                <br />
+                                                基础模型名称: {task.baseModelInfo.name}
+                                                <br />
+                                                基础模型大小: {Math.round(task.baseModelInfo.size / 1024 / 1024)} MB
+                                                <br />
+                                                模型下载量: {task.baseModelInfo.download_count}
+                                                <br />
+                                                模型上传者: <a href={task.baseModelInfo.uploader.html_url}>{task.baseModelInfo.uploader.login}</a>
+                                            </>
+                                        )}
+                                    </>
+                                }
+                            </p>
+                            <a className="dataset-info" style={{ marginRight: '10px' }} onClick={() => {
+                                if (showDetailsInfo.includes(index)) {
+                                    setShowDetailsInfo(prev => prev.filter(item => item !== index));
+                                } else {
+                                    setShowDetailsInfo(prev => [...prev, index]);
+                                }
+                            }}>
+                                {showDetailsInfo.includes(index) ? <>隐藏详细</> : <>查看详情</>}
+                            </a>
+                        </div>
+                    ))}
                 </div>
             );
     }

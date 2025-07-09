@@ -16,11 +16,16 @@ def info():
     })
     
 from IDataset.routes import IDataset_bp
+from ITraining.routes import ITraining_bp
 
 # 注册蓝图
 app.register_blueprint(
     IDataset_bp,
     url_prefix='/IDataset',
+)
+app.register_blueprint(
+    ITraining_bp,
+    url_prefix='/ITraining'
 )
 
 if __name__ == '__main__':

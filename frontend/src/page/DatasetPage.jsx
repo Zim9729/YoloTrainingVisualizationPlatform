@@ -29,13 +29,9 @@ function uploadDataset({ datasetType, includeYaml, trainPath, valPath, testPath,
         method: "POST",
         body: formData,
     })
-        .then(async res => {
-            if (!res.ok) throw await res.text();
-            return res.json();
-        })
         .then(data => {
             alert(data.msg);
-            if (data.code == 200) window.location.reload();
+            if (data.code == 200) setPageUrl("home");
         })
         .catch(err => {
             alert("上传失败：" + err);
