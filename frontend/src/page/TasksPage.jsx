@@ -57,7 +57,7 @@ function TasksPage({ setPageUrl, parameter }) {
             .then(data => {
                 console.log("获取数据集:", data.data);
                 setDatasetsList(data.data.datasets);
-                if (!parameter.datasetPath) {
+                if (!parameter.datasetPath && data.data.datasets.length > 0) {
                     setDatasetPath(data.data.datasets[0].path);
                 }
             })
@@ -105,6 +105,9 @@ function TasksPage({ setPageUrl, parameter }) {
             setErrorList([]);
             if (taskName == "") {
                 setErrorList(prev => [...prev, "taskName"]);
+            }
+            if (datasetPath == "") {
+                setErrorList(prev => [...prev, "datasetPath"])
             }
             if (epochs < 1) {
                 setErrorList(prev => [...prev, "epochs"]);
@@ -158,6 +161,48 @@ function TasksPage({ setPageUrl, parameter }) {
                 setIsUploading(false);
             });
     };
+
+    const startTask = (filename) => {
+        if (confirm("真的要开始训练该任务吗？")) {
+            console.log("开始训练任务: " + filename);
+            const data = {
+                filename: filename
+            };
+
+            api.post("/ITraining/startTask", { data: data, params: {} })
+                .then(data => {
+                    alert(data.msg);
+                })
+                .catch(err => {
+                    console.error("训练任务失败:", err);
+                    alert(err);
+                });
+        } else {
+            console.log("用户取消开始训练操作");
+        }
+    }
+
+    const deleteTask = (path) => {
+        if (confirm("真的要删除该训练任务吗？")) {
+            console.log("删除训练任务: " + path);
+            const data = {
+                path: path
+            };
+
+            api.post("/ITraining/deleteTask", { data: data, params: {} })
+                .then(data => {
+                    alert(data.msg);
+                    if (data.code == 200) setPageUrl("home");
+                })
+                .catch(err => {
+                    console.error("删除训练任务失败:", err);
+                    alert(err);
+                });
+        } else {
+            console.log("用户取消删除操作");
+        }
+    };
+
 
     const renderCheckIcon = (key) => {
         return errorList.includes(key) ? (
@@ -311,7 +356,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                         <br />
                                         <strong>下载次数</strong> {selectedBaseModel.download_count} 次
                                         <br />
-                                        <strong>上传者</strong> <a href={selectedBaseModel.uploader.html_url}>{selectedBaseModel.uploader.login}</a>
+                                        <strong>上传者</strong> <a href={selectedBaseModel.uploader.html_url} target="_blank">{selectedBaseModel.uploader.login}</a>
                                     </div>
                                 )}
 
@@ -326,7 +371,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                         <tbody>
                                             <tr>
                                                 <td>
-                                                    <a href="https://docs.ultralytics.com/zh/tasks/detect/">检测</a>
+                                                    <a href="https://docs.ultralytics.com/zh/tasks/detect/" target="_blank">检测</a>
                                                 </td>
                                                 <td>
                                                     <code>.pt</code>
@@ -336,7 +381,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                             </tr>
                                             <tr>
                                                 <td>
-                                                    <a href="https://docs.ultralytics.com/zh/tasks/segment/">实例分割</a>
+                                                    <a href="https://docs.ultralytics.com/zh/tasks/segment/" target="_blank">实例分割</a>
                                                 </td>
                                                 <td>
                                                     <code>-seg.pt</code>
@@ -346,7 +391,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                             </tr>
                                             <tr>
                                                 <td>
-                                                    <a href="https://docs.ultralytics.com/zh/tasks/pose/">姿势/关键点</a>
+                                                    <a href="https://docs.ultralytics.com/zh/tasks/pose/" target="_blank">姿势/关键点</a>
                                                 </td>
                                                 <td>
                                                     <code>-pose.pt</code>
@@ -356,7 +401,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                             </tr>
                                             <tr>
                                                 <td>
-                                                    <a href="https://docs.ultralytics.com/zh/tasks/obb/">定向检测</a>
+                                                    <a href="https://docs.ultralytics.com/zh/tasks/obb/" target="_blank">定向检测</a>
                                                 </td>
                                                 <td>
                                                     <code>-obb.pt</code>
@@ -366,7 +411,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                             </tr>
                                             <tr>
                                                 <td>
-                                                    <a href="https://docs.ultralytics.com/zh/tasks/classify/">分类</a>
+                                                    <a href="https://docs.ultralytics.com/zh/tasks/classify/" target="_blank">分类</a>
                                                 </td>
                                                 <td>
                                                     <code>-cls.pt</code>
@@ -376,7 +421,6 @@ function TasksPage({ setPageUrl, parameter }) {
                                             </tr>
                                         </tbody>
                                     </table>
-                                    如下拉框长时间无内容，请检查网络配置
                                 </div>
                             </>
                         }
@@ -406,7 +450,7 @@ function TasksPage({ setPageUrl, parameter }) {
                         </div>
 
                         <div className="tip-box">
-                            对于以上参数的描述，参见<a href="https://docs.ultralytics.com/zh/modes/train/#train-settings">https://docs.ultralytics.com/zh/modes/train/#train-settings</a>
+                            对于以上参数的描述，参见<a href="https://docs.ultralytics.com/zh/modes/train/#train-settings" target="_blank">https://docs.ultralytics.com/zh/modes/train/#train-settings</a>
                             <br />
                             如果您不了解，那么通常情况下您不需要更改这些参数
                         </div>
@@ -457,7 +501,7 @@ function TasksPage({ setPageUrl, parameter }) {
                         }
 
                         <div className="tip-box">
-                            对于训练设备相关，参见<a href="https://docs.ultralytics.com/zh/modes/train/#usage-examples">https://docs.ultralytics.com/zh/modes/train/#usage-examples</a>
+                            对于训练设备相关，参见<a href="https://docs.ultralytics.com/zh/modes/train/#usage-examples" target="_blank">https://docs.ultralytics.com/zh/modes/train/#usage-examples</a>
                         </div>
 
                         <div className="form-group">
@@ -478,7 +522,7 @@ function TasksPage({ setPageUrl, parameter }) {
                         </div>
 
                         <div className="tip-box">
-                            对于以上参数的描述，参见<a href="https://docs.ultralytics.com/zh/modes/train/#train-settings">https://docs.ultralytics.com/zh/modes/train/#train-settings</a>
+                            对于以上参数的描述，参见<a href="https://docs.ultralytics.com/zh/modes/train/#train-settings" target="_blank">https://docs.ultralytics.com/zh/modes/train/#train-settings</a>
                             <br />
                             如果您不了解，那么通常情况下您不需要更改这些参数
                         </div>
@@ -638,7 +682,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                                 <br />
                                                 模型下载量: {task.baseModelInfo.download_count}
                                                 <br />
-                                                模型上传者: <a href={task.baseModelInfo.uploader.html_url}>{task.baseModelInfo.uploader.login}</a>
+                                                模型上传者: <a href={task.baseModelInfo.uploader.html_url} target="_blank">{task.baseModelInfo.uploader.login}</a>
                                             </>
                                         )}
                                     </>
@@ -653,6 +697,8 @@ function TasksPage({ setPageUrl, parameter }) {
                             }}>
                                 {showDetailsInfo.includes(index) ? <>隐藏详细</> : <>查看详情</>}
                             </a>
+                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { startTask(task.__filename) }}>开始训练</button>
+                            <button className="btn sm r" onClick={() => { deleteTask(task.__filename) }}>删除训练任务</button>
                         </div>
                     ))}
                 </div>

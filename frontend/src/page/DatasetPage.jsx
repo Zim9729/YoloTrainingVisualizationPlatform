@@ -2,7 +2,7 @@ import { api } from "../api";
 import { useState, useEffect } from "react";
 import CONFIGS from "../config";
 
-function uploadDataset({ datasetType, includeYaml, trainPath, valPath, testPath, nc, names }) {
+function uploadDataset({ setPageUrl, datasetType, includeYaml, trainPath, valPath, testPath, nc, names }) {
     const formData = new FormData();
 
     const name = document.getElementById("datasetName").value;
@@ -29,6 +29,10 @@ function uploadDataset({ datasetType, includeYaml, trainPath, valPath, testPath,
         method: "POST",
         body: formData,
     })
+        .then(async res => {
+            if (!res.ok) throw await res.text();
+            return res.json();
+        })
         .then(data => {
             alert(data.msg);
             if (data.code == 200) setPageUrl("home");
@@ -63,6 +67,27 @@ function DatasetPage({ setPageUrl, parameter }) {
             });
     }, []);
 
+    const deleteDataset = (path) => {
+        if (confirm("您真的要删除该数据集吗？")) {
+            console.log("删除数据集: " + path);
+            const data = {
+                path: path
+            };
+
+            api.post("/IDataset/deleteDataset", { data: data, params: {} })
+                .then(data => {
+                    alert(data.msg);
+                    if (data.code == 200) setPageUrl("home");
+                })
+                .catch(err => {
+                    console.error("删除数据集失败:", err);
+                    alert(err);
+                });
+        } else {
+            console.log("用户取消删除操作");
+        }
+    };
+
     switch (parameter.type) {
         case "uploadDataset":
             return (
@@ -96,11 +121,11 @@ function DatasetPage({ setPageUrl, parameter }) {
                     <div className="tip-box">
                         {datasetType != "null" && <div>
                             对于 {datasetType} 数据集格式，详细请见
-                            {datasetType == "yolo" && <a href="https://docs.ultralytics.com/zh/datasets/detect/">https://docs.ultralytics.com/zh/datasets/detect/</a>}
-                            {datasetType == "coco" && <a href="https://docs.ultralytics.com/zh/datasets/detect/coco/">https://docs.ultralytics.com/zh/datasets/detect/coco/</a>}。
+                            {datasetType == "yolo" && <a href="https://docs.ultralytics.com/zh/datasets/detect/" target="_blank">https://docs.ultralytics.com/zh/datasets/detect/</a>}
+                            {datasetType == "coco" && <a href="https://docs.ultralytics.com/zh/datasets/detect/coco/" target="_blank">https://docs.ultralytics.com/zh/datasets/detect/coco/</a>}。
                         </div>}
                         {datasetType == "null" && <div>
-                            对于您自定义的数据集格式，请参见<a href="https://docs.ultralytics.com/zh/datasets/detect/">https://docs.ultralytics.com/zh/datasets/detect/</a>的要求。
+                            对于您自定义的数据集格式，请参见<a href="https://docs.ultralytics.com/zh/datasets/detect/" target="_blank">https://docs.ultralytics.com/zh/datasets/detect/</a>的要求。
                             <br />
                             我们无法对自定义数据集进行分析，部分参数无法在页面上显示。
                             <br />
@@ -237,7 +262,7 @@ function DatasetPage({ setPageUrl, parameter }) {
 
                     <button className="btn sm upload-btn" onClick={() => {
                         setIsUploading(true);
-                        uploadDataset({ datasetType, includeYaml, trainPath, valPath, testPath, nc, names });
+                        uploadDataset({ setPageUrl, datasetType, includeYaml, trainPath, valPath, testPath, nc, names });
                     }}>
                         {isUploading ? (<>正在上传中</>) : (<>上传数据集</>)}
                     </button>
@@ -286,7 +311,8 @@ function DatasetPage({ setPageUrl, parameter }) {
                             }}>
                                 {showDetailsInfo.includes(index) ? <>隐藏详细</> : <>查看详情</>}
                             </a>
-                            <button className="btn sm" onClick={() => { setPageUrl(`tasks?type=newTask&datasetPath=${dataset.path}`) }}>从该数据集开始创建任务</button>
+                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { setPageUrl(`tasks?type=newTask&datasetPath=${dataset.path}`) }}>从该数据集开始创建任务</button>
+                            <button className="btn sm r" onClick={() => { deleteDataset(dataset.path) }}>删除数据集</button>
                         </div>
                     ))}
                 </div>

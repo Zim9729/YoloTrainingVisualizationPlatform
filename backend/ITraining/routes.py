@@ -3,12 +3,13 @@ from tools.format_output import format_output
 from config import get_tasks_path, get_yolo_models_list_url
 import yaml
 import time
-import json
+from .run_in_thread import run_main_in_thread
 import requests
 import os
 
 
 ITraining_bp = Blueprint('ITraining', __name__)
+TASK_THREADS = {}
 
 @ITraining_bp.route("/getAllTasks", methods=["GET"])
 def get_all_tasks():
@@ -136,3 +137,91 @@ def create_task():
         yaml.dump(yaml_data, f, allow_unicode=True)
 
     return format_output(msg="任务已创建", data={"yaml_file": filename})
+
+@ITraining_bp.route("/deleteTask", methods=['POST'])
+def delete_dataset():
+    """
+    删除一个训练任务
+    """
+    task_path = get_tasks_path()
+    
+    path = request.json.get("path", None)
+    if path == None:
+        return format_output(code=400, msg="缺少必要的参数")
+    
+    filePath = os.path.join(task_path, path)
+    
+    try:
+        os.remove(filePath)
+    except OSError as e:
+        print(f"删除文件 '{path}' 失败: {e}")
+        return format_output(code=500, msg="删除失败")
+    
+    return format_output(msg="删除成功")
+
+@ITraining_bp.route("/startTask", methods=["POST"])
+def start_task():
+    """
+    启动训练任务
+    """
+    tasks_path = get_tasks_path()
+    
+    data = request.json
+    filename = data.get("filename")
+
+    if not filename:
+        return format_output(code=400, msg="缺少必要参数: filename")
+
+    file_path = os.path.join(tasks_path, filename)
+
+    if not os.path.exists(file_path):
+        return format_output(code=404, msg=f"找不到任务配置文件: {filename}")
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+    except Exception as e:
+        print("读取配置文件失败:", e)
+        return format_output(code=500, msg=f"读取配置文件失败: {str(e)}")
+
+    try:
+        print(f"启动训练任务: {config.get('taskName')}")
+        print("训练参数: ", config)
+
+        # 启动线程并获取 log_stream
+        thread, log_stream = run_main_in_thread(file_path)
+
+        # 保存
+        TASK_THREADS[filename] = {
+            "thread": thread,
+            "log": log_stream
+        }
+
+    except Exception as e:
+        print("启动训练任务失败:", e)
+        return format_output(code=500, msg=f"启动训练任务失败: {str(e)}")
+
+    return format_output(msg=f"任务 {config.get('taskName')} 已启动", data={"taskName": config.get("taskName")})
+
+@ITraining_bp.route("/getTaskLog", methods=["GET"])
+def get_task_log():
+    """
+    获取训练任务的终端输出
+    """
+    filename = request.args.get("filename")
+    if not filename:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    task_info = TASK_THREADS.get(filename)
+    if not task_info:
+        return format_output(code=404, msg="任务未在运行，或不存在")
+
+    log_text = task_info["log"].getvalue()
+
+    # 返回日志和线程状态
+    is_running = task_info["thread"].is_alive()
+
+    return format_output(data={
+        "log": log_text,
+        "is_running": is_running
+    })

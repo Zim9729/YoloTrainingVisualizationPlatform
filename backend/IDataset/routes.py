@@ -6,6 +6,7 @@ from glob import glob
 import yaml
 from pathlib import Path
 import time
+import shutil
 import zipfile
 
 
@@ -161,6 +162,7 @@ def upload_dataset():
     include_yaml = (include_yaml == "1")
 
     save_dir = os.path.join(dataset_path, f"{name}_{version}")
+    print(save_dir)
     if os.path.exists(save_dir) and os.listdir(save_dir):
         return format_output(code=400, msg=f"名为 '{name}' 且版本为 '{version}' 的数据集已存在，请更换名称或版本。")
 
@@ -220,3 +222,20 @@ def upload_dataset():
         yaml.safe_dump(info_data, f, allow_unicode=True)
         
     return format_output(msg="数据集上传成功")
+
+@IDataset_bp.route("/deleteDataset", methods=['POST'])
+def delete_dataset():
+    """
+    删除一个数据集
+    """
+    path = request.json.get("path", None)
+    if path == None:
+        return format_output(code=400, msg="缺少必要的参数")
+    
+    try:
+        shutil.rmtree(path)
+    except OSError as e:
+        print(f"删除文件夹 '{path}' 失败: {e}")
+        return format_output(code=500, msg="删除失败")
+    
+    return format_output(msg="删除成功")

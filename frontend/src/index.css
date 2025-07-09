@@ -16,6 +16,8 @@ body {
     --hover-color: #1A3A6D;
     --active-color: #162A4D;
     --background-color: #ffffff;
+    --red-color: #9B241C;
+    --red-hover-color: #E33122;
 }
 
 .btn {
@@ -30,6 +32,17 @@ body {
 
 .btn:hover {
     background-color: var(--hover-color);
+}
+
+.btn.r {
+    color: var(--red-color);
+    background-color: #00000000;
+    box-shadow: inset 0 0 0 2px var(--red-color);
+}
+
+.btn.r:hover {
+    color: var(--background-color);
+    background-color: var(--red-color);
 }
 
 .btn.sm {
