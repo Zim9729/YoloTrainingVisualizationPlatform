@@ -1,16 +1,36 @@
 from flask import Blueprint, request
 from tools.format_output import format_output
-from config import get_tasks_path, get_yolo_models_list_url
+from config import get_tasks_path, get_tasks_result_files_path, get_tasks_yaml_file_path
 import yaml
 import time
 from .run_in_thread import run_main_in_thread
 import requests
+import base64
 import os
+import mimetypes
+import random
+import re
 
 
 ITraining_bp = Blueprint('ITraining', __name__)
 TASK_THREADS = {}
 TASK_LIST = []
+
+def get_task_result_file(task_id):
+    """
+    获取模型训练结果数据文件
+    """
+    matched_files = []
+    pattern = re.compile(rf"^{re.escape(task_id)}_\d+\.yaml$")
+
+    try:
+        directory = get_tasks_result_files_path()
+        for filename in os.listdir(directory):
+            if pattern.match(filename):
+                matched_files.append(os.path.join(directory, filename))
+        return matched_files, False
+    except Exception as e:
+        return -1, e
 
 @ITraining_bp.route("/getAllTasks", methods=["GET"])
 def get_all_tasks():
@@ -33,6 +53,31 @@ def get_all_tasks():
         "tasks": tasks
     })
 
+@ITraining_bp.route("/getTask", methods=["GET"])
+def get_task():
+    """
+    获取指定任务信息
+    """
+    tasks_path = get_tasks_path()
+    filename = request.args.get("filename")
+
+    if not filename:
+        return format_output(code=400, msg="缺少必要参数：filename")
+
+    file_path = os.path.join(tasks_path, filename)
+
+    if not os.path.exists(file_path):
+        return format_output(code=404, msg="找不到该任务配置文件")
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+            data["__filename"] = filename
+            return format_output(data=data)
+    except Exception as e:
+        print(f"读取任务配置文件出错: {filename}, 错误: {e}")
+        return format_output(code=500, msg=f"读取任务配置失败: {str(e)}")
+
 @ITraining_bp.route("/createTask", methods=["POST"])
 def create_task():
     """
@@ -52,6 +97,7 @@ def create_task():
         return format_output(code=400, msg="训练任务名称不能为空[参数非法(step:2)]")
     
     extra_params = {}
+    timestamp = int(time.time())
     match int(trainingType):
         case 0:
             baseModelID = data.get("baseModelID", None)
@@ -87,10 +133,17 @@ def create_task():
                 return format_output(code=500, msg=f"获取模型信息失败: {str(e)}")
                 
         case 1:
-            modelYamlFile = data.get("modelYamlFile", "")
-            if modelYamlFile == "":
+            modelYamlStr = data.get("modelYamlFile", "")
+            if not modelYamlStr.strip():
                 return format_output(code=400, msg="缺少必要的参数(step:4)")
-            extra_params["modelYamlFile"] = modelYamlFile
+            
+            model_yaml_filename = f"tmp_{taskName}_model_{timestamp}.yaml"
+            
+            model_yaml_path = os.path.join(get_tasks_yaml_file_path(), model_yaml_filename)
+            with open(model_yaml_path, 'w', encoding='utf-8') as f:
+                f.write(modelYamlStr)
+
+            extra_params["modelYamlFile"] = model_yaml_path
     
     # 通用参数
     epochs = data.get("epochs", 100)
@@ -112,9 +165,11 @@ def create_task():
     except:
         return format_output(code=400, msg="参数非法(step:5)")
     
-    timestamp = int(time.time())
+    task_id = str(random.randint(11111111, 99999999) + timestamp)
+    result_file_name = os.path.join(get_tasks_result_files_path(), f"{task_id}_{str(random.randint(1111111, 9999999))}.yaml")
     
     yaml_data = {
+        "taskID": task_id,
         "taskName": taskName,
         "taskDescription": taskDescription,
         "datasetPath": datasetPath,
@@ -124,6 +179,7 @@ def create_task():
         "imgSize": imgSize,
         "trainSeed": trainSeed,
         "createTime": timestamp,
+        "resultFileName": result_file_name,
         **extra_params,
         **device_params,
     }
@@ -168,14 +224,15 @@ def start_task():
     tasks_path = get_tasks_path()
     
     data = request.json
+    task_id = data.get("taskID", None)
     filename = data.get("filename", None)
     taskname = data.get("taskname", None)
 
-    if not filename or not taskname:
-        return format_output(code=400, msg="缺少必要参数: filename")
+    if not task_id or not filename or not taskname:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
     
     for task in TASK_LIST:
-        if task["filename"] == filename:
+        if task["task_id"] == task_id:
             thread_info = TASK_THREADS.get(filename)
 
             if thread_info and thread_info["thread"].is_alive():
@@ -201,15 +258,15 @@ def start_task():
         print(f"启动训练任务: {config.get('taskName')}")
         print("训练参数: ", config)
 
-        # 启动线程并获取 log_stream
-        thread, log_stream = run_main_in_thread(file_path)
+        thread, log_stream = run_main_in_thread(file_path, task_id)
 
         # 保存
         TASK_THREADS[filename] = {
             "thread": thread,
-            "log": log_stream
+            "log": log_stream,
         }
         TASK_LIST.append({
+            "task_id": task_id,
             "taskname": taskname,
             "filename": filename
         })
@@ -217,6 +274,20 @@ def start_task():
     except Exception as e:
         print("启动训练任务失败:", e)
         return format_output(code=500, msg=f"启动训练任务失败: {str(e)}")
+    
+    timestamp = int(time.time())
+    
+    result_info = {
+        "startedAt": timestamp,
+        "completedAt": None,
+        "filename": filename,
+        "taskID": task_id,
+        "outputDir": None,
+        "log": None
+    }
+
+    with open(config.get('resultFileName'), "w", encoding="utf-8") as f:
+        yaml.dump(result_info, f, allow_unicode=True)
 
     return format_output(msg=f"任务 {config.get('taskName')} 已启动", data={"taskName": config.get("taskName")})
 
@@ -266,7 +337,110 @@ def get_all_running_tasks():
         if is_running:
             r_data.append({
                 "filename": _["filename"],
-                "taskname": _["taskname"]
+                "taskname": _["taskname"],
+                "task_id": _["task_id"]
             })
     
     return format_output(data={ "tasks": r_data })
+
+@ITraining_bp.route("/getTrainingTasksHistory", methods=['GET'])
+def get_training_tasks_history():
+    """
+    获取训练任务的历史记录
+    """
+    r_data = []
+    task_id = request.args.get("taskID", None)
+    if not task_id:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+    
+    matched_files, e = get_task_result_file(task_id)
+    if e:
+        return format_output(code=500, msg=f"获取文件数据时失败: {e}")
+    
+    for item in matched_files:
+        with open(item, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f.read())
+            data["__taskResultFilePath"] = item
+
+        output_dir = data.get("outputDir", None)
+        output_files = []
+        if output_dir and os.path.exists(output_dir):
+            for root, _, files in os.walk(output_dir):
+                for name in files:
+                    rel_path = os.path.relpath(os.path.join(root, name), output_dir)
+                    output_files.append(rel_path)
+        data["outputFiles"] = output_files
+
+        r_data.append(data)
+    
+    return format_output(data={
+        "history": r_data
+    })
+    
+@ITraining_bp.route("/getTrainingTaskOutputFile", methods=["GET"])
+def get_training_task_output_file():
+    """
+    根据任务ID与文件路径，返回对应的训练结果文件内容（支持图片、yaml、csv）
+    """
+    task_id = request.args.get("taskID")
+    file_path = request.args.get("filePath")
+
+    if not task_id or not file_path:
+        return format_output(code=400, msg="缺少必要参数(taskID / filePath)")
+
+    matched_files, e = get_task_result_file(task_id)
+    if e or not matched_files:
+        return format_output(code=404, msg=f"未找到任务ID为 {task_id} 的结果文件")
+
+    try:
+        with open(matched_files[0], "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f.read())
+
+        output_dir = data.get("outputDir")
+        if not output_dir:
+            return format_output(code=500, msg="结果文件中缺少 outputDir 字段")
+
+        abs_file_path = os.path.join(output_dir, file_path)
+
+        if not os.path.exists(abs_file_path):
+            return format_output(code=404, msg=f"文件不存在: {file_path}")
+
+        mime_type, _ = mimetypes.guess_type(abs_file_path)
+
+        # 图片
+        if mime_type and mime_type.startswith("image"):
+            with open(abs_file_path, "rb") as img_file:
+                b64_data = base64.b64encode(img_file.read()).decode("utf-8")
+            return format_output(data={
+                "type": "image",
+                "mime": mime_type,
+                "base64": f"data:{mime_type};base64,{b64_data}"
+            })
+
+        # 文本格式
+        elif file_path.endswith((".yaml", ".yml")):
+            with open(abs_file_path, "r", encoding="utf-8") as f:
+                return format_output(data={
+                    "type": "yaml",
+                    "content": f.read()
+                })
+
+        elif file_path.endswith(".csv"):
+            with open(abs_file_path, "r", encoding="utf-8") as f:
+                return format_output(data={
+                    "type": "csv",
+                    "content": f.read()
+                })
+
+        elif file_path.endswith(".txt"):
+            with open(abs_file_path, "r", encoding="utf-8") as f:
+                return format_output(data={
+                    "type": "text",
+                    "content": f.read()
+                })
+
+        else:
+            return format_output(code=415, msg="不支持的文件类型")
+
+    except Exception as e:
+        return format_output(code=500, msg=f"读取文件出错: {str(e)}")

@@ -4,17 +4,15 @@ from .handlers import QueueHandler
 import queue
 from .train import main
 
-def run_main_in_thread(taskfile_path):
+def run_main_in_thread(taskfile_path, task_id):
     """
     在新线程中运行 main，并捕获所有输出（stdout/stderr）
     """
     log_q = queue.Queue()
     
-    # 设置 logger
     logger = logging.getLogger(f"training-{taskfile_path}")
     logger.setLevel(logging.INFO)
 
-    # 清除已有的 handler（避免重复）
     logger.handlers.clear()
 
     q_handler = QueueHandler(log_q)
@@ -25,12 +23,12 @@ def run_main_in_thread(taskfile_path):
     def target():
         try:
             logger.info(f"开始任务: {taskfile_path}")
-            main(taskfile_path, logger=logger)  # 传入 logger 实例
+            main(taskfile_path, logger=logger, task_id=task_id)
             logger.info("🎉 训练任务结束")
         except Exception as e:
             logger.exception(f"训练线程发生异常: {e}")
 
-    t = Thread(target=target, daemon=True)
+    t = Thread(target=target, args=(), daemon=True)
     t.start()
 
     return t, log_q

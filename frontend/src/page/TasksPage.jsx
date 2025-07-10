@@ -143,8 +143,7 @@ function TasksPage({ setPageUrl, parameter }) {
             if (!(trainSeed === "" || /^\d+$/.test(String(trainSeed)))) {
                 setErrorList(prev => [...prev, "trainSeed"]);
             }
-            if (modelYamlFile == "" && trainingType == "1")
-            {
+            if (modelYamlFile == "" && trainingType == "1") {
                 setErrorList(prev => [...prev, "modelYamlFile"]);
             }
         }
@@ -182,10 +181,11 @@ function TasksPage({ setPageUrl, parameter }) {
             });
     };
 
-    const startTask = (filename, taskname) => {
+    const startTask = (filename, taskname, taskID) => {
         if (confirm("真的要开始训练该任务吗？")) {
             console.log("开始训练任务: " + filename + " " + taskname);
             const data = {
+                taskID: taskID,
                 filename: filename,
                 taskname: taskname
             };
@@ -675,7 +675,14 @@ function TasksPage({ setPageUrl, parameter }) {
                     {tasksList.map((task, index) => (
                         <div key={index} className="card" style={{ marginBottom: '10px' }}>
                             <p className="title" style={{ fontWeight: 'bold' }}>
-                                <span className="tag" style={{ fontSize: '12px', marginRight: '10px' }}>{CONFIGS.TRAINING_TYPE[task.trainingType]}</span>
+                                {runningTasksList.includes(task.__filename) &&
+                                    <span className="tag turquoise" style={{ fontSize: '12px', marginRight: '5px' }}>
+                                        训练中
+                                    </span>
+                                }
+                                <span className="tag" style={{ fontSize: '12px', marginRight: '10px' }}>
+                                    {CONFIGS.TRAINING_TYPE[task.trainingType]}
+                                </span>
                                 {task.taskName}
                             </p>
                             <p className="dataset-des">{task.taskDescription || "无描述"}</p>
@@ -720,11 +727,16 @@ function TasksPage({ setPageUrl, parameter }) {
                                 {showDetailsInfo.includes(index) ? <>隐藏详细</> : <>查看详情</>}
                             </a>
                             {!runningTasksList.includes(task.__filename) &&
-                                <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { startTask(task.__filename, task.taskName, index) }}>
-                                    开始训练
+                                <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { startTask(task.__filename, task.taskName, task.taskID) }}>
+                                    启动训练
                                 </button>
                             }
-                            <button className="btn sm r" onClick={() => { deleteTask(task.__filename) }}>删除训练任务</button>
+                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { setPageUrl(`tasksDetailed?filename=${task.__filename}`) }}>
+                                进入任务页面
+                            </button>
+                            {!runningTasksList.includes(task.__filename) &&
+                                <button className="btn sm r" onClick={() => { deleteTask(task.__filename) }}>删除训练任务</button>
+                            }
                         </div>
                     ))}
                 </div>

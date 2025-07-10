@@ -19,6 +19,8 @@ body {
     --red-color: #9B241C;
     --red-hover-color: #E33122;
     --turquoise-color: #58b4f5;
+    --green-color: #49713D;
+    --yellow-color: #F1D55F;
     --shadow-color: rgba(0, 0, 0, 0.1);
 }
 
@@ -262,7 +264,7 @@ a:hover {
 
 .banner {
     height: 140px;
-    padding: 40px 70px;
+    padding: 40px 63px;
 }
 
 .page-title {
@@ -311,6 +313,11 @@ a:hover {
     border-radius: 4px;
     margin-right: 10px;
     margin-bottom: -33px;
+}
+
+.form-group-title .step-tag.nobg {
+    color: var(--text-color);
+    background-color: #00000000 !important;
 }
 
 .form-group-title .title {
@@ -385,6 +392,14 @@ td {
     background-color: var(--turquoise-color) !important;
 }
 
+.tag.yellow {
+    background-color: var(--yellow-color) !important;
+}
+
+.tag.green {
+    background-color: var(--green-color) !important;
+}
+
 .tab-content {
     opacity: 0;
     transform: translateX(20px);
@@ -439,10 +454,66 @@ td {
 }
 
 .navbar .navbar-item:hover .icon,
-.navbar-item.clicked .icon {
+.navbar-item.clicked .icon,
+.icon.w {
     filter: invert(100%);
 }
 
 .fade-in {
     animation: fadeIn 0.4s ease-in-out;
+}
+
+.task-detail-box {
+    margin-top: 20px;
+}
+
+.info-card-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.info-card,
+.list-card {
+    padding: 20px;
+    background-color: var(--background-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    word-break: break-all;
+}
+
+.info-card {
+    flex: 1 1 200px;
+}
+
+.list-card {
+    flex: 1 1 100%;
+    margin-bottom: 20px;
+}
+
+.info-card:hover,
+.list-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px var(--shadow-color);
+}
+
+.info-card .key {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-title-color, var(--secondary-text-color));
+    margin-bottom: 6px;
+    display: block;
+}
+
+.info-card .value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-sub-color, var(--text-color));
+    word-break: break-all;
+}
+
+.terminal-container {
+    margin-top: 20px;
 }

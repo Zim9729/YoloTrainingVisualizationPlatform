@@ -31,7 +31,7 @@ function Bottombar({ setPageUrl }) {
             {runningTasksList.length > 0 &&
                 <span className="info-text" onClick={() => { setPageUrl("tasks") }}>
                     <img src={Icon_Grid_3x3} className="icon" style={{ marginBottom: '-3px', marginRight: '8px' }} />
-                    正在运行中的任务: {runningTasksList.length}
+                    训练中: {runningTasksList.length}
                 </span>
             }
         </div>

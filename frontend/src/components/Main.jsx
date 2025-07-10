@@ -6,12 +6,11 @@ import Bottombar from "./Bottombar";
 import HomePage from "../page/HomePage";
 import DatasetPage from "../page/DatasetPage";
 import TasksPage from "../page/TasksPage";
+import TaskDetailedPage from "../page/TaskDetailedPage";
 
 function Main({ page_url = "home", setPageUrl }) {
     const [pageType, setPageType] = useState("");
     const [parameter, setParameter] = useState({});
-
-    const [runningTasksList, setRunningTasksList] = useState([]);
 
     useEffect(() => {
         hljs.highlightAll();
@@ -58,6 +57,13 @@ function Main({ page_url = "home", setPageUrl }) {
                     <Bottombar setPageUrl={setPageUrl} />
                 </>
             );
+        case "tasksDetailed":
+            return (
+                <>
+                    <TaskDetailedPage setPageUrl={setPageUrl} parameter={parameter} />
+                    <Bottombar setPageUrl={setPageUrl} />
+                </>
+            )
         default:
             return (
                 <div className="main">

@@ -8,7 +8,7 @@ import logging
 from .stream_to_logger import StreamToLogger
 from tqdm import tqdm
 from ultralytics import YOLO
-from config import get_tasks_path, get_models_path
+from config import get_tasks_path, get_models_path, get_tasks_result_files_path
 
 def load_task_config(task_file, logger):
     """
@@ -69,18 +69,26 @@ def download_model(model_name, model_browser_download_url, logger):
     
     return local_path
 
-def main(taskfile_path, logger=None):
+def main(taskfile_path, logger=None, task_id=None):
+    start_time = int(time.time())
+    
     if logger is None:
         logger = logging.getLogger("default")
         logger.setLevel(logging.INFO)
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
         logger.addHandler(handler)
+    
+    if task_id == None:
+        logger.info("未获取到Task ID")
+        sys.exit(1)
+        
+    log_cache = []
         
     stdout_backup = sys.stdout
     stderr_backup = sys.stderr
-    sys.stdout = StreamToLogger(logger, logging.INFO)
-    sys.stderr = StreamToLogger(logger, logging.ERROR)
+    sys.stdout = StreamToLogger(logger, logging.INFO, log_cache=log_cache)
+    sys.stderr = StreamToLogger(logger, logging.ERROR, log_cache=log_cache)
 
     logger.info("加载任务配置中...")
     
@@ -99,10 +107,11 @@ def main(taskfile_path, logger=None):
     seed = int(config.get('trainSeed', 0))
     cache = config.get('cache', 'disk')
     training_type = int(config.get('trainingType', 0))
+    result_file_name = str(config.get('resultFileName', None))
     
     platform_infofile = load_platform_infofile(dataset_path, logger)
     dataset_yamlfile = platform_infofile.get('yaml_file_path', None)
-    if dataset_yamlfile == None:
+    if dataset_yamlfile == None or result_file_name == None:
         logger.info(f"[ERROR] 数据集平台配置文件信息缺失: 找不到数据集Yaml配置文件")
         sys.exit(1) 
     
@@ -134,6 +143,7 @@ def main(taskfile_path, logger=None):
         case _:
             pass
         
+    model_path = ""
     match training_type:
         case 0:
             try:
@@ -147,13 +157,10 @@ def main(taskfile_path, logger=None):
                 sys.exit(1) 
         case 1:
             try:
-                yaml_file = config.get('modelYamlFile')
-                
-                tmp_yaml = f"tmp_{int(time.time())}.yaml"
-                with open(tmp_yaml, 'w', encoding='utf-8') as f:
-                    f.write(yaml_file)
-                    
-                model_path = tmp_yaml
+                model_path = config.get('modelYamlFile', None)
+                if model_path == None:
+                    logger.info(f"[ERROR] 模型结构 Yaml 文件为空")
+                    sys.exit(1) 
             except:
                 logger.info(f"[ERROR] 在本地生成临时Yaml文件时出错")
                 sys.exit(1) 
@@ -170,7 +177,7 @@ def main(taskfile_path, logger=None):
         case _:
             device_arg = "cpu"
     
-    project_path = os.path.join(get_tasks_path(), "training", f"task_{int(time.time())}")
+    project_path = os.path.join(get_tasks_path(), "training", f"task_{task_id}_{start_time}")
     if cache == "disk":
         _cache = False
     else:
@@ -179,6 +186,7 @@ def main(taskfile_path, logger=None):
     logger.info(f"[INFO] 开始训练模型...")
     
     try:
+        print(model_path)
         model = YOLO(model_path)
         model.train(
             data=dataset_yamlfile_path,
@@ -198,3 +206,23 @@ def main(taskfile_path, logger=None):
         sys.stderr = stderr_backup
     
     logger.info("[INFO] 🎉 训练完成")
+    
+    completed_time = int(time.time())
+    
+    result_info = {
+        "completedAt": completed_time,
+        "outputDir": os.path.join(project_path, "result"),
+        "log": log_cache
+    }
+
+    if os.path.exists(result_file_name):
+        with open(result_file_name, 'r', encoding='utf-8') as f:
+            existing_data = yaml.safe_load(f) or {}
+    else:
+        existing_data = {}
+
+    existing_data.update(result_info)
+
+    with open(result_file_name, 'w', encoding='utf-8') as f:
+        yaml.dump(existing_data, f, allow_unicode=True)
+     
