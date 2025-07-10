@@ -174,9 +174,16 @@ def start_task():
     if not filename or not taskname:
         return format_output(code=400, msg="缺少必要参数: filename")
     
-    for _ in TASK_LIST:
-        if _["filename"] == filename:
-            return format_output(code=400, msg="任务正在运行中，无法同时启动")
+    for task in TASK_LIST:
+        if task["filename"] == filename:
+            thread_info = TASK_THREADS.get(filename)
+
+            if thread_info and thread_info["thread"].is_alive():
+                return format_output(code=400, msg="任务正在运行中，无法同时启动")
+            else:
+                TASK_THREADS.pop(filename, None)
+                TASK_LIST.remove(task)
+            break
 
     file_path = os.path.join(tasks_path, filename)
 

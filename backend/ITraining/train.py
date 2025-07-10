@@ -93,12 +93,12 @@ def main(taskfile_path, logger=None):
     logger.info(f"[INFO] 配置内容: {yaml.dump(config, allow_unicode=True)}")
 
     dataset_path = config['datasetPath']
-    epochs = config.get('epochs', 100)
-    batch_size = config.get('batchSize', 16)
-    imgsz = config.get('imgSize', 640)
-    seed = config.get('trainSeed', 0)
+    epochs = int(config.get('epochs', 100))
+    batch_size = int(config.get('batchSize', 16))
+    imgsz = int(config.get('imgSize', 640))
+    seed = int(config.get('trainSeed', 0))
     cache = config.get('cache', 'disk')
-    training_type = config.get('trainingType', 0)
+    training_type = int(config.get('trainingType', 0))
     
     platform_infofile = load_platform_infofile(dataset_path, logger)
     dataset_yamlfile = platform_infofile.get('yaml_file_path', None)
