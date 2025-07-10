@@ -38,3 +38,5 @@ frontend/.output/
 *.njsproj
 *.sln
 *.sw?
+
+**/*..pyc

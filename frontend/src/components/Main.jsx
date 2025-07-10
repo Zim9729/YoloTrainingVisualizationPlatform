@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react"
 import hljs from 'highlight.js';
 
+import Bottombar from "./Bottombar";
+
 import HomePage from "../page/HomePage";
 import DatasetPage from "../page/DatasetPage";
 import TasksPage from "../page/TasksPage";
@@ -35,15 +37,24 @@ function Main({ page_url = "home", setPageUrl }) {
     switch (pageType) {
         case "home":
             return (
-                <HomePage setPageUrl={setPageUrl} parameter={parameter} />
+                <>
+                    <HomePage setPageUrl={setPageUrl} parameter={parameter} />
+                    <Bottombar />
+                </>
             );
         case "dataset":
             return (
-                <DatasetPage setPageUrl={setPageUrl} parameter={parameter} />
+                <>
+                    <DatasetPage setPageUrl={setPageUrl} parameter={parameter} />
+                    <Bottombar />
+                </>
             );
         case "tasks":
             return (
-                <TasksPage setPageUrl={setPageUrl} parameter={parameter} />
+                 <>
+                    <TasksPage setPageUrl={setPageUrl} parameter={parameter} />
+                    <Bottombar />
+                </>
             );
         default:
             return (
