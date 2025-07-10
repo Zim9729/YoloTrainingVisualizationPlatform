@@ -10,6 +10,7 @@ import Icon_Gear_fill from "../assets/icons/gear-fill.svg";
 
 function Navbar({ setPageUrl }) {
     const [helperComponents, setHelperComponents] = useState("null");
+    const [clickItem, setClickItem] = useState('1');
 
     const navbarItem = [
         {
@@ -60,8 +61,11 @@ function Navbar({ setPageUrl }) {
             {navbarItem.map((item) => (
                 <div
                     key={item.id}
-                    className="navbar-item"
-                    onClick={() => setPageUrl(item.pageUrl)}
+                    className={`navbar-item${clickItem == item.id ? " clicked" : ""}`}
+                    onClick={() => {
+                        setClickItem(item.id);
+                        setPageUrl(item.pageUrl);
+                    }}
                 >
                     <img src={item.icon} className="icon" />
                     {item.name}
