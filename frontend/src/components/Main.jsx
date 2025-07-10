@@ -8,8 +8,10 @@ import DatasetPage from "../page/DatasetPage";
 import TasksPage from "../page/TasksPage";
 
 function Main({ page_url = "home", setPageUrl }) {
-    const [pageType, setPageType] = useState("")
-    const [parameter, setParameter] = useState({})
+    const [pageType, setPageType] = useState("");
+    const [parameter, setParameter] = useState({});
+
+    const [runningTasksList, setRunningTasksList] = useState([]);
 
     useEffect(() => {
         hljs.highlightAll();
@@ -32,28 +34,28 @@ function Main({ page_url = "home", setPageUrl }) {
             setPageType(page_url)
             setParameter({})
         }
-    }, [page_url])
+    }, [page_url]);
 
     switch (pageType) {
         case "home":
             return (
                 <>
                     <HomePage setPageUrl={setPageUrl} parameter={parameter} />
-                    <Bottombar />
+                    <Bottombar setPageUrl={setPageUrl} />
                 </>
             );
         case "dataset":
             return (
                 <>
                     <DatasetPage setPageUrl={setPageUrl} parameter={parameter} />
-                    <Bottombar />
+                    <Bottombar setPageUrl={setPageUrl} />
                 </>
             );
         case "tasks":
             return (
-                 <>
+                <>
                     <TasksPage setPageUrl={setPageUrl} parameter={parameter} />
-                    <Bottombar />
+                    <Bottombar setPageUrl={setPageUrl} />
                 </>
             );
         default:

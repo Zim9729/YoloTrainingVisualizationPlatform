@@ -118,12 +118,22 @@ a:hover {
 .bottombar {
     z-index: 999;
     position: absolute;
+    display: flex;
     bottom: 0;
-    width: 100%;
-    height: 36px;
+    left: 200px;
+    right: 0;
+    height: 44px;
+    box-sizing: border-box;
     border-top: 2px solid var(--secondary-color);
-    margin-left: 200px;
     background-color: var(--background-color);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.bottombar .info-text {
+    font-size: 14px;
+    color: var(--text-color);
 }
 
 @keyframes fadeInUp {
@@ -145,6 +155,7 @@ a:hover {
     background-color: var(--background-color);
     overflow-y: auto;
     padding: 40px;
+    padding-bottom: 80px;
 
     animation: fadeInUp 0.2s ease-out;
 }
