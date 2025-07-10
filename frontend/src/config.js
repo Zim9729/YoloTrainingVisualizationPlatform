@@ -29,7 +29,8 @@ const CONFIGS = {
         "gpuCUDAIndex": "CUDA设备编号",
         "gpuCUDANum": "GPU 数量",
         "trainSeed": "训练种子",
-        "cache": "数据缓存位置"
+        "cache": "数据缓存位置",
+        "modelYamlFile": "模型结构定义"
     },
     YOLO_MODLES_LIST_URL: "https://api.github.com/repos/ultralytics/assets/releases/latest",
     YOLO_MODELS_LIST: {
