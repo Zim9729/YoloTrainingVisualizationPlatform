@@ -226,9 +226,16 @@ def get_task_log():
     if not task_info:
         return format_output(code=404, msg="任务未在运行，或不存在")
 
-    log_text = task_info["log"].getvalue()
+    log_q = task_info["log"]
+    logs = []
+    while not log_q.empty():
+        logs.append(log_q.get())
 
-    # 返回日志和线程状态
+    if "log_cache" not in task_info:
+        task_info["log_cache"] = []
+    task_info["log_cache"].extend(logs)
+
+    log_text = "\n".join(task_info["log_cache"])
     is_running = task_info["thread"].is_alive()
 
     return format_output(data={

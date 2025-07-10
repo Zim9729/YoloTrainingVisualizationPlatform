@@ -1,39 +1,40 @@
 import os
 import sys
 import yaml
-import argparse
-from ultralytics import YOLO
-from config import get_tasks_path, get_models_path
 import os
 import time
 import requests
+import logging
+from .stream_to_logger import StreamToLogger
 from tqdm import tqdm
+from ultralytics import YOLO
+from config import get_tasks_path, get_models_path
 
-def load_task_config(task_file):
+def load_task_config(task_file, logger):
     """
     加载任务配置
     """
     if not os.path.exists(task_file):
-        print(f"[ERROR] 配置文件不存在: {task_file}")
+        logger.info(f"[ERROR] 配置文件不存在: {task_file}")
         sys.exit(1)
     with open(task_file, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     return config
 
-def load_platform_infofile(dataset_path):
+def load_platform_infofile(dataset_path, logger):
     """
     加载平台数据集配置
     """
     dataset_platforminfofile_path = os.path.join(dataset_path, "yolo_training_visualization_info.yaml")
     if not os.path.exists(dataset_platforminfofile_path):
-        print(f"[ERROR] 数据集平台配置文件不存在: {dataset_platforminfofile_path}")
+        logger.info(f"[ERROR] 数据集平台配置文件不存在: {dataset_platforminfofile_path}")
         sys.exit(1) 
         
     with open(dataset_platforminfofile_path, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     return config
 
-def download_model(model_name, model_browser_download_url):
+def download_model(model_name, model_browser_download_url, logger):
     """
     根据 baseModelInfo 下载模型，带进度条
     """
@@ -43,7 +44,7 @@ def download_model(model_name, model_browser_download_url):
     local_path = os.path.join(download_dir, model_name)
     
     if not os.path.exists(local_path):
-        print(f"[INFO] 正在下载模型: {model_name}")
+        logger.info(f"[INFO] 正在下载模型: {model_name}")
         
         with requests.get(model_browser_download_url, stream=True) as r:
             r.raise_for_status()
@@ -62,20 +63,34 @@ def download_model(model_name, model_browser_download_url):
                         f.write(chunk)
                         bar.update(len(chunk))
         
-        print(f"[INFO] 下载完成: {local_path}")
+        logger.info(f"[INFO] 下载完成: {local_path}")
     else:
-        print(f"[INFO] 模型已存在: {local_path}")
+        logger.info(f"[INFO] 模型已存在: {local_path}")
     
     return local_path
 
-def main(taskfile_path):
+def main(taskfile_path, logger=None):
+    if logger is None:
+        logger = logging.getLogger("default")
+        logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
+        logger.addHandler(handler)
+        
+    stdout_backup = sys.stdout
+    stderr_backup = sys.stderr
+    sys.stdout = StreamToLogger(logger, logging.INFO)
+    sys.stderr = StreamToLogger(logger, logging.ERROR)
+
+    logger.info("加载任务配置中...")
+    
     tasks_dir = get_tasks_path()
     task_file = os.path.join(tasks_dir, taskfile_path)
 
-    config = load_task_config(task_file)
+    config = load_task_config(task_file, logger)
 
-    print(f"[INFO] 加载配置成功: {taskfile_path}")
-    print(f"[INFO] 配置内容: {yaml.dump(config, allow_unicode=True)}")
+    logger.info(f"[INFO] 加载配置成功: {taskfile_path}")
+    logger.info(f"[INFO] 配置内容: {yaml.dump(config, allow_unicode=True)}")
 
     dataset_path = config['datasetPath']
     epochs = config.get('epochs', 100)
@@ -85,10 +100,10 @@ def main(taskfile_path):
     cache = config.get('cache', 'disk')
     training_type = config.get('trainingType', 0)
     
-    platform_infofile = load_platform_infofile(dataset_path)
+    platform_infofile = load_platform_infofile(dataset_path, logger)
     dataset_yamlfile = platform_infofile.get('yaml_file_path', None)
     if dataset_yamlfile == None:
-        print(f"[ERROR] 数据集平台配置文件信息缺失: 找不到数据集Yaml配置文件")
+        logger.info(f"[ERROR] 数据集平台配置文件信息缺失: 找不到数据集Yaml配置文件")
         sys.exit(1) 
     
     dataset_yamlfile_path = os.path.join(dataset_path, dataset_yamlfile)
@@ -98,15 +113,15 @@ def main(taskfile_path):
         case 0:
             extra_params['base_model_info'] = config.get('baseModelInfo', None)
             if extra_params['base_model_info'] == None:
-                print(f"[ERROR] 加载基础模型配置时出错")
+                logger.info(f"[ERROR] 加载基础模型配置时出错")
                 sys.exit(1) 
         case 1:
             extra_params['modelYamlFile'] = config.get('modelYamlFile', None)
             if extra_params['modelYamlFile'] == None:
-                print(f"[ERROR] 加载模型结构Yaml文件配置时出错")
+                logger.info(f"[ERROR] 加载模型结构Yaml文件配置时出错")
                 sys.exit(1) 
         case _:
-            print(f"[ERROR] 训练类型无效(0,1)")
+            logger.info(f"[ERROR] 训练类型无效(0,1)")
             sys.exit(1) 
     
     device = config.get('device', 0)
@@ -126,9 +141,9 @@ def main(taskfile_path):
                 model_browser_download_url = extra_params['base_model_info']['browser_download_url']
                 model_path = os.path.join(get_models_path(), "base", model_name)
                 if not os.path.exists(model_path):
-                    download_model(model_name, model_browser_download_url)
+                    download_model(model_name, model_browser_download_url, logger)
             except:
-                print(f"[ERROR] 下载模型时出错")
+                logger.info(f"[ERROR] 下载模型时出错")
                 sys.exit(1) 
         case 1:
             try:
@@ -140,11 +155,8 @@ def main(taskfile_path):
                     
                 model_path = tmp_yaml
             except:
-                print(f"[ERROR] 在本地生成临时Yaml文件时出错")
+                logger.info(f"[ERROR] 在本地生成临时Yaml文件时出错")
                 sys.exit(1) 
-            
-    print(f"[INFO] 开始训练模型...")
-    model = YOLO(model_path)
     
     match device:
         case "gpu":
@@ -163,19 +175,26 @@ def main(taskfile_path):
         _cache = False
     else:
         _cache = True
+            
+    logger.info(f"[INFO] 开始训练模型...")
     
-    model.train(
-        data=dataset_yamlfile_path,
-        project=project_path,
-        name="result",
-        epochs=int(epochs),
-        batch=int(batch_size),
-        imgsz=int(imgsz),
-        seed=int(seed),
-        cache=_cache,
-        device=device_arg,
-        plots=True,
-        save_period=5
-    )
+    try:
+        model = YOLO(model_path)
+        model.train(
+            data=dataset_yamlfile_path,
+            project=project_path,
+            name="result",
+            epochs=int(epochs),
+            batch=int(batch_size),
+            imgsz=int(imgsz),
+            seed=int(seed),
+            cache=_cache,
+            device=device_arg,
+            plots=True,
+            save_period=5
+        )
+    finally:
+        sys.stdout = stdout_backup
+        sys.stderr = stderr_backup
     
-    print("[INFO] 🎉 训练完成")
+    logger.info("[INFO] 🎉 训练完成")
