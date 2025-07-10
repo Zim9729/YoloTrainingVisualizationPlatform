@@ -40,6 +40,8 @@ function TasksPage({ setPageUrl, parameter }) {
 
     const [errorList, setErrorList] = useState([]);
 
+    const [runningTasksList, setRunningTasksList] = useState([]);
+
     useEffect(() => {
         api.get("/ITraining/getAllTasks", { params: {} })
             .then(data => {
@@ -99,6 +101,20 @@ function TasksPage({ setPageUrl, parameter }) {
     }, [baseModelID]);
 
     useEffect(() => {
+        api.get("/ITraining/getAllRunningTasks", { params: {} })
+            .then(data => {
+                console.log("获取正在运行的训练任务:", data.data.tasks);
+                for (var i = 0; i < data.data.tasks.length; i++) {
+                    setRunningTasksList(data.data.tasks[i]["filename"]);
+                }
+            })
+            .catch(err => {
+                console.error("获取正在运行的训练任务失败:", err);
+                alert(err);
+            });
+    }, [])
+
+    useEffect(() => {
         if (tabIndex == 5) {
             setCanBackLastTab(true);
 
@@ -126,6 +142,10 @@ function TasksPage({ setPageUrl, parameter }) {
             }
             if (!(trainSeed === "" || /^\d+$/.test(String(trainSeed)))) {
                 setErrorList(prev => [...prev, "trainSeed"]);
+            }
+            if (modelYamlFile == "" && trainingType == "1")
+            {
+                setErrorList(prev => [...prev, "modelYamlFile"]);
             }
         }
     }, [tabIndex]);
@@ -173,6 +193,7 @@ function TasksPage({ setPageUrl, parameter }) {
             api.post("/ITraining/startTask", { data: data, params: {} })
                 .then(data => {
                     alert(data.msg);
+                    if (data.code == 200) setRunningTasksList(prev => [...prev, filename]);
                 })
                 .catch(err => {
                     console.error("训练任务失败:", err);
@@ -698,7 +719,11 @@ function TasksPage({ setPageUrl, parameter }) {
                             }}>
                                 {showDetailsInfo.includes(index) ? <>隐藏详细</> : <>查看详情</>}
                             </a>
-                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { startTask(task.__filename, task.taskName) }}>开始训练</button>
+                            {!runningTasksList.includes(task.__filename) &&
+                                <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { startTask(task.__filename, task.taskName, index) }}>
+                                    开始训练
+                                </button>
+                            }
                             <button className="btn sm r" onClick={() => { deleteTask(task.__filename) }}>删除训练任务</button>
                         </div>
                     ))}
