@@ -10,6 +10,7 @@ import os
 
 ITraining_bp = Blueprint('ITraining', __name__)
 TASK_THREADS = {}
+TASK_LIST = []
 
 @ITraining_bp.route("/getAllTasks", methods=["GET"])
 def get_all_tasks():
@@ -167,10 +168,15 @@ def start_task():
     tasks_path = get_tasks_path()
     
     data = request.json
-    filename = data.get("filename")
+    filename = data.get("filename", None)
+    taskname = data.get("taskname", None)
 
-    if not filename:
+    if not filename or not taskname:
         return format_output(code=400, msg="缺少必要参数: filename")
+    
+    for _ in TASK_LIST:
+        if _["filename"] == filename:
+            return format_output(code=400, msg="任务正在运行中，无法同时启动")
 
     file_path = os.path.join(tasks_path, filename)
 
@@ -196,6 +202,10 @@ def start_task():
             "thread": thread,
             "log": log_stream
         }
+        TASK_LIST.append({
+            "taskname": taskname,
+            "filename": filename
+        })
 
     except Exception as e:
         print("启动训练任务失败:", e)
@@ -225,3 +235,24 @@ def get_task_log():
         "log": log_text,
         "is_running": is_running
     })
+    
+@ITraining_bp.route("/getAllRunningTasks", methods=['GET'])
+def get_all_running_tasks():
+    """
+    获取所有正在运行中的任务
+    """
+    r_data = []
+    for _ in TASK_LIST:
+        try:
+            task_info = TASK_THREADS[_["filename"]]
+        except:
+            pass
+        is_running = task_info["thread"].is_alive()
+        
+        if is_running:
+            r_data.append({
+                "filename": _["filename"],
+                "taskname": _["taskname"]
+            })
+    
+    return format_output(data={ "tasks": r_data })

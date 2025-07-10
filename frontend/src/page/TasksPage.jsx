@@ -162,11 +162,12 @@ function TasksPage({ setPageUrl, parameter }) {
             });
     };
 
-    const startTask = (filename) => {
+    const startTask = (filename, taskname) => {
         if (confirm("真的要开始训练该任务吗？")) {
-            console.log("开始训练任务: " + filename);
+            console.log("开始训练任务: " + filename + " " + taskname);
             const data = {
-                filename: filename
+                filename: filename,
+                taskname: taskname
             };
 
             api.post("/ITraining/startTask", { data: data, params: {} })
@@ -697,7 +698,7 @@ function TasksPage({ setPageUrl, parameter }) {
                             }}>
                                 {showDetailsInfo.includes(index) ? <>隐藏详细</> : <>查看详情</>}
                             </a>
-                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { startTask(task.__filename) }}>开始训练</button>
+                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { startTask(task.__filename, task.taskName) }}>开始训练</button>
                             <button className="btn sm r" onClick={() => { deleteTask(task.__filename) }}>删除训练任务</button>
                         </div>
                     ))}
