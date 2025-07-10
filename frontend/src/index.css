@@ -83,6 +83,7 @@ a:hover {
 }
 
 .navbar {
+    box-sizing: border-box;
     width: 200px;
     padding: 45px 10px;
     color: var(--text-color);
@@ -114,6 +115,29 @@ a:hover {
     color: var(--light-color);
 }
 
+.bottombar {
+    z-index: 999;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 36px;
+    border-top: 2px solid var(--secondary-color);
+    margin-left: 200px;
+    background-color: var(--background-color);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .main {
     flex: 1;
     display: flex;
@@ -121,6 +145,8 @@ a:hover {
     background-color: var(--background-color);
     overflow-y: auto;
     padding: 40px;
+
+    animation: fadeInUp 0.2s ease-out;
 }
 
 .main.nopadding {
@@ -358,4 +384,18 @@ td {
     width: 180px;
     color: var(--text-color);
     background-color: var(--background-color);
+}
+
+.icon {
+    width: 16px;
+    height: 16px;
+}
+
+.navbar .icon {
+    margin-bottom: -2px;
+    margin-right: 8px;
+}
+
+.navbar .navbar-item:hover .icon {
+    filter: invert(100%);
 }
