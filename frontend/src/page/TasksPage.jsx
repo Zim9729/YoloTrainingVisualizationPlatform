@@ -7,6 +7,7 @@ function TasksPage({ setPageUrl, parameter }) {
 
     const [datasetsList, setDatasetsList] = useState([]);
     const [modelList, setModelList] = useState([]);
+    const [getModelListError, setGetModelListError] = useState("");
 
     const [tabIndex, setTabIndex] = useState(0);
     const tabIndexCount = 5;
@@ -77,22 +78,28 @@ function TasksPage({ setPageUrl, parameter }) {
     }, [])
 
     useEffect(() => {
-        fetch(CONFIGS.YOLO_MODLES_LIST)
-            .then(res => res.json())
-            .then(data => {
-                const models = data.assets.filter(asset => asset.name.endsWith(".pt"));
-                setModelList(models);
-                if (models.length > 0) {
-                    // 设置默认的模型是yolo11n.pt
-                    setBaseModelID(196201276);
-                }
-            })
-            .catch(err => {
-                console.error("模型拉取失败: ", err);
-                console.log("启用本地模型索引文件");
-                setModelList(CONFIGS.YOLO_MODELS_LIST.assets.filter(asset => asset.name.endsWith(".pt")));
-                setBaseModelID(196201276);
-            });
+        if (parameter.type == "newTask") {
+            api.get("/ITraining/getAllBaseModelsFromGithub")
+                .then(data => {
+                    console.log("获取基础模型列表: " + JSON.stringify(data.data));
+
+                    const models = data.data.models.filter(asset => asset.name.endsWith(".pt"));
+                    setModelList(models);
+
+                    if (models.length > 0) {
+                        // 设置默认的模型是yolo11n.pt
+                        setBaseModelID(196201276);
+                    }
+
+                    if (data.data.has_network_error || data.data.has_fileread_error) {
+                        setGetModelListError(data.msg);
+                    }
+                })
+                .catch(err => {
+                    console.error("模型拉取失败: ", err);
+                    setGetModelListError(err.message);
+                });
+        }
     }, []);
 
     useEffect(() => {
@@ -145,6 +152,9 @@ function TasksPage({ setPageUrl, parameter }) {
             }
             if (modelYamlFile == "" && trainingType == "1") {
                 setErrorList(prev => [...prev, "modelYamlFile"]);
+            }
+            if (!selectedBaseModel) {
+                setErrorList(prev => [...prev, "baseModelID"]);
             }
         }
     }, [tabIndex]);
@@ -357,10 +367,10 @@ function TasksPage({ setPageUrl, parameter }) {
                             </h1>
                         </div>
 
-                        {trainingType == 0 &&
+                        {trainingType == 0 && !getModelListError &&
                             <>
                                 <div className="form-group">
-                                    <label htmlFor="baseModelID">选择基准模型</label>
+                                    <label htmlFor="baseModelID">选择基础模型</label>
                                     <select
                                         id="baseModelID"
                                         value={baseModelID}
@@ -450,6 +460,14 @@ function TasksPage({ setPageUrl, parameter }) {
                                 </div>
                             </>
                         }
+
+                        {getModelListError && (
+                            <div className="tip-box">
+                                <span style={{ color: 'var(--red-color)' }}>
+                                    获取基础模型信息时出错: {getModelListError}
+                                </span>
+                            </div>
+                        )}
 
                         {trainingType == 1 &&
                             <>
@@ -591,15 +609,22 @@ function TasksPage({ setPageUrl, parameter }) {
                                     <td>{trainingType == 0 ? "微调预训练模型" : "自定义结构"}</td>
                                 </tr>
 
-                                {trainingType == 0 && selectedBaseModel && (
+                                {trainingType == 0 && selectedBaseModel ? (
                                     <>
                                         <tr onClick={() => setTabIndex(3)}>
-                                            <td>{renderCheckIcon("baseModelID")} <strong>基准模型</strong></td>
-                                            <td>{selectedBaseModel.name}</td>
+                                            <td>{renderCheckIcon("baseModelID")} <strong>基础模型</strong></td>
+                                            <td>{selectedBaseModel.name || "unknown"}</td>
                                         </tr>
                                         <tr onClick={() => setTabIndex(3)}>
                                             <td><strong>模型大小</strong></td>
-                                            <td>{Math.round(selectedBaseModel.size / 1024 / 1024)} MB</td>
+                                            <td>{Math.round(selectedBaseModel.size / 1024 / 1024) || "0"} MB</td>
+                                        </tr>
+                                    </>
+                                ) : (
+                                    <>
+                                        <tr onClick={() => setTabIndex(3)}>
+                                            <td>{renderCheckIcon("baseModelID")} <strong>基础模型</strong></td>
+                                            <td>您还未选择基础模型</td>
                                         </tr>
                                     </>
                                 )}
