@@ -456,7 +456,7 @@ def get_training_task_output_file():
         return format_output(code=500, msg=f"读取文件出错: {str(e)}")
     
 @ITraining_bp.route("/getAllBaseModelsFromGithub", methods=['GET'])
-def get_all_base_models():
+def get_all_base_models_from_github():
     """
     从Github上获取所有的基础模型
     """
@@ -483,8 +483,8 @@ def get_all_base_models():
         if os.path.exists(cache_file_path):
             with open(cache_file_path, "r", encoding="utf-8") as f:
                 cache = json.load(f)
-                return format_output(msg=e, data={"models": cache.get("models", []), "from_github": False, "has_network_error": True, "has_fileread_error": False})
-        return format_output(msg=e, data={"models": [], "from_github": False, "has_network_error": True, "has_fileread_error": True})
+                return format_output(msg=str(e), data={"models": cache.get("models", []), "from_github": False, "has_network_error": True, "has_fileread_error": False})
+        return format_output(msg=str(e), data={"models": [], "from_github": False, "has_network_error": True, "has_fileread_error": True})
 
     with open(cache_file_path, "w", encoding="utf-8") as f:
         json.dump({
@@ -493,3 +493,29 @@ def get_all_base_models():
         }, f, ensure_ascii=False, indent=2)
 
     return format_output(data={"models": models, "from_github": True, "has_network_error": False, "has_fileread_error": False})
+
+@ITraining_bp.route("/getAllBaseModelFromLocal", methods=['GET'])
+def get_all_base_model_from_local():
+    """
+    从本地文件夹中读取所有模型文件（如 .pt 文件）
+    """
+    local_model_dir = os.path.join(get_models_path(), "base")
+    
+    if not os.path.exists(local_model_dir):
+        return format_output(data={"models": []})
+
+    models = []
+    for filename in os.listdir(local_model_dir):
+        filepath = os.path.join(local_model_dir, filename)
+        if os.path.isfile(filepath):
+            stat = os.stat(filepath)
+            models.append({
+                "name": filename,
+                "size": stat.st_size,
+                "path": filepath,
+                "modified_time": int(stat.st_mtime)
+            })
+
+    return format_output(data={
+        "models": sorted(models, key=lambda x: -x["modified_time"])
+    })
