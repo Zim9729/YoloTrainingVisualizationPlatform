@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useMemo, useEffect } from "react";
 import hljs from 'highlight.js';
 
 import Bottombar from "./Bottombar";
@@ -9,74 +9,57 @@ import TasksPage from "../page/TasksPage";
 import TaskDetailedPage from "../page/TaskDetailedPage";
 
 function Main({ pageUrl = "home", setPageUrl }) {
-    const [pageType, setPageType] = useState("");
-    const [parameter, setParameter] = useState({});
-
-    useEffect(() => {
-        hljs.highlightAll();
-
+    // 识别页面类型并提取参数
+    const { pageType, parameter } = useMemo(() => {
         if (pageUrl.includes("?")) {
-            const [type, queryString] = pageUrl.split("?")
-            setPageType(type)
+            const [type, queryString] = pageUrl.split("?");
+            const params = {};
 
-            const params = {}
-            if (queryString) {
-                queryString.split("&").forEach((param) => {
-                    const [key, value] = param.split("=")
-                    if (key) {
-                        params[key] = decodeURIComponent(value || "")
-                    }
-                })
-            }
-            setParameter(params)
-        } else {
-            setPageType(pageUrl)
-            setParameter({})
+            queryString.split("&").forEach((param) => {
+                const [key, value] = param.split("=");
+                if (key) params[key] = decodeURIComponent(value || "");
+            });
+
+            return { pageType: type, parameter: params };
         }
+        return { pageType: pageUrl, parameter: {} };
     }, [pageUrl]);
 
-    switch (pageType) {
-        case "home":
-            return (
+    // highlight 高亮初始化
+    useEffect(() => {
+        hljs.highlightAll();
+    }, [pageType, parameter]);
+
+    // 页面映射表
+    const PageComponentMap = {
+        home: HomePage,
+        dataset: DatasetPage,
+        tasks: TasksPage,
+        tasksDetailed: TaskDetailedPage,
+    };
+
+    const PageComponent = PageComponentMap[pageType];
+
+    return (
+        <>
+            {PageComponent ? (
                 <>
-                    <HomePage setPageUrl={setPageUrl} parameter={parameter} />
+                    <PageComponent setPageUrl={setPageUrl} parameter={parameter} />
                     <Bottombar setPageUrl={setPageUrl} />
                 </>
-            );
-        case "dataset":
-            return (
-                <>
-                    <DatasetPage setPageUrl={setPageUrl} parameter={parameter} />
-                    <Bottombar setPageUrl={setPageUrl} />
-                </>
-            );
-        case "tasks":
-            return (
-                <>
-                    <TasksPage setPageUrl={setPageUrl} parameter={parameter} />
-                    <Bottombar setPageUrl={setPageUrl} />
-                </>
-            );
-        case "tasksDetailed":
-            return (
-                <>
-                    <TaskDetailedPage setPageUrl={setPageUrl} parameter={parameter} />
-                    <Bottombar setPageUrl={setPageUrl} />
-                </>
-            )
-        default:
-            return (
+            ) : (
                 <div className="main">
                     <h1 style={{ marginBottom: '-13px' }}>ERROR</h1>
                     <p>找不到请求的资源</p>
                     <pre>
                         <code className="language-bash hljs">
-                            {`PageID: ${pageType}\nParameter: ${JSON.stringify(parameter || {}, null, 2)}`}
+                            {`PageID: ${pageType}\nParameter: ${JSON.stringify(parameter, null, 2)}`}
                         </code>
                     </pre>
                 </div>
-            );
-    }
+            )}
+        </>
+    );
 }
 
 export default Main;
