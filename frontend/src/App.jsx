@@ -15,7 +15,7 @@ function App() {
         api.get("/", { params: {} })
             .then(data => {
                 setIsDownloadHelperComponents(true);
-                console.log("已下载助手组件", data)
+                console.log("已下载助手组件", data);
             })
             .catch(err => {
                 setIsDownloadHelperComponents(false);
@@ -41,12 +41,13 @@ function App() {
             {isDownloadHelperComponents &&
                 <div className="app">
                     <Navbar
+                        pageUrl={pageUrl}
                         setPageUrl={(type) => {
                             setPageUrl(type);
                         }}
                     />
                     <Main
-                        page_url={pageUrl}
+                        pageUrl={pageUrl}
                         setPageUrl={(type) => {
                             setPageUrl(type);
                         }}

@@ -8,9 +8,8 @@ import Icon_Boxes from "../assets/icons/boxes.svg";
 import Icon_Box_seam_fill from "../assets/icons/box-seam-fill.svg";
 import Icon_Gear_fill from "../assets/icons/gear-fill.svg";
 
-function Navbar({ setPageUrl }) {
+function Navbar({ pageUrl, setPageUrl }) {
     const [helperComponents, setHelperComponents] = useState("null");
-    const [clickItem, setClickItem] = useState('1');
 
     const navbarItem = [
         {
@@ -61,9 +60,8 @@ function Navbar({ setPageUrl }) {
             {navbarItem.map((item) => (
                 <div
                     key={item.id}
-                    className={`navbar-item${clickItem == item.id ? " clicked" : ""}`}
+                    className={`navbar-item${pageUrl.split('?')[0] == item.pageUrl ? " clicked" : ""}`}
                     onClick={() => {
-                        setClickItem(item.id);
                         setPageUrl(item.pageUrl);
                     }}
                 >
