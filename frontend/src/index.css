@@ -116,3 +116,8 @@ a:hover {
 .terminal-container {
     margin-top: 20px;
 }
+
+.task-result-detailed-time {
+    font-size: 24px;
+    font-weight: bold;
+}

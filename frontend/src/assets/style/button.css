@@ -7,10 +7,12 @@
     padding: 10px 20px;
     font-size: 14px;
     box-shadow: 0 0 10px var(--shadow-color);
+    transition: all 0.2s ease;
 }
 
 .btn:hover {
     background-color: var(--hover-color);
+    transform: translateY(-3px);
 }
 
 .btn.r {
