@@ -44,7 +44,7 @@ function Main({ pageUrl = "home", setPageUrl }) {
         <>
             {PageComponent ? (
                 <>
-                    <PageComponent setPageUrl={setPageUrl} parameter={parameter} />
+                    <PageComponent key={pageUrl} setPageUrl={setPageUrl} parameter={parameter} />
                     <Bottombar setPageUrl={setPageUrl} />
                 </>
             ) : (
