@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
 import confetti from 'canvas-confetti';
-import hljs from 'highlight.js';
 import yaml from 'js-yaml';
+import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 
 import TerminalViewer from "../components/TerminalViewer";
@@ -14,11 +14,12 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     const [taskData, setTaskData] = useState({});
     const [taskHistory, setTaskHistory] = useState([]);
     const [infoCardShowDetails, setInfoCardShowDetails] = useState([]);
-    const [modelInfoCardShowDetails, setModelInfoCardShowDetails] = useState([]);
     const [isRunning, setIsRunning] = useState(false);
     const [trainingCompleted, setTrainingCompleted] = useState(false);
     const [basicInfo, setBasicInfo] = useState([]);
     const [modelInfo, setModelInfo] = useState([]);
+
+    const [showModelInfoCardDetails, setShowModelInfoCardDetails] = useState([]);
 
     const startTask = (filename, taskname, taskID) => {
         if (confirm("真的要开始训练该任务吗？")) {
@@ -152,10 +153,6 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     }, [taskData, isRunning]);
 
     useEffect(() => {
-        hljs.highlightAll();
-    }, [modelInfo]);
-
-    useEffect(() => {
         if (trainingCompleted) {
             confetti({
                 particleCount: 150,
@@ -164,6 +161,10 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
             });
         }
     }, [trainingCompleted]);
+
+    useEffect(() => {
+        hljs.highlightAll();
+    });
 
     return (
         <div className="main">
@@ -180,7 +181,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                     <span className="tag green" style={{ display: 'flex', alignItems: 'center' }}>
                         🎉 训练完成
                     </span>
-                    <a href="#" onClick={() => setPageUrl("models")} style={{ marginBottom: '20px' }}>点击此处下载模型</a>
+                    <a href="#" onClick={() => setPageUrl("models?type=local")} style={{ marginBottom: '20px' }}>点击此处下载模型</a>
                 </>
             }
 
@@ -211,13 +212,11 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                 <div className="info-card-group">
                     {basicInfo.map((item, index) => (
                         <div className="info-card" key={`basic_info_${index}`} onClick={() => {
-                            setInfoCardShowDetails(prev => {
-                                if (prev.includes(index)) {
-                                    return prev.filter(i => i !== index);
-                                } else {
-                                    return [...prev, index];
-                                }
-                            });
+                            setInfoCardShowDetails(prev =>
+                                prev.includes(index)
+                                    ? prev.filter(i => i !== index)
+                                    : [...prev, index]
+                            );
                         }}>
                             <span className="key">{item.name}</span>
                             <span className="value">{item.data}</span>
@@ -240,7 +239,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                         <div className="info-card"
                             key={`model_info_${index}`}
                             onClick={() => {
-                                setModelInfoCardShowDetails(prev =>
+                                setShowModelInfoCardDetails(prev =>
                                     prev.includes(index)
                                         ? prev.filter(i => i !== index)
                                         : [...prev, index]
@@ -255,14 +254,14 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                             ) : item.data ? (
                                 <span className="value">{item.data}</span>
                             ) : item.code ? (
-                                <pre style={{ maxHeight: modelInfoCardShowDetails.includes(index) ? "none" : "200px", overflow: "auto" }}>
+                                <pre style={{ maxHeight: showModelInfoCardDetails.includes(index) ? "none" : "200px", overflow: "auto" }}>
                                     <code className="language-yaml hljs" style={{ fontSize: '14px', wordBreak: 'break-word' }}>
                                         {item.code}
                                     </code>
                                 </pre>
                             ) : null}
 
-                            {(modelInfoCardShowDetails.includes(index) && item.details) && (
+                            {(showModelInfoCardDetails.includes(index) && item.details) && (
                                 <span className="key" style={{ wordBreak: 'break-all' }}>
                                     详细: {item.details}
                                 </span>
@@ -284,17 +283,23 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                         .sort((a, b) => b.startedAt - a.startedAt)
                         .map((item, index) => (
                             <div className="list-card" key={`task_history_${index}`}>
-                                <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
-                                    {new Date(item.startedAt * 1000).toLocaleString()} - {item.completedAt != null ? new Date(item.completedAt * 1000).toLocaleString() : "无记录"}
-                                </span>
-                                <br />
-                                {item.completedAt == null ? (
-                                    <span style={{ color: 'var(--red-color)', fontSize: '14px' }}>该训练暂无结果</span>
-                                ) : (
-                                    <span style={{ color: 'var(--secondary-text-color)', fontSize: '14px' }}>
-                                        训练结果: {item.outputDir || "unknown"}
+                                <div onClick={() => {
+                                    if (item.completedAt != null) {
+                                        setPageUrl(`taskResultDetailed?taskID=${item.taskID}&startedAt=${item.startedAt}&taskName=${taskData.taskName}`);
+                                    }
+                                }}>
+                                    <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
+                                        {new Date(item.startedAt * 1000).toLocaleString()} - {item.completedAt != null ? new Date(item.completedAt * 1000).toLocaleString() : "无记录"}
                                     </span>
-                                )}
+                                    <br />
+                                    {item.completedAt == null ? (
+                                        <span style={{ color: 'var(--red-color)', fontSize: '14px' }}>该训练暂无结果</span>
+                                    ) : (
+                                        <span style={{ color: 'var(--secondary-text-color)', fontSize: '14px' }}>
+                                            训练结果: {item.outputDir || "unknown"}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     {taskHistory.length == 0 &&
