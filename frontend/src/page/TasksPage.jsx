@@ -705,7 +705,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                         <br />
                                         输入图像尺寸 (imgsz): {task.imgSize}
                                         <br />
-                                        {task.trainingType == '0' && (
+                                        {task.trainingType == 0 && (
                                             <>
                                                 基础模型ID: {task.baseModelID}
                                                 <br />
@@ -716,6 +716,11 @@ function TasksPage({ setPageUrl, parameter }) {
                                                 模型下载量: {task.baseModelInfo.download_count}
                                                 <br />
                                                 模型上传者: <a href={task.baseModelInfo.uploader.html_url} target="_blank">{task.baseModelInfo.uploader.login}</a>
+                                            </>
+                                        )}
+                                        {task.trainingType == 1 && (
+                                            <>
+                                                模型结构Yaml文件: {task.modelYamlFile}
                                             </>
                                         )}
                                     </>
