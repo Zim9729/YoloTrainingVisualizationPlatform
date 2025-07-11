@@ -18,7 +18,7 @@ function HomePage({ setPageUrl, parameter }) {
                         <div className="top-tag">1</div>
                         <h1 className="title">上传数据集</h1>
                         <p className="content">支持 YOLO / COCO 格式的数据集，系统会自动解析标注信息并生成预览。</p>
-                        <button className="btn sm bottom-btn" onClick={() => { setPageUrl("dataset?type=uploadDataset") }} style={{ marginRight: '5px' }}>创建数据集</button>
+                        <button className="btn sm bottom-btn" onClick={() => { setPageUrl("dataset?type=uploadDataset") }} style={{ marginRight: '5px' }}>上传数据集</button>
                         <button className="btn sm bottom-btn" onClick={() => { setPageUrl("dataset") }}>从已有的数据集开始</button>
                     </div>
                     <div className="card">

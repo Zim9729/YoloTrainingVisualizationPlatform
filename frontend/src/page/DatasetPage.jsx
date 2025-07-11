@@ -273,7 +273,7 @@ function DatasetPage({ setPageUrl, parameter }) {
                 <div className="main">
                     <h1 className="page-title">数据集</h1>
                     <p className="page-des">查看和管理您的数据集。</p>
-                    <button className="btn sm" onClick={() => setPageUrl("dataset?type=uploadDataset")} style={{ marginBottom: '10px' }}>创建数据集</button>
+                    <button className="btn sm" onClick={() => setPageUrl("dataset?type=uploadDataset")} style={{ marginBottom: '10px' }}>上传数据集</button>
                     {datasetsList.map((dataset, index) => (
                         <div key={index} className="card" style={{ marginBottom: '10px' }}>
                             <p className="title" style={{ fontWeight: 'bold' }}>
