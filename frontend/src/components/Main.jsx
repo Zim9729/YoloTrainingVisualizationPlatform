@@ -9,6 +9,7 @@ import TasksPage from "../page/TasksPage";
 import TaskDetailedPage from "../page/TaskDetailedPage";
 import ModelsPage from "../page/ModelsPage";
 import TaskResultDetailedPage from "../page/TaskResultDetailedPage";
+import ModelTestPage from "../page/ModelTestPage";
 
 function Main({ pageUrl = "home", setPageUrl }) {
     // 识别页面类型并提取参数
@@ -40,6 +41,7 @@ function Main({ pageUrl = "home", setPageUrl }) {
         tasksDetailed: TaskDetailedPage,
         models: ModelsPage,
         taskResultDetailed: TaskResultDetailedPage,
+        modelTest: ModelTestPage,
     };
 
     const PageComponent = PageComponentMap[pageType];

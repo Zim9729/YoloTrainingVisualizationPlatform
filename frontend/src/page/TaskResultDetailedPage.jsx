@@ -212,9 +212,13 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
         return index === -1 ? Infinity : index;
     };
 
+    useEffect(() => {
+        console.log(taskResultData);
+    }, [taskResultData]);
+
     return (
         <div className="main">
-            <a href="#" onClick={() => setPageUrl(`tasksDetailed?filename=${taskResultData.filename || ""}`)} style={{ textDecoration: 'none' }}>返回</a>
+            <a href="#" onClick={() => setPageUrl(`tasksDetailed?filename=${taskResultData.filename}`)} style={{ textDecoration: 'none' }}>返回</a>
             <h1 className="page-title">
                 任务结果
             </h1>
@@ -232,7 +236,10 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                         <h1 className="step-tag nobg">
                             <img src={Icon_Box_seam_fill} className="icon" />
                         </h1>
-                        <h1 className="title">模型</h1>
+                        <h1 className="title">
+                            模型
+                            <button className="btn sm" style={{position: 'relative', top: '-2px', marginLeft: '15px'}} onClick={() => setPageUrl(`models?type=trained`)}>进行测试</button>
+                        </h1>
                     </div>
 
                     <div className="info-card-group">
