@@ -1,6 +1,8 @@
 import { api } from "../api";
 import { useState, useEffect } from "react";
 import CONFIGS from "../config";
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css';
 
 import Logo_Coco from "../assets/logo/coco_sm.png";
 import Logo_Ultralytics from "../assets/logo/ultralytics.svg";
@@ -57,6 +59,10 @@ function DatasetPage({ setPageUrl, parameter }) {
     const [names, setNames] = useState("");
     const [isUploading, setIsUploading] = useState(false);
     const [showDetailsInfo, setShowDetailsInfo] = useState([]);
+
+    useEffect(() => {
+        hljs.highlightAll();
+    });
 
     useEffect(() => {
         api.get("/IDataset/getAllDatasets", { params: {} })
@@ -248,13 +254,13 @@ function DatasetPage({ setPageUrl, parameter }) {
                                         Yolo 数据集压缩包格式示例:
                                     </p>
                                     <pre>
-                                        <code>
-                                            your_dataset/<br />
-                                            ├── images/<br />
-                                            │   └── train/, val/<br />
-                                            ├── labels/<br />
-                                            │   └── train/, val/<br />
-                                            ├── dataset.yaml<br />
+                                        <code className="language-bash hljs">
+                                            {`your_dataset/
+├── images/
+│   └── train/, val/
+├── labels/
+│   └── train/, val/
+├── dataset.yaml`}
                                         </code>
                                     </pre>
                                 </>}
@@ -264,13 +270,13 @@ function DatasetPage({ setPageUrl, parameter }) {
                                         COCO 数据集压缩包格式示例
                                     </p>
                                     <pre>
-                                        <code>
-                                            your_dataset/<br />
-                                            ├── images/<br />
-                                            │   └── train/, val/<br />
-                                            ├── annotations/<br />
-                                            │   └── instances_train.json<br />
-                                            ├── dataset.yaml<br />
+                                        <code className="language-bash hljs">
+{`your_dataset/
+├── images/
+│   └── train/, val/
+├── annotations/
+│   └── instances_train.json
+├── dataset.yaml`}
                                         </code>
                                     </pre>
                                 </>}
