@@ -71,6 +71,12 @@ function Navbar({ pageUrl, setPageUrl }) {
             ))}
 
             <p className="navbar-version">
+                <button className="btn sm" onClick={() => {
+                    window.open("https://github.com/chzane/YoloTrainingVisualizationPlatform/issues")
+                }}>
+                    BUG 反馈
+                </button>
+                <br />
                 <a href="https://github.com/chzane/YoloTrainingVisualizationPlatform" style={{ color: 'var(--light-color)' }} target="_blank">关于</a>
                 <br />
                 前端版本: {CONFIGS.FRONTEND_VERSION}
