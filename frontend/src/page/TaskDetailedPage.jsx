@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
 import Prism from "prismjs";
+import confetti from 'canvas-confetti';
 import "prismjs/themes/prism.css";
 
 import TerminalViewer from "../components/TerminalViewer";
@@ -152,6 +153,16 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     useEffect(() => {
         Prism.highlightAll();
     });
+
+    useEffect(() => {
+        if (trainingCompleted) {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    }, [trainingCompleted]);
 
     return (
         <div className="main fade-in">
