@@ -8,15 +8,15 @@ import DatasetPage from "../page/DatasetPage";
 import TasksPage from "../page/TasksPage";
 import TaskDetailedPage from "../page/TaskDetailedPage";
 
-function Main({ page_url = "home", setPageUrl }) {
+function Main({ pageUrl = "home", setPageUrl }) {
     const [pageType, setPageType] = useState("");
     const [parameter, setParameter] = useState({});
 
     useEffect(() => {
         hljs.highlightAll();
 
-        if (page_url.includes("?")) {
-            const [type, queryString] = page_url.split("?")
+        if (pageUrl.includes("?")) {
+            const [type, queryString] = pageUrl.split("?")
             setPageType(type)
 
             const params = {}
@@ -30,10 +30,10 @@ function Main({ page_url = "home", setPageUrl }) {
             }
             setParameter(params)
         } else {
-            setPageType(page_url)
+            setPageType(pageUrl)
             setParameter({})
         }
-    }, [page_url]);
+    }, [pageUrl]);
 
     switch (pageType) {
         case "home":
