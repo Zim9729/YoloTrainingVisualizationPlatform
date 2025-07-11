@@ -228,15 +228,17 @@ a:hover {
 }
 
 .card .title {
-    font-size: 18px;
+    font-size: 22px;
+    font-weight: bold;
     margin-bottom: -10px;
-    color: var(--main-color);
+    color: var(--text-color);
     transition: all 0.2s ease;
 }
 
 .card .content {
     font-size: 14px;
     line-height: 1.5;
+    color: var(--secondary-text-color);
 }
 
 .card .top-tag {
@@ -252,6 +254,10 @@ a:hover {
     font-size: 21px;
     font-weight: bold;
     margin-bottom: -20px;
+}
+
+.card .tag-group {
+    margin-bottom: -5px;
 }
 
 .card .bottom-btn {
@@ -478,7 +484,7 @@ td {
     padding: 20px;
     background-color: var(--background-color);
     border-radius: 12px;
-    box-shadow: 0 4px 12px var(--shadow-color);
+    box-shadow: 0 0 12px var(--shadow-color);
     transition: all 0.3s ease;
     cursor: pointer;
     word-break: break-all;

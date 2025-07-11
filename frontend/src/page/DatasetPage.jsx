@@ -276,8 +276,10 @@ function DatasetPage({ setPageUrl, parameter }) {
                     <button className="btn sm" onClick={() => setPageUrl("dataset?type=uploadDataset")} style={{ marginBottom: '10px' }}>上传数据集</button>
                     {datasetsList.map((dataset, index) => (
                         <div key={index} className="card" style={{ marginBottom: '10px' }}>
-                            <p className="title" style={{ fontWeight: 'bold' }}>
+                            <p className="tag-group">
                                 <span className="tag" style={{ fontSize: '12px', marginRight: '10px' }}>{CONFIGS.DATASET_TYPE[dataset.platform_info.type]}</span>
+                            </p>
+                            <p className="title">
                                 {dataset.platform_info.name} ({dataset.platform_info.version})
                             </p>
                             <p className="dataset-des">{dataset.platform_info.description || "无描述"}</p>

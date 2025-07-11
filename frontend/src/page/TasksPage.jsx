@@ -701,9 +701,10 @@ function TasksPage({ setPageUrl, parameter }) {
                     <h1 className="page-title">训练任务</h1>
                     <p className="page-des">管理所有模型训练任务。</p>
                     <button className="btn sm" onClick={() => setPageUrl("tasks?type=newTask")} style={{ marginBottom: '10px' }}>新建训练任务</button>
+                    
                     {tasksList.map((task, index) => (
                         <div key={index} className="card" style={{ marginBottom: '10px' }}>
-                            <p className="title" style={{ fontWeight: 'bold' }}>
+                            <p className="tag-group">
                                 {runningTasksList.includes(task.__filename) &&
                                     <span className="tag turquoise" style={{ fontSize: '12px', marginRight: '5px' }}>
                                         训练中
@@ -712,6 +713,8 @@ function TasksPage({ setPageUrl, parameter }) {
                                 <span className="tag" style={{ fontSize: '12px', marginRight: '10px' }}>
                                     {CONFIGS.TRAINING_TYPE[task.trainingType]}
                                 </span>
+                            </p>
+                            <p className="title">
                                 {task.taskName}
                             </p>
                             <p className="dataset-des">{task.taskDescription || "无描述"}</p>
