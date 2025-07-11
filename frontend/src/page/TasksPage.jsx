@@ -192,8 +192,12 @@ function TasksPage({ setPageUrl, parameter }) {
 
             api.post("/ITraining/startTask", { data: data, params: {} })
                 .then(data => {
-                    alert(data.msg);
-                    if (data.code == 200) setRunningTasksList(prev => [...prev, filename]);
+                    if (data.code == 200) {
+                        setRunningTasksList(prev => [...prev, filename]);
+                        setPageUrl(`tasksDetailed?filename=${filename}`)
+                    } else {
+                        alert(data.msg);
+                    }
                 })
                 .catch(err => {
                     console.error("训练任务失败:", err);

@@ -29,10 +29,11 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
 
             api.post("/ITraining/startTask", { data: data, params: {} })
                 .then(data => {
-                    alert(data.msg);
                     if (data.code == 200) {
                         setTrainingCompleted(false);
                         setIsRunning(true);
+                    } else {
+                        alert(data.msg);
                     }
                 })
                 .catch(err => {
@@ -266,11 +267,11 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                         <div className="list-card" key={`task_history_${index}`}>
                             <span style={{ fontWeight: 'bold', fontSize: '18px' }}>{new Date(item.startedAt * 1000).toLocaleString()} - {item.completedAt != null ? new Date(item.completedAt * 1000).toLocaleString() : "无记录"}</span>
                             <br />
-                            <span style={{ color: 'var(--secondary-text-color)', fontSize: '14px' }}>训练结果: {item.outputDir}</span>
-                            <br />
-                            {item.completedAt == null &&
+                            {item.completedAt == null ? (
                                 <span style={{ color: 'var(--red-color)', fontSize: '14px' }}>该训练暂无结果</span>
-                            }
+                            ) : (
+                                <span style={{ color: 'var(--secondary-text-color)', fontSize: '14px' }}>训练结果: {item.outputDir || "unknown"}</span>
+                            )}
                         </div>
                     ))}
                     {taskHistory.length == 0 &&

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@xterm/xterm": "^5.5.0",
+    "canvas-confetti": "^1.9.3",
     "highlight.js": "^11.11.1",
     "prismjs": "^1.30.0",
     "react": "^19.1.0",
