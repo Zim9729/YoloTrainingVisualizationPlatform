@@ -166,7 +166,7 @@ def create_task():
         return format_output(code=400, msg="参数非法(step:5)")
     
     task_id = str(random.randint(11111111, 99999999) + timestamp)
-    result_file_name = os.path.join(get_tasks_result_files_path(), f"{task_id}_{str(random.randint(1111111, 9999999))}.yaml")
+    result_file_name = str(random.randint(1111111, 9999999))
     
     yaml_data = {
         "taskID": task_id,
@@ -253,12 +253,29 @@ def start_task():
     except Exception as e:
         print("读取配置文件失败:", e)
         return format_output(code=500, msg=f"读取配置文件失败: {str(e)}")
+    
+    timestamp = int(time.time())
+    print(timestamp)
 
     try:
         print(f"启动训练任务: {config.get('taskName')}")
         print("训练参数: ", config)
+        
+        task_result_file_path = os.path.join(get_tasks_result_files_path(), f"{task_id}_{timestamp}.yaml")
 
-        thread, log_stream = run_main_in_thread(file_path, task_id)
+        result_info = {
+            "startedAt": timestamp,
+            "completedAt": None,
+            "filename": filename,
+            "taskID": task_id,
+            "outputDir": None,
+            "log": None
+        }
+
+        with open(task_result_file_path, "w", encoding="utf-8") as f:
+            yaml.dump(result_info, f, allow_unicode=True)
+
+        thread, log_stream = run_main_in_thread(file_path, task_id, task_result_file_path)
 
         # 保存
         TASK_THREADS[filename] = {
@@ -274,20 +291,6 @@ def start_task():
     except Exception as e:
         print("启动训练任务失败:", e)
         return format_output(code=500, msg=f"启动训练任务失败: {str(e)}")
-    
-    timestamp = int(time.time())
-    
-    result_info = {
-        "startedAt": timestamp,
-        "completedAt": None,
-        "filename": filename,
-        "taskID": task_id,
-        "outputDir": None,
-        "log": None
-    }
-
-    with open(config.get('resultFileName'), "w", encoding="utf-8") as f:
-        yaml.dump(result_info, f, allow_unicode=True)
 
     return format_output(msg=f"任务 {config.get('taskName')} 已启动", data={"taskName": config.get("taskName")})
 

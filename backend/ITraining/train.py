@@ -69,7 +69,7 @@ def download_model(model_name, model_browser_download_url, logger):
     
     return local_path
 
-def main(taskfile_path, logger=None, task_id=None):
+def main(taskfile_path, task_result_file_path, logger=None, task_id=None,):
     start_time = int(time.time())
     
     if logger is None:
@@ -81,6 +81,10 @@ def main(taskfile_path, logger=None, task_id=None):
     
     if task_id == None:
         logger.info("未获取到Task ID")
+        sys.exit(1)
+        
+    if task_result_file_path == None:
+        logger.info("未获取到Task Result File Path")
         sys.exit(1)
         
     log_cache = []
@@ -107,11 +111,10 @@ def main(taskfile_path, logger=None, task_id=None):
     seed = int(config.get('trainSeed', 0))
     cache = config.get('cache', 'disk')
     training_type = int(config.get('trainingType', 0))
-    result_file_name = str(config.get('resultFileName', None))
     
     platform_infofile = load_platform_infofile(dataset_path, logger)
     dataset_yamlfile = platform_infofile.get('yaml_file_path', None)
-    if dataset_yamlfile == None or result_file_name == None:
+    if dataset_yamlfile == None:
         logger.info(f"[ERROR] 数据集平台配置文件信息缺失: 找不到数据集Yaml配置文件")
         sys.exit(1) 
     
@@ -215,14 +218,14 @@ def main(taskfile_path, logger=None, task_id=None):
         "log": log_cache
     }
 
-    if os.path.exists(result_file_name):
-        with open(result_file_name, 'r', encoding='utf-8') as f:
+    if os.path.exists(task_result_file_path):
+        with open(task_result_file_path, 'r', encoding='utf-8') as f:
             existing_data = yaml.safe_load(f) or {}
     else:
         existing_data = {}
 
     existing_data.update(result_info)
 
-    with open(result_file_name, 'w', encoding='utf-8') as f:
+    with open(task_result_file_path, 'w', encoding='utf-8') as f:
         yaml.dump(existing_data, f, allow_unicode=True)
      

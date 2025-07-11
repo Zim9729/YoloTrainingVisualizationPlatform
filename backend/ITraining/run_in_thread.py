@@ -4,7 +4,7 @@ from .handlers import QueueHandler
 import queue
 from .train import main
 
-def run_main_in_thread(taskfile_path, task_id):
+def run_main_in_thread(taskfile_path, task_id, task_result_file_path):
     """
     在新线程中运行 main，并捕获所有输出（stdout/stderr）
     """
@@ -23,7 +23,7 @@ def run_main_in_thread(taskfile_path, task_id):
     def target():
         try:
             logger.info(f"开始任务: {taskfile_path}")
-            main(taskfile_path, logger=logger, task_id=task_id)
+            main(taskfile_path, logger=logger, task_id=task_id, task_result_file_path=task_result_file_path)
             logger.info("🎉 训练任务结束")
         except Exception as e:
             logger.exception(f"训练线程发生异常: {e}")
