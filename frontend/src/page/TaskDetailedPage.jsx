@@ -263,17 +263,24 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                 </div>
 
                 <div className="list-card-group">
-                    {taskHistory.map((item, index) => (
-                        <div className="list-card" key={`task_history_${index}`}>
-                            <span style={{ fontWeight: 'bold', fontSize: '18px' }}>{new Date(item.startedAt * 1000).toLocaleString()} - {item.completedAt != null ? new Date(item.completedAt * 1000).toLocaleString() : "无记录"}</span>
-                            <br />
-                            {item.completedAt == null ? (
-                                <span style={{ color: 'var(--red-color)', fontSize: '14px' }}>该训练暂无结果</span>
-                            ) : (
-                                <span style={{ color: 'var(--secondary-text-color)', fontSize: '14px' }}>训练结果: {item.outputDir || "unknown"}</span>
-                            )}
-                        </div>
-                    ))}
+                    {taskHistory
+                        .slice()
+                        .sort((a, b) => b.startedAt - a.startedAt)
+                        .map((item, index) => (
+                            <div className="list-card" key={`task_history_${index}`}>
+                                <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
+                                    {new Date(item.startedAt * 1000).toLocaleString()} - {item.completedAt != null ? new Date(item.completedAt * 1000).toLocaleString() : "无记录"}
+                                </span>
+                                <br />
+                                {item.completedAt == null ? (
+                                    <span style={{ color: 'var(--red-color)', fontSize: '14px' }}>该训练暂无结果</span>
+                                ) : (
+                                    <span style={{ color: 'var(--secondary-text-color)', fontSize: '14px' }}>
+                                        训练结果: {item.outputDir || "unknown"}
+                                    </span>
+                                )}
+                            </div>
+                        ))}
                     {taskHistory.length == 0 &&
                         <span>您还没有任何训练记录</span>
                     }
