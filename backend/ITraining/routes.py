@@ -1,9 +1,10 @@
+from .run_in_thread import run_main_in_thread
 from flask import Blueprint, request
 from tools.format_output import format_output
-from config import get_tasks_path, get_tasks_result_files_path, get_tasks_yaml_file_path
+from config import get_tasks_path, get_tasks_result_files_path, get_tasks_yaml_file_path, get_yolo_model_list_url, get_models_path, get_yolo_model_cahce_expiration_time
 import yaml
+import json
 import time
-from .run_in_thread import run_main_in_thread
 import requests
 import base64
 import os
@@ -72,8 +73,14 @@ def get_task():
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
-            data["__filename"] = filename
-            return format_output(data=data)
+            
+        if data["trainingType"] == 1:
+            with open(data["modelYamlFile"], "r", encoding="utf-8") as yaml_f:
+                task_yaml_file = yaml.safe_load(yaml_f)
+                
+            data["yamlFile"] = task_yaml_file
+        
+        return format_output(data=data)
     except Exception as e:
         print(f"读取任务配置文件出错: {filename}, 错误: {e}")
         return format_output(code=500, msg=f"读取任务配置失败: {str(e)}")
@@ -447,3 +454,42 @@ def get_training_task_output_file():
 
     except Exception as e:
         return format_output(code=500, msg=f"读取文件出错: {str(e)}")
+    
+@ITraining_bp.route("/getAllBaseModelsFromGithub", methods=['GET'])
+def get_all_base_models():
+    """
+    从Github上获取所有的基础模型
+    """
+    cache_file_path = os.path.join(get_models_path(), "models_cache_file.json")
+    
+    try:
+        if os.path.exists(cache_file_path):
+            with open(cache_file_path, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+                cached_time = cache.get("timestamp", 0)
+                if time.time() - cached_time < int(get_yolo_model_cahce_expiration_time()):
+                    return format_output(data={"models": cache.get("models", []), "from_github": False, "has_network_error": False, "has_fileread_error": False})
+    except:
+        pass
+
+    try:
+        response = requests.get(get_yolo_model_list_url())
+        if response.status_code == requests.codes.ok:
+            models = response.json().get("assets", [])
+        else:
+            models = []
+    except Exception as e:
+        # 如果请求失败了也可以获取本地文件
+        if os.path.exists(cache_file_path):
+            with open(cache_file_path, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+                return format_output(msg=e, data={"models": cache.get("models", []), "from_github": False, "has_network_error": True, "has_fileread_error": False})
+        return format_output(msg=e, data={"models": [], "from_github": False, "has_network_error": True, "has_fileread_error": True})
+
+    with open(cache_file_path, "w", encoding="utf-8") as f:
+        json.dump({
+            "timestamp": time.time(),
+            "models": models
+        }, f, ensure_ascii=False, indent=2)
+
+    return format_output(data={"models": models, "from_github": True, "has_network_error": False, "has_fileread_error": False})

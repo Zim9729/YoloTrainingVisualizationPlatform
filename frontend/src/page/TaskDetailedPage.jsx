@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
-import Prism from "prismjs";
 import confetti from 'canvas-confetti';
-import "prismjs/themes/prism.css";
+import hljs from 'highlight.js';
+import yaml from 'js-yaml';
+import 'highlight.js/styles/github.css';
 
 import TerminalViewer from "../components/TerminalViewer";
 
@@ -116,7 +117,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
             setModelInfo([
                 {
                     name: "模型结构文件",
-                    code: taskData.modelYamlFile
+                    code: yaml.dump(taskData.yamlFile)
                 }
             ]);
         }
@@ -151,8 +152,8 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     }, [taskData, isRunning]);
 
     useEffect(() => {
-        Prism.highlightAll();
-    });
+        hljs.highlightAll();
+    }, [modelInfo]);
 
     useEffect(() => {
         if (trainingCompleted) {
@@ -236,32 +237,36 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
 
                 <div className="info-card-group">
                     {modelInfo.map((item, index) => (
-                        <div className="info-card" key={`model_info_${index}`} onClick={() => {
-                            setModelInfoCardShowDetails(prev => {
-                                if (prev.includes(index)) {
-                                    return prev.filter(i => i !== index);
-                                } else {
-                                    return [...prev, index];
-                                }
-                            });
-                        }}>
+                        <div className="info-card"
+                            key={`model_info_${index}`}
+                            onClick={() => {
+                                setModelInfoCardShowDetails(prev =>
+                                    prev.includes(index)
+                                        ? prev.filter(i => i !== index)
+                                        : [...prev, index]
+                                );
+                            }}
+                        >
                             <span className="key">{item.name}</span>
                             {item.url ? (
                                 <span className="value">
                                     <a href={item.url} target="_blank" rel="noreferrer">{item.data}</a>
                                 </span>
-                            ) : (item.data ? (
+                            ) : item.data ? (
                                 <span className="value">{item.data}</span>
-                            ) : (
-                                <pre>
-                                    <code className="language-yaml" style={{ fontSize: '14px', wordBreak: 'break-all' }}>
+                            ) : item.code ? (
+                                <pre style={{ maxHeight: modelInfoCardShowDetails.includes(index) ? "none" : "200px", overflow: "auto" }}>
+                                    <code className="language-yaml hljs" style={{ fontSize: '14px', wordBreak: 'break-word' }}>
                                         {item.code}
                                     </code>
                                 </pre>
-                            ))}
-                            {(modelInfoCardShowDetails.includes(index) && item.details) &&
-                                <span className="key" style={{ wordBreak: 'break-all' }}>详细: {item.details}</span>
-                            }
+                            ) : null}
+
+                            {(modelInfoCardShowDetails.includes(index) && item.details) && (
+                                <span className="key" style={{ wordBreak: 'break-all' }}>
+                                    详细: {item.details}
+                                </span>
+                            )}
                         </div>
                     ))}
                 </div>
