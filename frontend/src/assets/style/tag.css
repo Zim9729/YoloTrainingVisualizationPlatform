@@ -1,0 +1,18 @@
+.tag {
+    padding: 5px 8px;
+    color: var(--background-color);
+    background-color: var(--main-color);
+    border-radius: 8px;
+}
+
+.tag.turquoise {
+    background-color: var(--turquoise-color) !important;
+}
+
+.tag.yellow {
+    background-color: var(--yellow-color) !important;
+}
+
+.tag.green {
+    background-color: var(--green-color) !important;
+}

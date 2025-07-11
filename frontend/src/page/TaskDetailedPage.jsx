@@ -166,7 +166,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     }, [trainingCompleted]);
 
     return (
-        <div className="main fade-in">
+        <div className="main">
             <a href="#" onClick={() => setPageUrl("tasks")} style={{ textDecoration: 'none' }}>返回</a>
             <h1 className="page-title">{taskData.taskName || "unknown"}</h1>
             <p className="page-des">{taskData.taskDescription || "无描述"}</p>

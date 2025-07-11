@@ -1,0 +1,19 @@
+.tab-content {
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.4s ease;
+    position: absolute;
+    width: 100%;
+}
+
+.tab-content.active {
+    opacity: 1;
+    transform: translateX(0);
+    position: relative;
+}
+
+.tab-content.hidden {
+    pointer-events: none;
+    height: 0;
+    overflow: hidden;
+}

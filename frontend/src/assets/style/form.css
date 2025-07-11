@@ -1,0 +1,67 @@
+.form-group,
+.form-group-title {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+
+.form-group-title {
+    display: flex;
+}
+
+.form-group-title .step-tag {
+    font-size: 16px;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--background-color);
+    background-color: var(--main-color);
+    border-radius: 4px;
+    margin-right: 10px;
+    margin-bottom: -33px;
+}
+
+.form-group-title .step-tag.nobg {
+    color: var(--text-color);
+    background-color: #00000000 !important;
+}
+
+.form-group-title .title {
+    font-size: 18px;
+    color: var(--text-color);
+    line-height: 1;
+    margin-left: 35px;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea,
+input[type="file"] {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid var(--secondary-color);
+    border-radius: 6px;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+    border-color: var(--main-color);
+}
+
+button.btn.upload-btn {
+    margin-top: 10px;
+}
+
+label {
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-color);
+}

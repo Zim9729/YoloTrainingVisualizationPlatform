@@ -2,6 +2,9 @@ import { api } from "../api";
 import { useState, useEffect } from "react";
 import CONFIGS from "../config";
 
+import Logo_Coco from "../assets/logo/coco_sm.png";
+import Logo_Ultralytics from "../assets/logo/ultralytics.svg";
+
 function uploadDataset({ setPageUrl, datasetType, includeYaml, trainPath, valPath, testPath, nc, names }) {
     const formData = new FormData();
 
@@ -93,7 +96,7 @@ function DatasetPage({ setPageUrl, parameter }) {
             return (
                 <div className="main">
                     <h1 className="page-title">上传数据集</h1>
-                    <p className="page-des">上传 Yolo 数据集以供模型使用</p>
+                    <p className="page-des">上传数据集以供模型使用</p>
 
                     <div className="form-group">
                         <label htmlFor="datasetName">数据集名称</label>
@@ -112,11 +115,25 @@ function DatasetPage({ setPageUrl, parameter }) {
 
                     <div className="form-group">
                         <label htmlFor="datasetType">选择数据集格式</label>
-                        <select id="datasetType" value={datasetType} onChange={(e) => setDatasetType(e.target.value)}>
-                            <option value="yolo">YOLO</option>
-                            <option value="coco">COCO</option>
-                            <option value="null">其他</option>
-                        </select>
+                        <div style={{ display: 'flex', gap: '20px' }}>
+                            <div className={`card hover-enabled${datasetType == "yolo" ? " click" : ""}`} style={{ flex: '1' }} onClick={() => { setDatasetType("yolo") }}>
+                                <h1 className="title mb12">
+                                    <img src={Logo_Ultralytics} className="invert_w" style={{ height: '22px', marginRight: '12px', marginBottom: '-4px' }} />
+                                    YOLO 格式
+                                </h1>
+                            </div>
+                            <div className={`card hover-enabled${datasetType == "coco" ? " click" : ""}`} style={{ flex: '1' }} onClick={() => { setDatasetType("coco") }}>
+                                <h1 className="title mb12">
+                                    <img src={Logo_Coco} style={{ height: '22px', marginRight: '12px', marginBottom: '-4px' }} />
+                                    COCO 格式
+                                </h1>
+                            </div>
+                            <div className={`card hover-enabled${datasetType == "null" ? " click" : ""}`} style={{ flex: '1' }} onClick={() => { setDatasetType("null") }}>
+                                <h1 className="title mb12">
+                                    其他格式
+                                </h1>
+                            </div>
+                        </div>
                     </div>
                     <div className="tip-box">
                         {datasetType != "null" && <div>

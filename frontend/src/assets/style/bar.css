@@ -1,0 +1,92 @@
+.title-bar {
+    z-index: 999;
+    position: fixed;
+    top: 0;
+    app-region: drag;
+    width: 100%;
+    height: 32px;
+    background-color: var(--main-color);
+    box-shadow: 0 5px 12px var(--shadow-color);
+    text-align: center;
+}
+
+.title-bar .title {
+    font-size: 16px;
+    margin-top: 4px;
+    color: #ffffff;
+}
+
+.navbar {
+    z-index: 888;
+    box-sizing: border-box;
+    width: 240px;
+    padding: 70px 20px;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    box-shadow: 0 0 12px var(--shadow-color);
+}
+
+.navbar-item {
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-color);
+    box-shadow: 0 0 8px var(--shadow-color);
+    border-radius: 8px;
+    text-decoration: none;
+
+    transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.navbar-item:hover {
+    color: var(--background-color);
+    background-color: var(--hover-color);
+
+    transform: scale(1.05);
+}
+
+.navbar-item.clicked {
+    color: var(--background-color);
+    background-color: var(--main-color);
+
+    transform: scale(1.03);
+}
+
+.navbar-item:active {
+    transform: scale(0.96);
+}
+
+.navbar .icon {
+    margin-bottom: -2px;
+    margin-right: 8px;
+}
+
+.navbar-version {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    font-size: 12px;
+    color: var(--light-color);
+}
+
+.bottombar {
+    z-index: 999;
+    position: absolute;
+    display: flex;
+    bottom: 0;
+    left: 240px;
+    right: 0;
+    height: 44px;
+    box-sizing: border-box;
+    border-top: 2px solid var(--secondary-color);
+    background-color: var(--background-color);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.bottombar .info-text {
+    font-size: 14px;
+    color: var(--text-color);
+}
