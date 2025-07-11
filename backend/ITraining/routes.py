@@ -191,8 +191,7 @@ def create_task():
         **device_params,
     }
 
-    # 文件名：taskName_时间戳.yaml
-    filename = f"{taskName}_{timestamp}.yaml"
+    filename = f"task_{task_id}.yaml"
     file_path = os.path.join(tasks_path, filename)
 
     os.makedirs(tasks_path, exist_ok=True)

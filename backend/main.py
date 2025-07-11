@@ -17,6 +17,7 @@ def info():
     
 from IDataset.routes import IDataset_bp
 from ITraining.routes import ITraining_bp
+from IModel.routes import IModel_bp
 
 # 注册蓝图
 app.register_blueprint(
@@ -26,6 +27,10 @@ app.register_blueprint(
 app.register_blueprint(
     ITraining_bp,
     url_prefix='/ITraining'
+)
+app.register_blueprint(
+    IModel_bp,
+    url_prefix='/IModel'
 )
 
 if __name__ == '__main__':

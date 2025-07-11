@@ -7,6 +7,7 @@ TASKS_PATH = USER_HOME + "/.yolo_training_visualization_platform/tasks"
 MODELS_PATH = USER_HOME + "/.yolo_training_visualization_platform/models"
 TASKS_RESULT_FILES_PATH = USER_HOME + "/.yolo_training_visualization_platform/tasks_result_files"
 TASKS_RESULT_YAML_FILES_PATH = USER_HOME + "/.yolo_training_visualization_platform/tasks/t"
+TEST_RESULT_FILES_PATH = USER_HOME + "/.yolo_training_visualization_platform/test_result_files"
 
 YOLO_MODEL_LIST_URL = "https://api.github.com/repos/ultralytics/assets/releases/latest"
 
@@ -47,6 +48,15 @@ def get_tasks_result_files_path():
         os.makedirs(TASKS_RESULT_FILES_PATH)
         
     return TASKS_RESULT_FILES_PATH
+
+def get_test_result_files_path():
+    """
+    获取测试任务结果元数据
+    """
+    if not os.path.exists(TEST_RESULT_FILES_PATH):
+        os.makedirs(TEST_RESULT_FILES_PATH)
+        
+    return TEST_RESULT_FILES_PATH
 
 def get_tasks_yaml_file_path():
     """
