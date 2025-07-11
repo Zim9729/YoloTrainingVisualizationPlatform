@@ -37,7 +37,7 @@ function HomePage({ setPageUrl, parameter }) {
                         <div className="top-tag">4</div>
                         <h1 className="title">下载模型并测试</h1>
                         <p className="content">训练完成后可一键下载模型文件，同时可查看模型在验证集上的预测结果。</p>
-                        <button className="btn sm bottom-btn" onClick={() => { setPageUrl("models") }}>查看我的模型</button>
+                        <button className="btn sm bottom-btn" onClick={() => { setPageUrl("models?type=local") }}>查看我的模型</button>
                     </div>
                 </div>
             </div>
