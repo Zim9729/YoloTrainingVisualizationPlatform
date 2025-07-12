@@ -1,4 +1,4 @@
-from .run_in_thread import run_main_in_thread
+from run_in_thread import run_main_in_thread
 from flask import Blueprint, request
 from tools.format_output import format_output
 from config import get_tasks_path, get_tasks_result_files_path, get_tasks_yaml_file_path, get_yolo_model_list_url, get_models_path, get_yolo_model_cahce_expiration_time

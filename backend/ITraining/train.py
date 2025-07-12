@@ -5,10 +5,10 @@ import os
 import time
 import requests
 import logging
-from .stream_to_logger import StreamToLogger
+from stream_to_logger import StreamToLogger
 from tqdm import tqdm
 from ultralytics import YOLO
-from config import get_tasks_path, get_models_path, get_tasks_result_files_path
+from config import get_tasks_path, get_models_path
 
 def load_task_config(task_file, logger):
     """
@@ -69,7 +69,7 @@ def download_model(model_name, model_browser_download_url, logger):
     
     return local_path
 
-def main(taskfile_path, task_result_file_path, logger=None, task_id=None,):
+def main(taskfile_path, task_result_file_path, logger=None, task_id=None):
     start_time = int(time.time())
     
     if logger is None:

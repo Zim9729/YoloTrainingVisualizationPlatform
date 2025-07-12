@@ -1,7 +1,7 @@
 from flask import request, Blueprint
 from tools.format_output import format_output
-from .test import test_model_thread
 from config import get_test_result_files_path, get_tasks_path
+from run_in_thread import run_modeltest_in_thread
 import os
 import time
 import yaml
@@ -9,6 +9,9 @@ import shutil
 import re
 
 IModel_bp = Blueprint('IModel', __name__)
+
+TEST_THREADS = {}
+TEST_LIST = []
 
 def get_test_result_file(task_id):
     """
@@ -33,12 +36,13 @@ def run_model_test():
     """
     data = request.json
     task_id = data.get("taskID")
+    task_name = data.get("taskName")
     output_dir = data.get("outputDir")
     input_type = data.get("inputType", "image") # image 或 video
     input_path = data.get("inputPath")
     model_choice = data.get("modelType", "best")
 
-    if not task_id or not output_dir or not input_path:
+    if not task_id or not task_name or not output_dir or not input_path:
         return format_output(code=400, msg="缺少必要的参数(step:1)")
     
     timestamp = int(time.time())
@@ -63,27 +67,45 @@ def run_model_test():
         if weight_file in files:
             weight_path = os.path.join(root, weight_file)
             break
-        
-    print(weight_path)
 
     if not os.path.exists(weight_path):
         return format_output(code=404, msg=f"模型权重文件未找到: {model_choice}.pt, {weight_path}")
     
-    test_result_file_path = os.path.join(get_test_result_files_path(), f"{task_id}_{timestamp}.yaml")
+    try:
+        print(f"启动训练任务: {task_id}")
+        
+        test_result_file_path = os.path.join(get_test_result_files_path(), f"{task_id}_{timestamp}.yaml")
 
-    result_info = {
-        "model_path": weight_path,
-        "input_type": input_type,
-        "input_path": input_path,
-        "output_dir": test_output_dir,
-        "startedAt": timestamp,
-        "completedAt": None,
-    }
-    
-    with open(test_result_file_path, "w", encoding="utf-8") as f:
-        yaml.dump(result_info, f, allow_unicode=True)
+        result_info = {
+            "model_path": weight_path,
+            "input_type": input_type,
+            "input_path": os.path.join(input_file_target_path, input_filename),
+            "output_dir": test_output_dir,
+            "startedAt": timestamp,
+            "completedAt": None,
+            "log": None
+        }
+        
+        with open(test_result_file_path, "w", encoding="utf-8") as f:
+            yaml.dump(result_info, f, allow_unicode=True)
+            
+        thread, log_stream = run_modeltest_in_thread(task_id, weight_path, os.path.join(input_file_target_path, input_filename), test_output_dir, test_result_file_path, "image")
+        
+        # 保存
+        TEST_THREADS[test_result_file_path] = {
+            "thread": thread,
+            "log": log_stream,
+        }
+        TEST_LIST.append({
+            "task_id": task_id,
+            "taskname": task_name,
+            "filename": test_result_file_path
+        })
+    except:
+        print("启动测试任务失败:", e)
+        return format_output(code=500, msg=f"启动测试任务失败: {str(e)}")
 
-    return format_output(msg="测试任务启动成功", data={"output_dir": test_output_dir})
+    return format_output(msg=f"任务 {task_id} 已启动", data={"output_dir": test_output_dir, "filename": test_result_file_path})
 
 @IModel_bp.route("/getAllTest", methods=['GET'])
 def get_all_test():
@@ -119,13 +141,50 @@ def get_all_test():
                     if os.path.exists(candidate):
                         data["result_file_path"] = candidate
                         break
+                    
+            test_info = TEST_THREADS.get(item)
+            is_running = test_info["thread"].is_alive()
+            data["is_running"] = is_running
         except Exception as e:
             data["result_file_path"] = None
+            data["is_running"] = None
             
         r_data.append(data)
     
     return format_output(data={
         "test": r_data
+    })
+    
+@IModel_bp.route("/getTaskLog", methods=["GET"])
+def get_task_log():
+    """
+    获取测试任务的终端输出
+    """
+    filename = request.args.get("filename")
+    if not filename:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+    
+    print(TEST_THREADS)
+
+    task_info = TEST_THREADS.get(filename)
+    if not task_info:
+        return format_output(code=404, msg="任务未在运行，或不存在")
+
+    log_q = task_info["log"]
+    logs = []
+    while not log_q.empty():
+        logs.append(log_q.get())
+
+    if "log_cache" not in task_info:
+        task_info["log_cache"] = []
+    task_info["log_cache"].extend(logs)
+
+    log_text = "\n".join(task_info["log_cache"])
+    is_running = task_info["thread"].is_alive()
+
+    return format_output(data={
+        "log": log_text,
+        "is_running": is_running
     })
     
 @IModel_bp.route("/getAllTrainedModel", methods=['GET'])
