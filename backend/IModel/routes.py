@@ -7,6 +7,9 @@ import time
 import yaml
 import shutil
 import re
+import json
+import base64
+import mimetypes
 
 IModel_bp = Blueprint('IModel', __name__)
 
@@ -28,6 +31,24 @@ def get_test_result_file(task_id):
         return matched_files, False
     except Exception as e:
         return -1, e
+
+def save_test_list():
+    """
+    保存测试任务列表
+    """
+    with open("test_list.json", "w", encoding="utf-8") as f:
+        json.dump(TEST_LIST, f, ensure_ascii=False, indent=2)
+
+def load_test_list():
+    """
+    加载测试任务列表
+    """
+    global TEST_LIST
+    try:
+        with open("test_list.json", "r", encoding="utf-8") as f:
+            TEST_LIST = json.load(f)
+    except FileNotFoundError:
+        TEST_LIST = []
 
 @IModel_bp.route("/runModelTest", methods=['POST'])
 def run_model_test():
@@ -101,6 +122,7 @@ def run_model_test():
             "taskname": task_name,
             "filename": test_result_file_path
         })
+        save_test_list()
     except:
         print("启动测试任务失败:", e)
         return format_output(code=500, msg=f"启动测试任务失败: {str(e)}")
@@ -141,13 +163,17 @@ def get_all_test():
                     if os.path.exists(candidate):
                         data["result_file_path"] = candidate
                         break
-                    
+        except Exception as e:
+            data["result_file_path"] = None
+            
+        try:
             test_info = TEST_THREADS.get(item)
             is_running = test_info["thread"].is_alive()
             data["is_running"] = is_running
         except Exception as e:
-            data["result_file_path"] = None
-            data["is_running"] = None
+            data["is_running"] = False
+        
+        data["task_id"] = task_id
             
         r_data.append(data)
     
@@ -244,3 +270,50 @@ def get_all_trained_models():
         trained_models.append(model_info)
 
     return format_output(data={"models": trained_models})
+
+@IModel_bp.route("/getTestResultImageBase64", methods=["GET"])
+def get_test_result_image_base64():
+    """
+    获取测试任务的结果图片的 Base64 内容
+    """
+    task_id = request.args.get("taskID")
+    file_path = request.args.get("filePath")
+
+    if not task_id or not file_path:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    matched_files, e = get_test_result_file(task_id)
+    if e or not matched_files:
+        return format_output(code=404, msg=f"未找到测试任务ID为 {task_id} 的结果文件")
+
+    try:
+        for item in matched_files:
+            with open(item, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f.read())
+
+            output_dir = data.get("output_dir")
+            if not output_dir:
+                continue
+
+            abs_file_path = os.path.join(output_dir, file_path)
+            if not os.path.exists(abs_file_path):
+                continue
+
+            mime_type, _ = mimetypes.guess_type(abs_file_path)
+            if mime_type and mime_type.startswith("image"):
+                with open(abs_file_path, "rb") as img_file:
+                    b64_data = base64.b64encode(img_file.read()).decode("utf-8")
+                return format_output(data={
+                    "type": "image",
+                    "mime": mime_type,
+                    "base64": f"data:{mime_type};base64,{b64_data}"
+                })
+
+            return format_output(code=415, msg="目标文件不是图片类型")
+
+        return format_output(code=404, msg="未找到匹配的输出路径或文件不存在")
+
+    except Exception as e:
+        return format_output(code=500, msg=f"读取图片文件失败: {str(e)}")
+
+load_test_list()
