@@ -36,7 +36,8 @@ def save_test_list():
     """
     保存测试任务列表
     """
-    with open("test_list.json", "w", encoding="utf-8") as f:
+    test_list_file_path = os.path.join(get_test_result_files_path(), "test_list.json")
+    with open(test_list_file_path, "w", encoding="utf-8") as f:
         json.dump(TEST_LIST, f, ensure_ascii=False, indent=2)
 
 def load_test_list():
@@ -45,7 +46,8 @@ def load_test_list():
     """
     global TEST_LIST
     try:
-        with open("test_list.json", "r", encoding="utf-8") as f:
+        test_list_file_path = os.path.join(get_test_result_files_path(), "test_list.json")
+        with open(test_list_file_path, "r", encoding="utf-8") as f:
             TEST_LIST = json.load(f)
     except FileNotFoundError:
         TEST_LIST = []
