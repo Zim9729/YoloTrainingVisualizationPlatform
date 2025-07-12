@@ -39,4 +39,5 @@ frontend/.output/
 *.sln
 *.sw?
 
-**/*..pyc
+*.pyc
+**/__pycache__/
