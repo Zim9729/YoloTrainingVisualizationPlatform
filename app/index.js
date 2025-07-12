@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 const createWindow = () => {
     const win = new BrowserWindow({
@@ -36,7 +37,20 @@ app.whenReady().then(() => {
             return null;
         }
 
-        return result.filePaths[0]; 
+        return result.filePaths[0];
+    });
+
+    ipcMain.handle('open_local_folder', async (event, folderPath) => {
+        try {
+            if (fs.existsSync(folderPath) && fs.lstatSync(folderPath).isDirectory()) {
+                await shell.openPath(folderPath);
+                return { success: true };
+            } else {
+                return { success: false, error: '路径不存在或不是一个文件夹' };
+            }
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
     });
 })
 

@@ -4,6 +4,7 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 
 import CONFIGS from "../config";
+import { pathJoin } from "../tools";
 
 import Icon_Terminal_fill from "../assets/icons/terminal-fill.svg";
 import Icon_Box_seam_fill from "../assets/icons/box-seam-fill.svg";
@@ -212,6 +213,10 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
         return index === -1 ? Infinity : index;
     };
 
+    const openLocalFolder = async (path) => {
+        const result = await window.electronAPI.openLocalFolder(path);
+    };
+
     useEffect(() => {
         console.log(taskResultData);
     }, [taskResultData]);
@@ -226,8 +231,12 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                 来自任务「{parameter.taskName || "Unknown"}」
             </p>
 
-            <span style={{ fontSize: '18px', marginBottom: '14px' }}>
+            <span style={{ fontSize: '18px', marginBottom: '8px' }}>
                 自 <span className="task-result-detailed-time">{new Date(taskResultData.startedAt * 1000).toLocaleString()}</span> - 至 <span className="task-result-detailed-time">{new Date(taskResultData.completedAt * 1000).toLocaleString()}</span>
+            </span>
+
+            <span style={{ fontSize: '14px', marginBottom: '18px' }}>
+                训练结果位于<span onClick={() => openLocalFolder(taskResultData.outputDir)} style={{ wordBreak: 'break-all', cursor: 'pointer' }}>{taskResultData.outputDir}</span>
             </span>
 
             {taskResultData.outputFiles && (
@@ -238,7 +247,7 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                         </h1>
                         <h1 className="title">
                             模型
-                            <button className="btn sm" style={{position: 'relative', top: '-2px', marginLeft: '15px'}} onClick={() => setPageUrl(`models?type=trained`)}>进行测试</button>
+                            <button className="btn sm" style={{ position: 'relative', top: '-2px', marginLeft: '15px' }} onClick={() => setPageUrl(`models?type=trained`)}>进行测试</button>
                         </h1>
                     </div>
 
@@ -251,7 +260,9 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                                 return 0;
                             })
                             .map((item, index) => (
-                                <div className="info-card" key={`model_file_${index}`}>
+                                <div className="info-card" key={`model_file_${index}`} onClick={() => {
+                                    openLocalFolder(pathJoin(taskResultData.outputDir, "weights"));
+                                }}>
                                     <span className="value">
                                         {item}
                                     </span>
