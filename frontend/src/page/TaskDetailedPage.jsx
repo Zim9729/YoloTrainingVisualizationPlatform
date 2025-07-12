@@ -181,7 +181,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                     <span className="tag green" style={{ display: 'flex', alignItems: 'center' }}>
                         🎉 训练完成
                     </span>
-                    <a href="#" onClick={() => setPageUrl("models?type=local")} style={{ marginBottom: '20px' }}>点击此处下载模型</a>
+                    <a href="#" onClick={() => setPageUrl("models?type=trained")} style={{ marginBottom: '20px' }}>点击此处下载模型</a>
                 </>
             }
 
