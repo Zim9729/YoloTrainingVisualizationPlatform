@@ -101,7 +101,7 @@ function ModelsPage({ setPageUrl, parameter }) {
                                 ))}
 
                                 {Object.keys(model.weights).filter(k => /^epoch\d+\.pt$/.test(k)).length > 0 && (
-                                    <div style={{ marginTop: '8px', color: '#888' }}>
+                                    <div style={{ marginTop: '8px', color: 'var(--secondary-text-color)' }}>
                                         其他周期模型文件: {Object.keys(model.weights).filter(k => /^epoch\d+\.pt$/.test(k)).length} 个
                                     </div>
                                 )}

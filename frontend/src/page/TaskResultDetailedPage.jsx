@@ -253,7 +253,7 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
 
                     <div className="info-card-group">
                         {taskResultData.outputFiles
-                            .filter(f => f.startsWith("weights/") || f.endsWith(".pt"))
+                            .filter(f => (f.startsWith("weights/") && f.endsWith(".pt")))
                             .sort((a, b) => {
                                 if (a === "weights/best.pt") return -1;
                                 if (b === "weights/best.pt") return 1;
@@ -316,7 +316,7 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
 
                     <div className="info-card-group img-group">
                         {taskResultData.outputFiles
-                            .filter(f => /\.(png|jpg|jpeg)$/i.test(f) && !f.includes("labels.cache"))
+                            .filter(f => /\.(png|jpg|jpeg)$/i.test(f) && !f.includes("labels.cache") && !/^(\.DS_Store|Thumbs\.db)$/i.test(f))
                             .sort((a, b) => getImageFilePriority(a) - getImageFilePriority(b))
                             .map((item, index) => (
                                 <div className="info-card" onClick={() => {
