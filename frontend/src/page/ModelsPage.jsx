@@ -42,7 +42,7 @@ function ModelsPage({ setPageUrl, parameter }) {
 
     const startModelTest = (taskID, taskName, folder, weightsArray, outputDir) => {
         const weights = weightsArray.join(",");
-        setPageUrl(`modelTest?taskID=${taskID}&taskName=${taskName}&folder=${folder}&weights=${weights}&outputDir=${outputDir}`);
+        setPageUrl(`modelTest?type=newTest&taskID=${taskID}&taskName=${taskName}&folder=${folder}&weights=${weights}&outputDir=${outputDir}`);
     };
 
     return (
@@ -61,7 +61,7 @@ function ModelsPage({ setPageUrl, parameter }) {
 
             {showModelType === 0 &&
                 localModelList.map((item, index) => (
-                    <div key={index} className="card pointer">
+                    <div key={index} className="card pointer" style={{ wordBreak: 'break-all' }}>
                         <p className="title">{item.name}</p>
                         <p className="content">
                             {item.path}
@@ -82,7 +82,7 @@ function ModelsPage({ setPageUrl, parameter }) {
                         同一任务可能包含多个训练结果，请务必核查训练时间
                     </div>
                     {trainedModelList.map((model, index) => (
-                        <div key={index} className="card pointer" style={{ marginBottom: '20px' }}>
+                        <div key={index} className="card pointer" style={{ marginBottom: '20px', wordBreak: 'break-all' }}>
                             <p className="title">
                                 {model.task_name || "Unknown"} <span style={{ fontSize: '16px' }}>#{model.task_id}</span>
                             </p>
@@ -94,7 +94,7 @@ function ModelsPage({ setPageUrl, parameter }) {
                             <p className="content">
                                 {["best.pt", "last.pt"].map(key => (
                                     model.weights[key] && (
-                                        <div key={key} style={{ wordBreak: 'break-all' }}>
+                                        <div key={key}>
                                             <strong>{key}</strong>: {model.weights[key]}
                                         </div>
                                     )
@@ -106,7 +106,10 @@ function ModelsPage({ setPageUrl, parameter }) {
                                     </div>
                                 )}
                             </p>
-                            <button className="btn sm" onClick={() => startModelTest(model.task_id, model.task_name, model.folder, Object.keys(model.weights), model.output_dir)}>进行测试</button>
+                            <button className="btn sm" onClick={() => startModelTest(model.task_id, model.task_name, model.folder, Object.keys(model.weights), model.output_dir)} style={{ marginRight: '8px' }}>进行测试</button>
+                            <button className="btn sm" onClick={() => {
+                                setPageUrl(`modelTest?taskName=${model.task_name}&startedAt=${new Date(parseInt(model.folder.split('_')[2]) * 1000).toLocaleString()}&folder=${model.folder}`)
+                            }}>查看测试历史记录</button>
                         </div>
                     ))}
                 </>
