@@ -68,8 +68,21 @@ a:hover {
 }
 
 .banner {
-    height: 140px;
-    padding: 40px 63px;
+    min-height: 65px;
+    margin: 24px 0;
+    padding: 24px 50px;
+    border-radius: 14px;
+    box-shadow: 0 0 12px var(--shadow-color);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.banner:hover {
+    transform: scale(1.02);
+}
+
+.banner:active {
+    transform: scale(0.99);
 }
 
 .page-title {
@@ -120,4 +133,13 @@ a:hover {
 .task-result-detailed-time {
     font-size: 26px;
     font-weight: bold;
+}
+
+.home-page-title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.home-page-title .icon{
+    margin-right: 8px;
 }

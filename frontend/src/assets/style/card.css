@@ -18,6 +18,10 @@
     transition: all 0.3s ease;
 }
 
+.card.b-transform {
+    transition: all 0.2s ease;
+}
+
 .card.click {
     cursor: pointer;
     color: var(--background-color);
@@ -30,6 +34,14 @@
 
 .card:active {
     transform: scale(0.99);
+}
+
+.card.b-transform:hover {
+    transform: scale(1.05);
+}
+
+.card.b-transform:active {
+    transform: scale(0.95);
 }
 
 .card.pointer {
