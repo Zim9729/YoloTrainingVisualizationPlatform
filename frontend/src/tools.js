@@ -11,6 +11,14 @@ function pathJoin(...parts) {
         .join(separator);
 }
 
+function splitPath(filePath) {
+    return filePath
+        .replace(/\\/g, '/') 
+        .split('/')
+        .filter(Boolean);
+}
+
 export {
-    pathJoin
+    pathJoin,
+    splitPath
 };

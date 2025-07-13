@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
+import { splitPath } from "../tools";
 import confetti from 'canvas-confetti';
 import yaml from 'js-yaml';
 import hljs from 'highlight.js';
@@ -82,7 +83,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
         if (taskData.trainingType == 0) {
             setBasicInfo([
                 { name: "创建时间", data: new Date(taskData.createTime * 1000).toLocaleString() },
-                { name: "数据集", data: taskData.datasetPath ? taskData.datasetPath.split("/").pop() : "", details: taskData.datasetPath },
+                { name: "数据集", data: taskData.datasetPath ? splitPath(taskData.datasetPath).pop() : "", details: taskData.datasetPath },
                 { name: "训练轮数 (epochs)", data: taskData.epochs },
                 { name: "每批训练样本数量 (batchSize)", data: taskData.batchSize },
                 { name: "输入图像尺寸 (imgSize)", data: taskData.imgSize },
@@ -105,7 +106,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                 { name: "创建时间", data: new Date(taskData.createTime * 1000).toLocaleString() },
                 {
                     name: "数据集",
-                    data: taskData.datasetPath ? taskData.datasetPath.split("/").pop() : "",
+                    data: taskData.datasetPath ? splitPath(taskData.datasetPath).pop() : "",
                     details: taskData.datasetPath
                 },
                 { name: "训练轮数 (epochs)", data: taskData.epochs },

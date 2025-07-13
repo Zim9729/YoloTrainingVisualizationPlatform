@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
+import { splitPath } from "../tools";
 
 import Icon_Box_seam_fill from "../assets/icons/box-seam-fill.svg";
 import Icon_Calendar_fill from "../assets/icons/calendar-fill.svg";
@@ -212,11 +213,11 @@ function ModelTestPage({ setPageUrl, parameter }) {
                                                                 </span>
                                                                 <br />
                                                                 <span style={{ fontSize: '14px', color: 'var(--secondary-text-color)' }}>
-                                                                    测试图片来自 {test.input_path.split('/').pop()}
+                                                                    测试图片来自 {splitPath(test.input_path).pop()}
                                                                 </span>
                                                                 <br />
                                                                 <span style={{ fontSize: '14px', color: 'var(--secondary-text-color)' }}>
-                                                                    使用 {test.model_path.split('/').pop()} 进行测试
+                                                                    使用 {splitPath(test.model_path).pop()} 进行测试
                                                                 </span>
                                                             </div>
 
