@@ -283,24 +283,22 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                         .slice()
                         .sort((a, b) => b.startedAt - a.startedAt)
                         .map((item, index) => (
-                            <div className="list-card" key={`task_history_${index}`}>
-                                <div onClick={() => {
-                                    if (item.completedAt != null) {
-                                        setPageUrl(`taskResultDetailed?taskID=${item.taskID}&startedAt=${item.startedAt}&taskName=${taskData.taskName}`);
-                                    }
-                                }}>
-                                    <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
-                                        {new Date(item.startedAt * 1000).toLocaleString()} - {item.completedAt != null ? new Date(item.completedAt * 1000).toLocaleString() : "无记录"}
+                            <div className="list-card" key={`task_history_${index}`} onClick={() => {
+                                if (item.completedAt != null) {
+                                    setPageUrl(`taskResultDetailed?taskID=${item.taskID}&startedAt=${item.startedAt}&taskName=${taskData.taskName}`);
+                                }
+                            }}>
+                                <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
+                                    {new Date(item.startedAt * 1000).toLocaleString()} - {item.completedAt != null ? new Date(item.completedAt * 1000).toLocaleString() : "无记录"}
+                                </span>
+                                <br />
+                                {item.completedAt == null ? (
+                                    <span style={{ color: 'var(--red-color)', fontSize: '14px' }}>该训练暂无结果</span>
+                                ) : (
+                                    <span style={{ color: 'var(--secondary-text-color)', fontSize: '14px' }}>
+                                        训练结果: {item.outputDir || "unknown"}
                                     </span>
-                                    <br />
-                                    {item.completedAt == null ? (
-                                        <span style={{ color: 'var(--red-color)', fontSize: '14px' }}>该训练暂无结果</span>
-                                    ) : (
-                                        <span style={{ color: 'var(--secondary-text-color)', fontSize: '14px' }}>
-                                            训练结果: {item.outputDir || "unknown"}
-                                        </span>
-                                    )}
-                                </div>
+                                )}
                             </div>
                         ))}
                     {taskHistory.length == 0 &&
