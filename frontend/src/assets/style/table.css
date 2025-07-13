@@ -1,0 +1,36 @@
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th,
+td {
+    padding: 10px;
+    border: 1px solid var(--secondary-color);
+    text-align: left;
+    font-size: 14px;
+}
+
+.config-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.config-table tr:hover {
+    cursor: pointer;
+}
+
+.config-table td {
+    border: 1px solid var(--light-color);
+    padding: 8px 12px;
+    vertical-align: top;
+}
+
+.config-table td:first-child {
+    font-weight: bold;
+    width: 180px;
+    color: var(--text-color);
+    background-color: var(--background-color);
+}

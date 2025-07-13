@@ -35,12 +35,6 @@ function Navbar({ pageUrl, setPageUrl }) {
             name: '模型',
             icon: Icon_Box_seam_fill,
             pageUrl: 'models'
-        },
-        {
-            id: '5',
-            name: '设置',
-            icon: Icon_Gear_fill,
-            pageUrl: 'settings'
         }
     ]
 
@@ -71,6 +65,12 @@ function Navbar({ pageUrl, setPageUrl }) {
             ))}
 
             <p className="navbar-version">
+                <button className="btn sm" onClick={() => {
+                    window.open("https://github.com/chzane/YoloTrainingVisualizationPlatform/issues")
+                }}>
+                    BUG 反馈
+                </button>
+                <br />
                 <a href="https://github.com/chzane/YoloTrainingVisualizationPlatform" style={{ color: 'var(--light-color)' }} target="_blank">关于</a>
                 <br />
                 前端版本: {CONFIGS.FRONTEND_VERSION}

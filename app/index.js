@@ -1,10 +1,17 @@
-const { app, BrowserWindow } = require('electron/main')
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const path = require('path');
+const fs = require('fs');
 
 const createWindow = () => {
     const win = new BrowserWindow({
         width: 1400,
         height: 800,
-        titleBarStyle: 'hidden'
+        titleBarStyle: 'hidden',
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true,
+            nodeIntegration: false
+        }
     })
 
     // 开发环境下使用 Vite 的开发服务器
@@ -19,6 +26,32 @@ app.whenReady().then(() => {
             createWindow()
         }
     })
+
+    ipcMain.handle('select-file', async () => {
+        const result = await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: [{ name: 'Images', extensions: ['jpg', 'png', 'jpeg', 'webp'] }]
+        });
+
+        if (result.canceled || result.filePaths.length === 0) {
+            return null;
+        }
+
+        return result.filePaths[0];
+    });
+
+    ipcMain.handle('open_local_folder', async (event, folderPath) => {
+        try {
+            if (fs.existsSync(folderPath) && fs.lstatSync(folderPath).isDirectory()) {
+                await shell.openPath(folderPath);
+                return { success: true };
+            } else {
+                return { success: false, error: '路径不存在或不是一个文件夹' };
+            }
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
 })
 
 app.on('window-all-closed', () => {

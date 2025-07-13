@@ -1,0 +1,220 @@
+.card-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.card-group .card {
+    flex: 1;
+}
+
+.card {
+    color: var(--text-color);
+    background-color: var(--background-color);
+    box-shadow: 0 0 12px var(--shadow-color);
+    border-radius: 15px;
+    padding: 5px 20px;
+    transition: all 0.3s ease;
+}
+
+.card.b-transform {
+    transition: all 0.2s ease;
+}
+
+.card.click {
+    cursor: pointer;
+    color: var(--background-color);
+    background-color: var(--main-color);
+}
+
+.card:hover {
+    transform: scale(1.02);
+}
+
+.card:active {
+    transform: scale(0.99);
+}
+
+.card.b-transform:hover {
+    transform: scale(1.05);
+}
+
+.card.b-transform:active {
+    transform: scale(0.95);
+}
+
+.card.pointer {
+    cursor: pointer;
+}
+
+.card.hover-enabled:hover .title,
+.card.click .title {
+    color: var(--background-color);
+}
+
+.card.hover-enabled:hover {
+    cursor: pointer;
+    color: var(--background-color);
+    background-color: var(--hover-color);
+}
+
+.card.hover-enabled:hover img.invert_w,
+.card.hover-enabled.click img.invert_w {
+    filter: invert(0%);
+}
+
+.card.hover-enabled img.invert_w {
+    filter: invert(100%);
+}
+
+.card .btn {
+    margin-bottom: 10px;
+}
+
+.card .title {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: -10px;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.card .title.mb12 {
+    margin-bottom: 12px;
+}
+
+.card .content {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--secondary-text-color);
+}
+
+.card .top-tag {
+    position: relative;
+    left: -30px;
+    top: -15px;
+    width: 32px;
+    height: 32px;
+    color: var(--background-color);
+    background-color: var(--main-color);
+    border-radius: 50%;
+    text-align: center;
+    font-size: 21px;
+    font-weight: bold;
+    margin-bottom: -20px;
+}
+
+.card .tag-group {
+    margin-bottom: -5px;
+}
+
+.card .bottom-btn {
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.tip-box {
+    border: 1px solid var(--secondary-color);
+    border-radius: 8px;
+    padding: 10px 30px;
+    font-size: 14px;
+    color: var(--text-color);
+    margin-bottom: 20px;
+}
+
+.info-card-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.info-card-group.img-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.info-card-group.img-group .info-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-card-group.img-group .info-card .filename {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.info-card-group.img-group .info-card .explanation {
+    font-size: 14px;
+    color: var(--secondary-text-color);
+}
+
+@media (max-width: 768px) {
+    .info-card-group.img-group {
+        grid-template-columns: 1fr;
+    }
+}
+
+.info-card,
+.list-card {
+    padding: 20px;
+    background-color: var(--background-color);
+    border-radius: 12px;
+    box-shadow: 0 0 12px var(--shadow-color);
+    cursor: pointer;
+    word-break: break-all;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.info-card {
+    flex: 1 1 200px;
+}
+
+.info-card .key {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-title-color, var(--secondary-text-color));
+    margin-bottom: 6px;
+    display: block;
+}
+
+.info-card .value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-sub-color, var(--text-color));
+    word-break: break-all;
+}
+
+.info-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 12px 24px var(--shadow-color);
+}
+
+.list-card:hover,
+.list-card.clicked {
+    transform: scale(1.01);
+    box-shadow: 0 12px 24px var(--shadow-color);
+}
+
+.info-card:active {
+    transform: scale(0.98);
+}
+
+.list-card:active {
+    transform: scale(0.995);
+}
+
+.list-card {
+    flex: 1 1 100%;
+    margin-bottom: 20px;
+}
+
+.task-detail-box {
+    margin-top: 20px;
+}

@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
-import Prism from "prismjs";
-import "prismjs/themes/prism.css";
+import { splitPath } from "../tools";
+import confetti from 'canvas-confetti';
+import yaml from 'js-yaml';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css';
 
 import TerminalViewer from "../components/TerminalViewer";
 
@@ -12,11 +15,12 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     const [taskData, setTaskData] = useState({});
     const [taskHistory, setTaskHistory] = useState([]);
     const [infoCardShowDetails, setInfoCardShowDetails] = useState([]);
-    const [modelInfoCardShowDetails, setModelInfoCardShowDetails] = useState([]);
     const [isRunning, setIsRunning] = useState(false);
     const [trainingCompleted, setTrainingCompleted] = useState(false);
     const [basicInfo, setBasicInfo] = useState([]);
     const [modelInfo, setModelInfo] = useState([]);
+
+    const [showModelInfoCardDetails, setShowModelInfoCardDetails] = useState([]);
 
     const startTask = (filename, taskname, taskID) => {
         if (confirm("真的要开始训练该任务吗？")) {
@@ -79,7 +83,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
         if (taskData.trainingType == 0) {
             setBasicInfo([
                 { name: "创建时间", data: new Date(taskData.createTime * 1000).toLocaleString() },
-                { name: "数据集", data: taskData.datasetPath ? taskData.datasetPath.split("/").pop() : "", details: taskData.datasetPath },
+                { name: "数据集", data: taskData.datasetPath ? splitPath(taskData.datasetPath).pop() : "", details: taskData.datasetPath },
                 { name: "训练轮数 (epochs)", data: taskData.epochs },
                 { name: "每批训练样本数量 (batchSize)", data: taskData.batchSize },
                 { name: "输入图像尺寸 (imgSize)", data: taskData.imgSize },
@@ -102,7 +106,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                 { name: "创建时间", data: new Date(taskData.createTime * 1000).toLocaleString() },
                 {
                     name: "数据集",
-                    data: taskData.datasetPath ? taskData.datasetPath.split("/").pop() : "",
+                    data: taskData.datasetPath ? splitPath(taskData.datasetPath).pop() : "",
                     details: taskData.datasetPath
                 },
                 { name: "训练轮数 (epochs)", data: taskData.epochs },
@@ -115,7 +119,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
             setModelInfo([
                 {
                     name: "模型结构文件",
-                    code: taskData.modelYamlFile
+                    code: yaml.dump(taskData.yamlFile)
                 }
             ]);
         }
@@ -150,11 +154,21 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     }, [taskData, isRunning]);
 
     useEffect(() => {
-        Prism.highlightAll();
+        if (trainingCompleted) {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    }, [trainingCompleted]);
+
+    useEffect(() => {
+        hljs.highlightAll();
     });
 
     return (
-        <div className="main fade-in">
+        <div className="main">
             <a href="#" onClick={() => setPageUrl("tasks")} style={{ textDecoration: 'none' }}>返回</a>
             <h1 className="page-title">{taskData.taskName || "unknown"}</h1>
             <p className="page-des">{taskData.taskDescription || "无描述"}</p>
@@ -168,7 +182,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                     <span className="tag green" style={{ display: 'flex', alignItems: 'center' }}>
                         🎉 训练完成
                     </span>
-                    <a href="#" onClick={() => setPageUrl("models")} style={{ marginBottom: '20px' }}>点击此处下载模型</a>
+                    <a href="#" onClick={() => setPageUrl("models?type=trained")} style={{ marginBottom: '20px' }}>点击此处下载模型</a>
                 </>
             }
 
@@ -199,13 +213,11 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                 <div className="info-card-group">
                     {basicInfo.map((item, index) => (
                         <div className="info-card" key={`basic_info_${index}`} onClick={() => {
-                            setInfoCardShowDetails(prev => {
-                                if (prev.includes(index)) {
-                                    return prev.filter(i => i !== index);
-                                } else {
-                                    return [...prev, index];
-                                }
-                            });
+                            setInfoCardShowDetails(prev =>
+                                prev.includes(index)
+                                    ? prev.filter(i => i !== index)
+                                    : [...prev, index]
+                            );
                         }}>
                             <span className="key">{item.name}</span>
                             <span className="value">{item.data}</span>
@@ -225,32 +237,36 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
 
                 <div className="info-card-group">
                     {modelInfo.map((item, index) => (
-                        <div className="info-card" key={`model_info_${index}`} onClick={() => {
-                            setModelInfoCardShowDetails(prev => {
-                                if (prev.includes(index)) {
-                                    return prev.filter(i => i !== index);
-                                } else {
-                                    return [...prev, index];
-                                }
-                            });
-                        }}>
+                        <div className="info-card"
+                            key={`model_info_${index}`}
+                            onClick={() => {
+                                setShowModelInfoCardDetails(prev =>
+                                    prev.includes(index)
+                                        ? prev.filter(i => i !== index)
+                                        : [...prev, index]
+                                );
+                            }}
+                        >
                             <span className="key">{item.name}</span>
                             {item.url ? (
                                 <span className="value">
                                     <a href={item.url} target="_blank" rel="noreferrer">{item.data}</a>
                                 </span>
-                            ) : (item.data ? (
+                            ) : item.data ? (
                                 <span className="value">{item.data}</span>
-                            ) : (
-                                <pre>
-                                    <code className="language-yaml" style={{ fontSize: '14px', wordBreak: 'break-all' }}>
+                            ) : item.code ? (
+                                <pre style={{ maxHeight: showModelInfoCardDetails.includes(index) ? "none" : "200px", overflow: "auto" }}>
+                                    <code className="language-yaml hljs" style={{ fontSize: '14px', wordBreak: 'break-word' }}>
                                         {item.code}
                                     </code>
                                 </pre>
-                            ))}
-                            {(modelInfoCardShowDetails.includes(index) && item.details) &&
-                                <span className="key" style={{ wordBreak: 'break-all' }}>详细: {item.details}</span>
-                            }
+                            ) : null}
+
+                            {(showModelInfoCardDetails.includes(index) && item.details) && (
+                                <span className="key" style={{ wordBreak: 'break-all' }}>
+                                    详细: {item.details}
+                                </span>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -267,7 +283,11 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                         .slice()
                         .sort((a, b) => b.startedAt - a.startedAt)
                         .map((item, index) => (
-                            <div className="list-card" key={`task_history_${index}`}>
+                            <div className="list-card" key={`task_history_${index}`} onClick={() => {
+                                if (item.completedAt != null) {
+                                    setPageUrl(`taskResultDetailed?taskID=${item.taskID}&startedAt=${item.startedAt}&taskName=${taskData.taskName}`);
+                                }
+                            }}>
                                 <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
                                     {new Date(item.startedAt * 1000).toLocaleString()} - {item.completedAt != null ? new Date(item.completedAt * 1000).toLocaleString() : "无记录"}
                                 </span>
