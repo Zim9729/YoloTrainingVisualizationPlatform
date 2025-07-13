@@ -40,4 +40,8 @@ frontend/.output/
 *.sw?
 
 *.pyc
-**/__pycache__/
+**/__pycache__
+
+# Build
+*.spec
+**/build
