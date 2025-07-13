@@ -35,12 +35,6 @@ function Navbar({ pageUrl, setPageUrl }) {
             name: '模型',
             icon: Icon_Box_seam_fill,
             pageUrl: 'models'
-        },
-        {
-            id: '5',
-            name: '设置',
-            icon: Icon_Gear_fill,
-            pageUrl: 'settings'
         }
     ]
 
