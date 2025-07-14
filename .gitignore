@@ -45,3 +45,4 @@ frontend/.output/
 # Build
 *.spec
 **/build
+**/resources

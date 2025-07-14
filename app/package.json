@@ -4,11 +4,56 @@
   "main": "index.js",
   "repository": "https://github.com/chzane/YoloTrainingVisualizationPlatform/",
   "author": "chzane",
+  "build": {
+    "appId": "com.solariix.yolo_training_visualization_app",
+    "productName": "YoloTrainingVisualizationApp",
+    "files": [
+      "index.js",
+      "preload.js",
+      {
+        "from": "resources",
+        "to": "resources",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "asarUnpack": [
+      "resources/backend/**"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/backend",
+        "to": "resources/backend"
+      }
+    ]
+  },
   "scripts": {
-    "dev": "electron ."
+    "dev": "electron .",
+    "build": "electron-builder"
   },
   "license": "MIT",
   "dependencies": {
-    "electron": "^37.2.0"
+    "electron-squirrel-startup": "^1.0.1",
+    "python-shell": "^5.0.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.8.1",
+    "@electron-forge/maker-deb": "^7.8.1",
+    "@electron-forge/maker-rpm": "^7.8.1",
+    "@electron-forge/maker-squirrel": "^7.8.1",
+    "@electron-forge/maker-zip": "^7.8.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.8.1",
+    "@electron-forge/plugin-fuses": "^7.8.1",
+    "@electron/fuses": "^1.8.0",
+    "babel-runtime": "^6.26.0",
+    "electron": "^37.2.1",
+    "electron-builder": "^26.0.12"
   }
 }
