@@ -1,6 +1,25 @@
+<div align="center">
+
 # YOLO 可视化训练平台
 
-一个基于 Electron + Flask 的跨平台 YOLO 模型训练可视化工具，支持数据集上传、模型训练、训练进度监控、模型测试及结果可视化，旨在降低视觉学习检测任务的入门门槛。
+#### 一个基于 Electron + Flask 的跨平台 YOLO 模型训练可视化工具，支持数据集上传、模型训练、训练进度监控、模型测试及结果可视化，旨在降低视觉学习检测任务的入门门槛。
+
+简体中文 · [English](./README_en.md)
+
+</div>
+
+## 🖼️ 截图
+
+<table>
+  <tr>
+    <td><img src="screenshot/s_1.png" /></td>
+    <td><img src="screenshot/s_2.png" /></td>
+  </tr>
+  <tr>
+    <td><img src="screenshot/s_3.png" /></td>
+    <td><img src="screenshot/s_4.png" /></td>
+  </tr>
+</table>
 
 ## ✨ 功能
 
@@ -69,6 +88,7 @@ cd frontend
 yarn build
 
 cd backend
+# 运行前，请先将main.py中的debug改为Flase
 pyinstaller --onefile main.py
 
 # 将 frontend/dist/ 移动到 app/ 内
@@ -99,7 +119,7 @@ Yolo_Training_Visualization_Platform/
 欢迎提交 PR 或 issue！你可以：
 
 * 提交 bug 报告
-* 增加新的功能模块（如视频测试、可视化分析等）
+* 增加新的功能模块
 * 提出 UI/UX 优化建议
 
 ## 📄 许可证
