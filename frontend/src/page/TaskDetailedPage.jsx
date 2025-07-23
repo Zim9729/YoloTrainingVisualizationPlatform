@@ -180,9 +180,8 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
             {trainingCompleted &&
                 <>
                     <span className="tag green" style={{ display: 'flex', alignItems: 'center' }}>
-                        🎉 训练完成
+                        🎉 训练完成，在下方查看训练结果
                     </span>
-                    <a href="#" onClick={() => setPageUrl("models?type=trained")} style={{ marginBottom: '20px' }}>点击此处下载模型</a>
                 </>
             }
 
