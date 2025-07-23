@@ -155,8 +155,8 @@ def main(taskfile_path, task_result_file_path, logger=None, task_id=None):
                 model_path = os.path.join(get_models_path(), "base", model_name)
                 if not os.path.exists(model_path):
                     download_model(model_name, model_browser_download_url, logger)
-            except:
-                logger.info(f"[ERROR] 下载模型时出错")
+            except Exception as e:
+                logger.info(f"[ERROR] 下载模型时出错: " + str(e))
                 sys.exit(1) 
         case 1:
             try:
@@ -164,8 +164,8 @@ def main(taskfile_path, task_result_file_path, logger=None, task_id=None):
                 if model_path == None:
                     logger.info(f"[ERROR] 模型结构 Yaml 文件为空")
                     sys.exit(1) 
-            except:
-                logger.info(f"[ERROR] 在本地生成临时Yaml文件时出错")
+            except Exception as e:
+                logger.info(f"[ERROR] 在本地生成临时Yaml文件时出错" + str(e))
                 sys.exit(1) 
     
     match device:
