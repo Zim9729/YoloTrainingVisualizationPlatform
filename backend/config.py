@@ -2,12 +2,12 @@ import os
 
 USER_HOME = os.path.expanduser("~")   # 用户主目录
 
-DATASET_PATH = USER_HOME + "/.yolo_training_visualization_platform/dataset"   # 数据集存放路径
-TASKS_PATH = USER_HOME + "/.yolo_training_visualization_platform/tasks"
-MODELS_PATH = USER_HOME + "/.yolo_training_visualization_platform/models"
-TASKS_RESULT_FILES_PATH = USER_HOME + "/.yolo_training_visualization_platform/tasks_result_files"
-TASKS_RESULT_YAML_FILES_PATH = USER_HOME + "/.yolo_training_visualization_platform/tasks/t"
-TEST_RESULT_FILES_PATH = USER_HOME + "/.yolo_training_visualization_platform/test_result_files"
+DATASET_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform/dataset")   # 数据集存放路径
+TASKS_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform/tasks")
+MODELS_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform/models")
+TASKS_RESULT_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform/tasks_result_files")
+TASKS_RESULT_YAML_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform/tasks/t")
+TEST_RESULT_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform/test_result_files")
 
 YOLO_MODEL_LIST_URL = "https://api.github.com/repos/ultralytics/assets/releases/latest"
 
