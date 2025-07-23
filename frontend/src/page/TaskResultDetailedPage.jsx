@@ -19,14 +19,15 @@ function getExplanation(item) {
     return matched ? matched[1] : [];
 }
 
-function ImageCard({ taskID, filePath }) {
+function ImageCard({ taskID, filePath, resultFilePath }) {
     const [base64, setBase64] = useState("");
 
     useEffect(() => {
         api.get('/ITraining/getTrainingTaskOutputFile', {
             params: {
                 taskID: taskID,
-                filePath: filePath
+                filePath: filePath,
+                resultFilePath: resultFilePath
             }
         })
             .then(data => {
@@ -173,31 +174,34 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
     }, [parameter.taskID]);
 
     useEffect(() => {
-        api.get("/ITraining/getTrainingTaskOutputFile", {
-            params: {
-                taskID: parameter.taskID,
-                filePath: "results.csv"
-            }
-        })
-            .then(res => {
-                if (res.code === 200 && res.data?.type === "csv") {
-                    const content = res.data.content.trim();
-                    const lines = content.split("\n");
-                    const headerRow = lines[0].split(",");
-                    const dataRows = lines.slice(1).map(line => line.split(","));
-
-                    setHeaders(headerRow);
-                    setCsvData(dataRows);
-
-                    setAnalyzeTrainingResultsData(analyzeTrainingResults(res.data.content.trim()));
-                } else {
-                    console.error("不是CSV格式或请求失败");
+        if (taskResultData.__taskResultFilePath) {
+            api.get("/ITraining/getTrainingTaskOutputFile", {
+                params: {
+                    taskID: parameter.taskID,
+                    filePath: "results.csv",
+                    resultFilePath: taskResultData.__taskResultFilePath
                 }
             })
-            .catch(err => {
-                console.error("获取results失败:", err);
-            });
-    }, [parameter.taskID]);
+                .then(res => {
+                    if (res.code === 200 && res.data?.type === "csv") {
+                        const content = res.data.content.trim();
+                        const lines = content.split("\n");
+                        const headerRow = lines[0].split(",");
+                        const dataRows = lines.slice(1).map(line => line.split(","));
+
+                        setHeaders(headerRow);
+                        setCsvData(dataRows);
+
+                        setAnalyzeTrainingResultsData(analyzeTrainingResults(res.data.content.trim()));
+                    } else {
+                        console.error("不是CSV格式或请求失败");
+                    }
+                })
+                .catch(err => {
+                    console.error("获取results失败:", err);
+                });
+        }
+    }, [parameter.taskID, taskResultData]);
 
     const priorityImageFiles = [
         "confusion_matrix.png",
@@ -327,7 +331,7 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                                     );
                                 }}>
                                     {showImageIndex.includes(index) ? (
-                                        <ImageCard key={`image_file_${index}`} taskID={parameter.taskID} filePath={item} />
+                                        <ImageCard key={`image_file_${index}`} taskID={parameter.taskID} filePath={item} resultFilePath={taskResultData.__taskResultFilePath} />
                                     ) : (
                                         <>
                                             <span className="filename">{item}</span>

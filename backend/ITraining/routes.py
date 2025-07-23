@@ -419,7 +419,7 @@ def get_training_task_output_file():
 
         # 图片
         if mime_type and mime_type.startswith("image"):
-            with open(abs_file_path, "rb", encoding="utf-8") as img_file:
+            with open(abs_file_path, "rb") as img_file:
                 b64_data = base64.b64encode(img_file.read()).decode("utf-8")
             return format_output(data={
                 "type": "image",
