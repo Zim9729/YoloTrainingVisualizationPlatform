@@ -8,29 +8,38 @@ from pathlib import Path
 import time
 import shutil
 import zipfile
+import json
 
 
 IDataset_bp = Blueprint('IDataset', __name__)
 
-def count_images_and_labels(image_dir, label_dir):
+def count_images_and_labels(root_path, image_dir, label_dir):
     """
-    统计 YOLO 格式下的图片数量和标签数量
+    统计 YOLO 格式下的图片数量和标签数量（跨平台兼容）
     """
-    image_paths = glob(os.path.join(image_dir, "*.jpg")) + glob(os.path.join(image_dir, "*.png"))
-    label_paths = [p.replace("/images/", "/labels/").replace(".jpg", ".txt").replace(".png", ".txt") for p in image_paths]
+    root_path = Path(root_path)
+    image_dir = root_path / image_dir
+    label_dir = root_path / label_dir
+
+    image_paths = list(image_dir.glob("*.jpg")) + \
+                  list(image_dir.glob("*.png")) + \
+                  list(image_dir.glob("*.jpeg")) + \
+                  list(image_dir.glob("*.webp"))
+
     num_labels = 0
-    for label_file in label_paths:
-        if os.path.exists(label_file):
-            with open(label_file, "r") as f:
+    for image_path in image_paths:
+        label_path = label_dir / (image_path.stem + ".txt")
+        if label_path.exists():
+            with open(label_path, "r") as f:
                 lines = f.readlines()
                 num_labels += len(lines)
+
     return len(image_paths), num_labels
 
 def count_images(image_dir):
-    return len(glob(os.path.join(image_dir, "*.jpg")) + glob(os.path.join(image_dir, "*.png")))
+    return len(glob(os.path.join(image_dir, "*.jpg")) + glob(os.path.join(image_dir, "*.png")) + glob(os.path.join(image_dir, "*.jpeg")) + glob(os.path.join(image_dir, "*.webp")))
 
 def count_annotations_in_coco(json_path):
-    import json
     if not os.path.exists(json_path):
         return 0
     with open(json_path, "r") as f:
@@ -53,7 +62,7 @@ def load_dataset_yoloinfofile(dataset_path, yaml_path, dataset_type):
     download_url_or_script = data.get("download", "")
 
     if dataset_type.upper() == "YOLO":
-        train_img_count, train_label_count = count_images_and_labels(os.path.join(dataset_path, train_path), train_path.replace("/images", "/labels"))
+        train_img_count, train_label_count = count_images_and_labels(root_path, os.path.join(dataset_path, train_path), train_path.replace("/images", "/labels"))
     elif dataset_type.upper() == "COCO":
         train_img_count = count_images(os.path.join(dataset_path, train_path))
         ann_file = os.path.join(Path(train_path).parent.parent, "annotations", "instances_train.json")
@@ -101,9 +110,10 @@ def extract_zip_flat(zip_path, extract_to):
             if member.endswith("/"):
                 continue
 
-            member_path = "/".join(member.split('/')[1:])
-            target_path = os.path.join(extract_to, member_path)
-            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            parts = Path(member).parts
+            member_path = Path(*parts[1:])  # 移除第一层目录
+            target_path = Path(extract_to) / member_path
+            os.makedirs(target_path.parent, exist_ok=True)
             with zip_ref.open(member) as source, open(target_path, 'wb') as target:
                 target.write(source.read())
         
