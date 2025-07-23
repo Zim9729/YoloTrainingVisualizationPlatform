@@ -20,6 +20,9 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     const [basicInfo, setBasicInfo] = useState([]);
     const [modelInfo, setModelInfo] = useState([]);
 
+    const [showLastLog, setShowLastLog] = useState(false);
+    const [lastLog, setLastLog] = useState("");
+
     const [showModelInfoCardDetails, setShowModelInfoCardDetails] = useState([]);
 
     const startTask = (filename, taskname, taskID) => {
@@ -145,6 +148,27 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     const onTrainingCompleted = () => {
         setTrainingCompleted(true);
         getTaskHistory();
+    }
+
+    const showLastTaskLog = () => {
+        console.log(parameter.filename);
+
+        api.get("/ITraining/getTaskLog", {
+            params: { filename: parameter.filename },
+        })
+            .then(res => {
+                setShowLastLog(true);
+
+                if (res.code === 200) {
+                    const { log, is_running } = res.data;
+                    setLastLog(log);
+                } else {
+                    setLastLog(res.msg);
+                }
+            })
+            .catch(err => {
+                console.error("获取日志失败:", err);
+            });
     }
 
     useEffect(() => {
@@ -275,7 +299,16 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                         <img src={Icon_Info_circle_fill} className="icon" />
                     </h1>
                     <h1 className="title">训练记录</h1>
+                    <a href="#" onClick={() => showLastTaskLog()}>显示上一次的结果</a>
                 </div>
+
+                {showLastLog && (
+                    <pre>
+                        <code>
+                            {lastLog}
+                        </code>
+                    </pre>
+                )}
 
                 <div className="list-card-group">
                     {taskHistory
@@ -292,7 +325,9 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                                 </span>
                                 <br />
                                 {item.completedAt == null ? (
-                                    <span style={{ color: 'var(--red-color)', fontSize: '14px' }}>该训练暂无结果</span>
+                                    <>
+                                        <span style={{ color: 'var(--red-color)', fontSize: '14px' }}>该训练暂无结果</span>
+                                    </>
                                 ) : (
                                     <span style={{ color: 'var(--secondary-text-color)', fontSize: '14px' }}>
                                         训练结果: {item.outputDir || "unknown"}
