@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import path from "path";
 
 import CONFIGS from "../config";
 import { pathJoin } from "../tools";
@@ -221,6 +222,16 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
         const result = await window.electronAPI.openLocalFolder(path);
     };
 
+    const isWeightsPtFile = (filePath) => {
+        const normalized = filePath.replace(/\\/g, "/");
+        return normalized.startsWith("weights/") && normalized.endsWith(".pt");
+    };
+
+    const isBestPtFile = (filePath) => {
+        const normalized = filePath.replace(/\\/g, "/");
+        return normalized === "weights/best.pt";
+    };
+
     useEffect(() => {
         console.log(taskResultData);
     }, [taskResultData]);
@@ -257,10 +268,10 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
 
                     <div className="info-card-group">
                         {taskResultData.outputFiles
-                            .filter(f => (f.startsWith("weights/") && f.endsWith(".pt")))
+                            .filter(f => isWeightsPtFile(f))
                             .sort((a, b) => {
-                                if (a === "weights/best.pt") return -1;
-                                if (b === "weights/best.pt") return 1;
+                                if (isBestPtFile(a)) return -1;
+                                if (isBestPtFile(b)) return 1;
                                 return 0;
                             })
                             .map((item, index) => (
@@ -347,7 +358,7 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                     {taskResultData.outputFiles
                         .filter(f =>
                             !(/\.(png|jpg|jpeg|csv|yaml|pt)$/i.test(f)) &&
-                            !f.startsWith("weights/") &&
+                            !f.startsWith("weights") &&
                             !/^(\.DS_Store|Thumbs\.db)$/i.test(f)
                         )
                         .length > 0 && (
@@ -362,7 +373,7 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                     {taskResultData.outputFiles
                         .filter(f =>
                             !(/\.(png|jpg|jpeg|csv|yaml|pt)$/i.test(f)) &&
-                            !f.startsWith("weights/") &&
+                            !f.startsWith("weights") &&
                             !/^(\.DS_Store|Thumbs\.db)$/i.test(f)
                         )
                         .map((item, index) => (
