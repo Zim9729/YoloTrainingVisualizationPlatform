@@ -299,7 +299,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                         <img src={Icon_Info_circle_fill} className="icon" />
                     </h1>
                     <h1 className="title">训练记录</h1>
-                    <a href="#" onClick={() => showLastTaskLog()}>显示上一次的结果</a>
+                    <a href="#" onClick={() => showLastTaskLog()}>没有训练结果？显示上一次的日志</a>
                 </div>
 
                 {showLastLog && (
