@@ -393,16 +393,17 @@ def get_training_task_output_file():
     """
     task_id = request.args.get("taskID")
     file_path = request.args.get("filePath")
+    result_file_path = request.args.get("resultFilePath")
 
-    if not task_id or not file_path:
-        return format_output(code=400, msg="缺少必要参数(taskID / filePath)")
+    if not task_id or not file_path or not result_file_path:
+        return format_output(code=400, msg="缺少必要参数(taskID / filePath / result_file_path)")
 
     matched_files, e = get_task_result_file(task_id)
     if e or not matched_files:
         return format_output(code=404, msg=f"未找到任务ID为 {task_id} 的结果文件")
 
     try:
-        with open(matched_files[0], "r", encoding="utf-8") as f:
+        with open(result_file_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f.read())
 
         output_dir = data.get("outputDir")
