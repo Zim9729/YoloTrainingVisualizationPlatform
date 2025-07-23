@@ -30,7 +30,7 @@ def count_images_and_labels(root_path, image_dir, label_dir):
     for image_path in image_paths:
         label_path = label_dir / (image_path.stem + ".txt")
         if label_path.exists():
-            with open(label_path, "r") as f:
+            with open(label_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
                 num_labels += len(lines)
 
@@ -42,7 +42,7 @@ def count_images(image_dir):
 def count_annotations_in_coco(json_path):
     if not os.path.exists(json_path):
         return 0
-    with open(json_path, "r") as f:
+    with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     return len(data.get("annotations", []))
 
@@ -50,7 +50,7 @@ def load_dataset_yoloinfofile(dataset_path, yaml_path, dataset_type):
     """
     加载数据集的yaml文件，支持 YOLO 和 COCO
     """
-    with open(yaml_path, "r") as f:
+    with open(yaml_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     root_path = str(data.get("path", Path(yaml_path).parent)) 
@@ -86,7 +86,7 @@ def load_dataset_platforminfofile(info_file):
     """
     加载平台 info 文件
     """
-    with open(info_file, "r") as f:
+    with open(info_file, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     
     return {
@@ -215,7 +215,7 @@ def upload_dataset():
         }
 
         yaml_path = "dataset.yaml"
-        with open(os.path.join(save_dir, yaml_path), "w") as f:
+        with open(os.path.join(save_dir, yaml_path), "w", encoding="utf-8") as f:
             yaml.safe_dump(yaml_data, f, allow_unicode=True)
 
     # 平台 Info 文件
@@ -228,7 +228,7 @@ def upload_dataset():
         "type": dataset_type,
         "yaml_file_path": yaml_path
     }
-    with open(os.path.join(save_dir, "yolo_training_visualization_info.yaml"), "w") as f:
+    with open(os.path.join(save_dir, "yolo_training_visualization_info.yaml"), "w", encoding="utf-8") as f:
         yaml.safe_dump(info_data, f, allow_unicode=True)
         
     return format_output(msg="数据集上传成功")

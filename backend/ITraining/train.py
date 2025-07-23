@@ -51,7 +51,7 @@ def download_model(model_name, model_browser_download_url, logger):
             total_size = int(r.headers.get('content-length', 0))
             block_size = 1024
 
-            with open(local_path, 'wb') as f, tqdm(
+            with open(local_path, 'wb', encoding="utf-8") as f, tqdm(
                 desc=model_name,
                 total=total_size,
                 unit='iB',
