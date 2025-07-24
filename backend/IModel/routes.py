@@ -161,7 +161,8 @@ def get_all_test():
                 for ext in [".jpg", ".png", ".jpeg", ".webp"]:
                     candidate = result_file_path
                     if not candidate.lower().endswith(ext):
-                        candidate = result_file_path + ext
+                        base_name, _ = os.path.splitext(result_file_path)
+                        candidate = base_name + ext
                     if os.path.exists(candidate):
                         data["result_file_path"] = candidate
                         break
