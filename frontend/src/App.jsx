@@ -31,7 +31,7 @@ function App() {
                     <div className="card" style={{ marginTop: '15px' }}>
                         <h1 className="title">未识别到训练助手组件</h1>
                         <p className="content">
-                            正常情况下助手组件将自动启动，刷新页面后仍然能看到该提示框，这可能是助手程序正在启动。
+                            请先启动助手组件，待终端有提示后再刷新本页面。
                             <br />
                             如您确信这是一个BUG，请点击下面的“反馈”按钮向我们提交issues。
                         </p>
