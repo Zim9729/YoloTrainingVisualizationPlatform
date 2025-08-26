@@ -91,9 +91,6 @@ cd backend
 # 运行前，请先将main.py中的debug改为Flase
 pyinstaller --onefile main.py
 
-# 将 frontend/dist/ 移动到 app/ 内
-# 将 backend/dist/main（Windows平台为main.exe） 移动到 app/resources/backend 内
-
 cd app
 yarn build
 ```
