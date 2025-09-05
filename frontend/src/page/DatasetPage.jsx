@@ -296,7 +296,14 @@ function DatasetPage({ setPageUrl, parameter }) {
                 <div className="main">
                     <h1 className="page-title">数据集</h1>
                     <p className="page-des">查看和管理您的数据集。</p>
-                    <button className="btn sm" onClick={() => setPageUrl("dataset?type=uploadDataset")} style={{ marginBottom: '10px' }}>上传数据集</button>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                        <button className="btn sm" onClick={() => setPageUrl("dataset?type=uploadDataset")}>上传数据集</button>
+                        <button className="btn sm" onClick={() => {
+                            const base_url = encodeURIComponent("http://10.10.10.96:8080");
+                            const token = encodeURIComponent("Token c438e617f6488a1d77ee04208e4c917723e25a34");
+                            setPageUrl(`labelStudioImport?base_url=${base_url}&token=${token}`);
+                        }}>从 Label Studio 导入</button>
+                    </div>
                     {datasetsList.map((dataset, index) => (
                         <div key={index} className="card" style={{ marginBottom: '10px' }}>
                             <p className="tag-group">

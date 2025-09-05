@@ -9,6 +9,10 @@ import time
 import shutil
 import zipfile
 import json
+from IDataset.process_annotation_projects import (
+    get_projects_name as ls_get_projects_name,
+    build_yolo_dataset_from_label_studio,
+)
 
 
 IDataset_bp = Blueprint('IDataset', __name__)
@@ -249,3 +253,111 @@ def delete_dataset():
         return format_output(code=500, msg="删除失败")
     
     return format_output(msg="删除成功")
+
+# -----------------------------
+# Label Studio Integration APIs
+# -----------------------------
+
+@IDataset_bp.route('/listLabelStudioProjects', methods=["GET"])
+def list_label_studio_projects():
+    """
+    列出 Label Studio 的项目列表。
+
+    Query 参数：
+    - base_url: Label Studio 服务地址，如 http://127.0.0.1:8080
+    - token: Label Studio API Token（可选，如果服务未启用鉴权可不传）
+    """
+    base_url = request.args.get("base_url", "")
+    token = request.args.get("token", "")
+    if not base_url:
+        return format_output(code=400, msg="缺少必要的参数 base_url")
+    try:
+        mapping = ls_get_projects_name(base_url=base_url, token=token)
+        # 转换为列表形式，便于前端展示
+        projects = [{"title": k, "id": v} for k, v in mapping.items()]
+        return format_output(data={"projects": projects})
+    except Exception as e:
+        return format_output(code=500, msg=f"获取 Label Studio 项目失败: {e}")
+
+
+@IDataset_bp.route('/buildDatasetFromLabelStudio', methods=["POST"])
+def build_dataset_from_label_studio():
+    """
+    从 Label Studio 指定项目拉取标注，构建 YOLO 数据集并注册到平台。
+
+    Body JSON：
+    - base_url: Label Studio 服务地址（必填）
+    - token: Label Studio API Token（可选）
+    - project_id: 要导出的项目 ID（必填）
+    - name: 数据集名称（必填）
+    - version: 版本号，如 v1.0.0（必填）
+    - description: 描述（可选）
+    - exportType: 导出类型，默认 CSV（可选）
+    - splits: 划分比例，形如 [0.8, 0.2, 0.0]（可选）
+    - seed: 随机种子，默认 42（可选）
+    - download_images: 是否下载图片，默认 True（可选）
+    - class_names: 指定类别名列表，若不传则从数据推断（可选）
+    """
+    data = request.get_json(silent=True) or {}
+    base_url = data.get("base_url", "")
+    token = data.get("token", "")
+    project_id = data.get("project_id")
+    name = data.get("name")
+    version = data.get("version")
+    description = data.get("description", "")
+    export_type = data.get("exportType", "CSV")
+    splits = data.get("splits", [0.8, 0.2, 0.0])
+    seed = int(data.get("seed", 42))
+    download_images = bool(data.get("download_images", True))
+    class_names = data.get("class_names", None)
+
+    if not base_url or project_id is None or not name or not version:
+        return format_output(code=400, msg="缺少必要的参数 base_url / project_id / name / version")
+
+    # 输出目录：用户数据集根目录下 name_version
+    dataset_root = get_dataset_path()
+    save_dir = os.path.join(dataset_root, f"{name}_{version}")
+    if os.path.exists(save_dir) and os.listdir(save_dir):
+        return format_output(code=400, msg=f"名为 '{name}' 且版本为 '{version}' 的数据集已存在，请更换名称或版本。")
+    os.makedirs(save_dir, exist_ok=True)
+
+    try:
+        # 构建数据集，返回 dataset.yaml 的路径
+        dataset_yaml = build_yolo_dataset_from_label_studio(
+            project_id=int(project_id),
+            out_dir=save_dir,
+            exportType=export_type,
+            splits=tuple(splits) if isinstance(splits, (list, tuple)) else (0.8, 0.2, 0.0),
+            seed=seed,
+            download_images=download_images,
+            class_names=class_names,
+            base_url=base_url,
+            token=token,
+        )
+
+        # 写平台信息文件
+        info_data = {
+            "name": name,
+            "description": description,
+            "version": version,
+            "author": "unknown",
+            "created_at": int(time.time()),
+            "type": "YOLO",
+            "yaml_file_path": os.path.relpath(dataset_yaml, save_dir)
+        }
+        with open(os.path.join(save_dir, "yolo_training_visualization_info.yaml"), "w", encoding="utf-8") as f:
+            yaml.safe_dump(info_data, f, allow_unicode=True)
+
+        return format_output(msg="数据集构建成功", data={
+            "name": name,
+            "path": save_dir,
+            "yaml_file_path": info_data["yaml_file_path"],
+        })
+    except Exception as e:
+        # 若失败且目录为空可清理
+        try:
+            if os.path.exists(save_dir) and not os.listdir(save_dir):
+                shutil.rmtree(save_dir)
+        except Exception:
+            pass
+        return format_output(code=500, msg=f"构建数据集失败: {e}")

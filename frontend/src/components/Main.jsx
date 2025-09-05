@@ -10,6 +10,7 @@ import TaskDetailedPage from "../page/TaskDetailedPage";
 import ModelsPage from "../page/ModelsPage";
 import TaskResultDetailedPage from "../page/TaskResultDetailedPage";
 import ModelTestPage from "../page/ModelTestPage";
+import LabelStudioImportPage from "../page/LabelStudioImportPage";
 
 function Main({ pageUrl = "home", setPageUrl }) {
     // 识别页面类型并提取参数
@@ -42,6 +43,7 @@ function Main({ pageUrl = "home", setPageUrl }) {
         models: ModelsPage,
         taskResultDetailed: TaskResultDetailedPage,
         modelTest: ModelTestPage,
+        labelStudioImport: LabelStudioImportPage,
     };
 
     const PageComponent = PageComponentMap[pageType];

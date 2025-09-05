@@ -33,10 +33,14 @@ function HomePage({ setPageUrl, parameter }) {
             <div>
                 <h1 className="home-page-title">快速开始</h1>
                 <div className="card-group" style={{ marginTop: '20px' }}>
-                    <div className="card b-transform pointer" onClick={() => { setPageUrl("dataset?type=uploadDataset") }}>
+                    <div className="card b-transform">
                         <div className="top-tag">1</div>
-                        <h1 className="title">上传数据集</h1>
-                        <p className="content">支持 YOLO / COCO 格式的数据集，系统会自动解析标注信息并生成预览。</p>
+                        <h1 className="title">导入/上传数据集</h1>
+                        <p className="content">支持上传 YOLO / COCO 压缩包，或从 Label Studio 连接项目并一键构建 YOLO 数据集。</p>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                            <button className="btn sm" onClick={() => { setPageUrl("dataset?type=uploadDataset") }}>上传压缩包</button>
+                            <button className="btn sm" onClick={() => { setPageUrl("labelStudioImport") }}>从 Label Studio 导入</button>
+                        </div>
                     </div>
                     <div className="card b-transform pointer" onClick={() => { setPageUrl("tasks?type=newTask") }}>
                         <div className="top-tag">2</div>

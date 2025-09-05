@@ -1,0 +1,370 @@
+openapi: 3.0.3
+info:
+  title: YOLO Training Visualization Platform API
+  version: 1.0.0
+  description: |
+    REST API for dataset management, training tasks, and model testing used by the YOLO Training Visualization Platform.
+servers:
+  - url: http://localhost:10799
+paths:
+  /:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+  /info:
+    get:
+      summary: Backend version and info
+      responses:
+        '200':
+          description: Version info
+  /IDataset/getAllDatasets:
+    get:
+      summary: List all datasets
+      responses:
+        '200':
+          description: List of datasets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IDataset/uploadDataset:
+    post:
+      summary: Upload a dataset archive and register it
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                name:
+                  type: string
+                description:
+                  type: string
+                version:
+                  type: string
+                  example: v1.0.0
+                type:
+                  type: string
+                  description: Dataset type
+                  enum: [YOLO, COCO]
+                include_yaml:
+                  type: string
+                  description: '"1" to auto-detect YAML in archive; otherwise provide fields below'
+                train:
+                  type: string
+                val:
+                  type: string
+                test:
+                  type: string
+                nc:
+                  type: integer
+                names:
+                  type: string
+      responses:
+        '200':
+          description: Upload status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IDataset/deleteDataset:
+    post:
+      summary: Delete a dataset directory by absolute path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+              required: [path]
+      responses:
+        '200':
+          description: Delete status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/getAllTasks:
+    get:
+      summary: List all training task YAMLs
+      responses:
+        '200':
+          description: Task list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/getTask:
+    get:
+      summary: Read a specific task config
+      parameters:
+        - in: query
+          name: filename
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Task config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/createTask:
+    post:
+      summary: Create a training task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                taskName: { type: string }
+                taskDescription: { type: string }
+                datasetPath: { type: string }
+                trainingType: { type: integer, enum: [0,1] }
+                baseModelID: { type: string, description: Required when trainingType=0 }
+                modelYamlFile: { type: string, description: YAML text when trainingType=1 }
+                epochs: { type: integer, default: 100 }
+                batchSize: { type: integer, default: 16 }
+                imgSize: { type: integer, default: 640 }
+                device: { type: string, enum: [cpu, gpu, gpu_idlefirst, mps] }
+                gpuCUDAIndex: { type: string }
+                gpuCUDANum: { type: integer }
+                trainSeed: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/deleteTask:
+    post:
+      summary: Delete a task YAML by relative path under tasks directory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path: { type: string }
+              required: [path]
+      responses:
+        '200':
+          description: Delete status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/startTask:
+    post:
+      summary: Start a training task execution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                taskID: { type: string }
+                filename: { type: string }
+                taskname: { type: string }
+              required: [taskID, filename, taskname]
+      responses:
+        '200':
+          description: Started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/getTaskLog:
+    get:
+      summary: Get terminal logs for a running training task
+      parameters:
+        - in: query
+          name: filename
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Logs and running flag
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/getAllRunningTasks:
+    get:
+      summary: List currently running tasks
+      responses:
+        '200':
+          description: Running tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/getTrainingTasksHistory:
+    get:
+      summary: List history entries for a task
+      parameters:
+        - in: query
+          name: taskID
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: History
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/getTrainingTaskOutputFile:
+    get:
+      summary: Read a training output file content or image
+      parameters:
+        - in: query
+          name: taskID
+          schema: { type: string }
+          required: true
+        - in: query
+          name: filePath
+          schema: { type: string }
+          required: true
+        - in: query
+          name: resultFilePath
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Output file content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/getAllBaseModelsFromGithub:
+    get:
+      summary: Fetch list of base models from GitHub (with cache)
+      responses:
+        '200':
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /ITraining/getAllBaseModelFromLocal:
+    get:
+      summary: List base models from local directory
+      responses:
+        '200':
+          description: Local model list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/runModelTest:
+    post:
+      summary: Start a model test (inference) task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                taskID: { type: string }
+                taskName: { type: string }
+                outputDir: { type: string }
+                inputType: { type: string, enum: [image, video], default: image }
+                inputPath: { type: string }
+                modelType: { type: string, enum: [best, last], default: best }
+              required: [taskID, taskName, outputDir, inputPath]
+      responses:
+        '200':
+          description: Started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/getAllTest:
+    get:
+      summary: List all test tasks for a given training task
+      parameters:
+        - in: query
+          name: taskID
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Test list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/getTaskLog:
+    get:
+      summary: Get logs for a running model test task
+      parameters:
+        - in: query
+          name: filename
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/getAllTrainedModel:
+    get:
+      summary: List all trained models discovered in training directory
+      responses:
+        '200':
+          description: Trained model inventory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/getTestResultImageBase64:
+    get:
+      summary: Get Base64 image of a model test result
+      parameters:
+        - in: query
+          name: taskID
+          schema: { type: string }
+          required: true
+        - in: query
+          name: filePath
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Base64 image content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+components:
+  schemas:
+    StdResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        msg:
+          type: string
+          example: OK
+        data:
+          description: Response payload (varies by endpoint)
+          nullable: true
