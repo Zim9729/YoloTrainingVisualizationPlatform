@@ -121,6 +121,7 @@ Yolo_Training_Visualization_Platform/
 ## 🧩 Architecture
 
 - Frontend (`frontend/`): React + Vite. Dev server runs at `5173`. HTTP calls are centralized in `src/api.js`, using `API_BASE_URL` from `src/config.js` (default `http://localhost:10799`).
+  - Can be overridden via environment variables: set `VITE_API_BASE_URL` in `frontend/.env.development` and `frontend/.env.production`.
 - Backend (`backend/`): Flask app with three blueprints registered in `backend/main.py`:
   - `IDataset` (`backend/IDataset/routes.py`): dataset import, statistics and validation
   - `ITraining` (`backend/ITraining/`): training task management and YOLO training workflow
@@ -147,7 +148,13 @@ Backend version endpoint: `GET /info`, current `1.0.0`. The frontend checks comp
     - `POST /IDataset/buildDatasetFromLabelStudio`: build a YOLO dataset from a project
       - Body JSON keys: `base_url`(required), `token`(optional), `project_id`(required), `name`, `version`, `splits` (e.g. `[0.8,0.2,0.0]`), `download_images`, `class_names`
 - `ITraining` (see `backend/ITraining/routes.py`): list/read tasks, start training, query status, fetch logs/artifacts (supports concurrent tasks)
-- `IModel` (see `backend/IModel/routes.py`): run inference task (image/video), list tests, fetch results
+- `IModel` (see `backend/IModel/routes.py`):
+  - `POST /IModel/runModelTest`: start inference (image/video)
+  - `POST /IModel/runModelValidation`: start model validation (provide `datasetYamlPath`, `modelType`, etc.)
+  - `GET /IModel/getTaskLog`: poll logs for a test task
+  - `GET /IModel/getValTaskLog`: poll logs for a validation task
+  - `POST /IModel/uploadTestInput`: upload a test image (multipart form in browser)
+  - list/load tasks, index and download result files
 
 All endpoints return a unified structure (see `tools/format_output.py`). Frontend uses `src/api.js` to wrap `fetch` calls.
 

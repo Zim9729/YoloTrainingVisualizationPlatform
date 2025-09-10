@@ -4,6 +4,7 @@ from ITraining.handlers import QueueHandler
 import queue
 from ITraining.train import main
 from IModel.test import test_model
+from IModel.validate import validate_model
 
 def run_main_in_thread(taskfile_path, task_id, task_result_file_path):
     """
@@ -57,6 +58,35 @@ def run_modeltest_in_thread(task_id, model_path, input_path, output_dir, result_
             logger.info("🎉 测试任务结束")
         except Exception as e:
             logger.exception(f"测试线程发生异常: {e}")
+
+    t = Thread(target=target, args=(), daemon=True)
+    t.start()
+
+    return t, log_q
+
+def run_modelval_in_thread(task_id, model_path, dataset_yaml_path, output_dir, result_file_path):
+    """
+    在新线程中运行 Model Validation，并捕获所有输出（stdout/stderr）
+    """
+    log_q = queue.Queue()
+
+    logger = logging.getLogger(f"validation-{task_id}")
+    logger.setLevel(logging.INFO)
+
+    logger.handlers.clear()
+
+    q_handler = QueueHandler(log_q)
+    formatter = logging.Formatter("[%(asctime)s] %(message)s", "%H:%M:%S")
+    q_handler.setFormatter(formatter)
+    logger.addHandler(q_handler)
+
+    def target():
+        try:
+            logger.info(f"开始任务: {task_id}")
+            validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, logger=logger, task_id=task_id)
+            logger.info("🎉 验证任务结束")
+        except Exception as e:
+            logger.exception(f"验证线程发生异常: {e}")
 
     t = Thread(target=target, args=(), daemon=True)
     t.start()

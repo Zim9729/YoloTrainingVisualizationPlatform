@@ -121,6 +121,7 @@ Yolo_Training_Visualization_Platform/
 ## 🧩 系统架构
 
 - 前端（`frontend/`）：基于 React + Vite，默认开发端口 `5173`，通过 `src/api.js` 使用 `src/config.js` 中的 `API_BASE_URL` 访问后端（默认 `http://localhost:10799`）。
+  - 支持通过环境变量覆盖：在 `frontend/.env.development`、`frontend/.env.production` 中设置 `VITE_API_BASE_URL`。
 - 后端（`backend/`）：基于 Flask，主入口 `backend/main.py`，注册三个蓝图：
   - `IDataset`（`backend/IDataset/routes.py`）：数据集导入、统计与校验
   - `ITraining`（`backend/ITraining/`）：训练任务管理与 YOLO 训练主流程
@@ -154,6 +155,10 @@ Yolo_Training_Visualization_Platform/
   - 训练启动与状态查询、训练日志与曲线数据获取（支持多任务并行）
 - `IModel` 模块（见 `backend/IModel/routes.py`）：
   - `POST /IModel/runModelTest`：发起推理任务（单图/视频）
+  - `POST /IModel/runModelValidation`：发起模型验证任务（指定 `datasetYamlPath`、`modelType` 等）
+  - `GET /IModel/getTaskLog`：测试任务日志轮询
+  - `GET /IModel/getValTaskLog`：验证任务日志轮询
+  - `POST /IModel/uploadTestInput`：上传测试图片（浏览器环境下使用 multipart 表单）
   - 任务列表保存/加载、推理结果文件索引与下载
 
 提示：各接口返回统一结构（`tools/format_output.py`），前端通过 `src/api.js` 包装 `fetch` 访问。

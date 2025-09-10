@@ -1,5 +1,6 @@
 const CONFIGS = {
-    API_BASE_URL: "http://localhost:10799",
+    // Prefer env var, fallback to default localhost. Define VITE_API_BASE_URL in .env files.
+    API_BASE_URL: (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || "http://localhost:10799",
     SUPPORTED_BACKEND_VERSIONS: ["1.0.0"],
     FRONTEND_VERSION: "1.0.0",
     DATASET_TYPE: {

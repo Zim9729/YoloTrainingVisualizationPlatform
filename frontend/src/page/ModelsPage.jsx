@@ -45,6 +45,11 @@ function ModelsPage({ setPageUrl, parameter }) {
         setPageUrl(`modelTest?type=newTest&taskID=${taskID}&taskName=${taskName}&folder=${folder}&weights=${weights}&outputDir=${outputDir}`);
     };
 
+    const startModelValidation = (taskID, taskName, folder, weightsArray, outputDir) => {
+        const weights = weightsArray.join(",");
+        setPageUrl(`modelTest?type=newVal&taskID=${taskID}&taskName=${taskName}&folder=${folder}&weights=${weights}&outputDir=${outputDir}`);
+    };
+
     return (
         <div className="main">
             <h1 className="page-title">模型</h1>
@@ -99,7 +104,8 @@ function ModelsPage({ setPageUrl, parameter }) {
                                         </div>
                                     )
                                 ))}
-
+                            </p>
+                            <p className="content">
                                 {Object.keys(model.weights).filter(k => /^epoch\d+\.pt$/.test(k)).length > 0 && (
                                     <div style={{ marginTop: '8px', color: 'var(--secondary-text-color)' }}>
                                         其他周期模型文件: {Object.keys(model.weights).filter(k => /^epoch\d+\.pt$/.test(k)).length} 个
@@ -107,9 +113,16 @@ function ModelsPage({ setPageUrl, parameter }) {
                                 )}
                             </p>
                             <button className="btn sm" onClick={() => startModelTest(model.task_id, model.task_name, model.folder, Object.keys(model.weights), model.output_dir)} style={{ marginRight: '8px' }}>进行测试</button>
+                            <button className="btn sm" onClick={() => startModelValidation(model.task_id, model.task_name, model.folder, Object.keys(model.weights), model.output_dir)} style={{ marginRight: '8px' }}>进行验证</button>
                             <button className="btn sm" onClick={() => {
-                                setPageUrl(`modelTest?taskName=${model.task_name}&startedAt=${new Date(parseInt(model.folder.split('_')[2]) * 1000).toLocaleString()}&folder=${model.folder}`)
-                            }}>查看测试历史记录</button>
+                                try {
+                                    const ts = parseInt(model.folder.split('_')[2]);
+                                    const startedAtStr = new Date(ts * 1000).toLocaleString();
+                                    setPageUrl(`modelTest?taskID=${model.task_id}&taskName=${encodeURIComponent(model.task_name || '')}&startedAt=${encodeURIComponent(startedAtStr)}&folder=${model.folder}`);
+                                } catch (e) {
+                                    setPageUrl(`modelTest?taskID=${model.task_id}&taskName=${encodeURIComponent(model.task_name || '')}&folder=${model.folder}`);
+                                }
+                            }}>查看测试/验证历史记录</button>
                         </div>
                     ))}
                 </>

@@ -5,8 +5,7 @@ import 'highlight.js/styles/github.css';
 
 function LabelStudioImportPage({ setPageUrl, parameter }) {
   const [baseUrl, setBaseUrl] = useState(parameter.base_url || "http://10.10.10.96:8080");
-  const [token, setToken] = useState(parameter.token || "");
-
+  const [token, setToken] = useState(parameter.token || "Token c438e617f6488a1d77ee04208e4c917723e25a34");
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState("");

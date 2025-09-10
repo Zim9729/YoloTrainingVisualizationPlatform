@@ -29,6 +29,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StdResponse'
+  /IModel/uploadTestInput:
+    post:
+      summary: Upload a test image to the server and return its saved path
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Upload result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
   /IDataset/uploadDataset:
     post:
       summary: Upload a dataset archive and register it
@@ -331,6 +351,44 @@ paths:
       responses:
         '200':
           description: Trained model inventory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/runModelValidation:
+    post:
+      summary: Start a model validation task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                taskID: { type: string }
+                taskName: { type: string }
+                outputDir: { type: string }
+                datasetYamlPath: { type: string }
+                modelType: { type: string, enum: [best, last], default: best }
+              required: [taskID, taskName, outputDir, datasetYamlPath]
+      responses:
+        '200':
+          description: Started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/getValTaskLog:
+    get:
+      summary: Get logs for a running model validation task
+      parameters:
+        - in: query
+          name: filename
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Logs
           content:
             application/json:
               schema:
