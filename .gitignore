@@ -46,3 +46,4 @@ frontend/.output/
 *.spec
 **/build
 **/resources
+Tritonmodel/
