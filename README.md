@@ -36,6 +36,7 @@
 - 支持多任务并行训练
 - 支持上传图片路径进行单图推理测试
 - 完全本地运行，无需依赖云平台
+- 支持模型导出（ONNX / TorchScript / OpenVINO / TensorRT），并可选集成到 Triton 模型仓库
 
 ## 📦 安装说明
 
@@ -161,6 +162,15 @@ Yolo_Training_Visualization_Platform/
   - `POST /IModel/uploadTestInput`：上传测试图片（浏览器环境下使用 multipart 表单）
   - 任务列表保存/加载、推理结果文件索引与下载
 
+导出与制品相关端点（详见根目录 `openapi.yaml`）：
+
+- `POST /IModel/runModelExport`：启动模型导出任务（支持 `onnx/torchscript/openvino/engine`）
+- `GET /IModel/getExportTaskLog`：导出任务日志轮询（使用 `exportKey`）
+- `GET /IModel/getExportHistory`：查询某训练结果目录的导出历史
+- `GET /IModel/getExportHistoryLog`：读取历史导出记录的持久化日志
+- `GET /IModel/listExportArtifacts`：列出 `outputDir/export/` 下导出产物
+- `GET /IModel/downloadExportArtifact`：下载指定导出文件
+
 提示：各接口返回统一结构（`tools/format_output.py`），前端通过 `src/api.js` 包装 `fetch` 访问。
 
 OpenAPI 文档：参见仓库根目录的 `openapi.yaml`（可导入 Swagger UI/Insomnia/Postman 查看）。
@@ -226,6 +236,39 @@ yarn dev
 
 4. 打开应用，按引导创建或选择数据集，配置训练任务，启动训练；在「测试」页选择 `best.pt` 进行单图/视频推理与结果可视化。
 
+## 📦 模型导出与部署
+
+本项目内置基于 `ultralytics.YOLO` 的导出能力，导出产物统一存放在训练结果目录的 `export/` 下，可选择以下格式：
+
+- ONNX（`onnx`）
+- TorchScript（`torchscript`）
+- OpenVINO（`openvino`，会生成 `.xml` 与 `.bin`）
+- TensorRT（`engine`）
+
+触发导出：调用 `POST /IModel/runModelExport`，关键参数包括：
+
+- `outputDir`：训练结果目录（包含 `weights/best.pt` 等）
+- `modelType`：导出权重名（不含扩展名，例如 `best`、`last`、`epoch10`）
+- `formats`：导出格式数组，如 `["onnx", "openvino"]`
+- `imgsz`、`half`、`simplify`、`opset`、`device`：底层导出参数
+
+日志与历史：
+
+- 通过 `GET /IModel/getExportTaskLog?exportKey=...` 轮询导出日志
+- 通过 `GET /IModel/getExportHistory?outputDir=...` 查询历史记录
+- 通过 `GET /IModel/getExportHistoryLog?outputDir=...&exportKey=...` 查看历史任务日志
+- 通过 `GET /IModel/listExportArtifacts?outputDir=...` 列出导出产物并可用 `GET /IModel/downloadExportArtifact` 下载
+
+### Triton 模型仓库浏览（可选）
+
+前端页面：`frontend/src/page/TritonRepoPage.jsx`
+
+- 输入本地 Triton `model_repository` 路径后，可浏览模型、版本与文件结构
+- 支持复制模型/文件路径，删除模型或指定版本
+- 便于将导出的 ONNX/TensorRT 模型组织到 Triton 中进行在线服务
+
+说明：部分 Triton 仓库相关后端接口仍在演进中，OpenAPI 可能未完全覆盖，具体以页面与后端实现为准。
+
 ## 🛠️ 打包与发布建议
 
 - 后端可使用 `pyinstaller` 生成单文件可执行（注意在 `backend/main.py` 中将 `debug=True` 改为 `False`）。
@@ -257,7 +300,7 @@ yarn dev
 - [ ] 训练过程更丰富的可视化（lr、各损失分项、PR 曲线）
 - [ ] 断点续训、任务克隆与对比
 - [ ] 更多数据集格式支持与自动转换
-- [ ] 模型导出（ONNX/TensorRT/OpenVINO）与部署助手
+- [x] 模型导出（ONNX/TorchScript/OpenVINO/TensorRT）初步支持；部署助手与 Triton 集成持续完善
 
 
 ## 🤝 贡献指南

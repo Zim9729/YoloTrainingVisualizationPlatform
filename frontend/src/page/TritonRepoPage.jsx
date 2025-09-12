@@ -14,20 +14,66 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
   const [openMenuModel, setOpenMenuModel] = useState(null); // 当前展开的模型更多菜单
   const [openMenuVersion, setOpenMenuVersion] = useState({}); // { [modelName]: version }
 
-  // UI helpers
-  const Chip = ({ color = '#64748b', bg = '#e2e8f0', children, title }) => (
-    <span
-      title={title}
-      style={{
-        display:'inline-flex', alignItems:'center', gap:6,
-        background: bg, color, borderRadius: 999,
-        padding: '2px 8px', fontSize: 12, lineHeight: 1.6,
-        border: '1px solid rgba(0,0,0,0.06)'
-      }}
-    >{children}</span>
+  // Enhanced UI helpers
+  const Chip = ({ color = '#64748b', bg = '#e2e8f0', children, title, variant = 'default' }) => {
+    const variants = {
+      success: { bg: '#dcfce7', color: '#166534', border: '#bbf7d0' },
+      warning: { bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
+      info: { bg: '#dbeafe', color: '#1e40af', border: '#bfdbfe' },
+      purple: { bg: '#ede9fe', color: '#5b21b6', border: '#d8b4fe' },
+      default: { bg, color, border: 'rgba(0,0,0,0.1)' }
+    };
+    const style = variants[variant] || variants.default;
+    
+    return (
+      <span
+        title={title}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          background: style.bg, color: style.color, borderRadius: 6,
+          padding: '4px 8px', fontSize: 11, fontWeight: 500, lineHeight: 1.4,
+          border: `1px solid ${style.border}`,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+        }}
+      >{children}</span>
+    );
+  };
+
+  const IconDot = ({ color = '#94a3b8', size = 6 }) => (
+    <span style={{ 
+      width: size, height: size, background: color, borderRadius: '50%', 
+      display: 'inline-block', flexShrink: 0 
+    }} />
   );
-  const IconDot = ({ color = '#94a3b8' }) => (
-    <span style={{ width:6, height:6, background: color, borderRadius:'50%', display:'inline-block' }} />
+
+  // Icons
+  const FolderIcon = ({ size = 16, color = '#6b7280' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+    </svg>
+  );
+
+  const FileIcon = ({ size = 16, color = '#6b7280' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14,2 14,8 20,8"/>
+    </svg>
+  );
+
+  const ChevronIcon = ({ expanded, size = 16, color = '#6b7280' }) => (
+    <svg 
+      width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"
+      style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+    >
+      <polyline points="9,18 15,12 9,6"/>
+    </svg>
+  );
+
+  const SearchIcon = ({ size = 16, color = '#6b7280' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <circle cx="11" cy="11" r="8"/>
+      <path d="m21 21-4.35-4.35"/>
+    </svg>
   );
 
   useEffect(() => {
@@ -167,117 +213,555 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
       {!embedded && <h1 className="page-title">Triton 模型仓库</h1>}
       {!embedded && <p className="page-des">浏览 Triton 仓库中的模型与版本</p>}
 
-      <div className="card" style={{ padding: 12, display:'flex', flexWrap:'wrap', alignItems:'center', gap:10 }}>
-        <label className="label">仓库路径</label>
-        <input type="text" value={repo} onChange={(e)=>setRepo(e.target.value)} placeholder="/path/to/triton/model_repository" style={{ flex:'1 1 480px', minWidth: 320 }} />
-        <button className="btn sm" onClick={saveRepo}>保存/刷新</button>
-        <div style={{ marginLeft:'auto', display:'flex', gap:10, alignItems:'center' }}>
-          <input type="text" value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="搜索模型名..." style={{ width: 200 }} />
-          <select value={sortKey} onChange={(e)=>setSortKey(e.target.value)} style={{ height: 30 }}>
-            <option value="name">按名称</option>
-            <option value="config">按是否有 config</option>
-            <option value="versions">按版本数量</option>
-          </select>
+      <div className="card" style={{ 
+        padding: 20, 
+        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+        border: '1px solid #e2e8f0',
+        borderRadius: 12,
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Repository Path Section */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FolderIcon size={18} color="#4f46e5" />
+              <label className="label" style={{ fontWeight: 600, color: '#374151' }}>仓库路径</label>
+            </div>
+            <input 
+              type="text" 
+              value={repo} 
+              onChange={(e)=>setRepo(e.target.value)} 
+              placeholder="/path/to/triton/model_repository" 
+              style={{ 
+                flex: '1 1 400px', 
+                minWidth: 300,
+                padding: '10px 12px',
+                border: '2px solid #e5e7eb',
+                borderRadius: 8,
+                fontSize: 14,
+                transition: 'border-color 0.2s',
+                ':focus': { borderColor: '#4f46e5', outline: 'none' }
+              }} 
+            />
+            <button 
+              className="btn sm" 
+              onClick={saveRepo}
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: 8,
+                fontWeight: 600,
+                boxShadow: '0 2px 4px rgba(79, 70, 229, 0.3)',
+                transition: 'all 0.2s'
+              }}
+            >
+              保存/刷新
+            </button>
+          </div>
+
+          {/* Search and Filter Section */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Chip variant="info">
+                <FolderIcon size={12} />
+                共 {filteredModels.length} 个模型
+              </Chip>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ position: 'relative' }}>
+                <SearchIcon 
+                  size={16} 
+                  color="#9ca3af" 
+                  style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+                />
+                <input 
+                  type="text" 
+                  value={search} 
+                  onChange={(e)=>setSearch(e.target.value)} 
+                  placeholder="搜索模型名..." 
+                  style={{ 
+                    width: 220,
+                    padding: '8px 12px 8px 36px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    transition: 'border-color 0.2s'
+                  }} 
+                />
+              </div>
+              
+              <select 
+                value={sortKey} 
+                onChange={(e)=>setSortKey(e.target.value)} 
+                style={{ 
+                  padding: '8px 12px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  background: 'white',
+                  minWidth: 140
+                }}
+              >
+                <option value="name">按名称排序</option>
+                <option value="config">按配置状态</option>
+                <option value="versions">按版本数量</option>
+              </select>
+            </div>
+          </div>
+
+          {err && (
+            <div style={{
+              padding: 12,
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: 8,
+              color: '#dc2626',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}>
+              <IconDot color="#dc2626" size={8} />
+              错误：{err}
+            </div>
+          )}
         </div>
-        {err && <div className="tip-box" style={{ width:'100%' }}>错误：{err}</div>}
       </div>
 
-      <div className="list-card" style={{ padding: 8, marginTop: 10 }}>
+      <div style={{ marginTop: 20 }}>
         {loading ? (
-          <div className="tip-box">加载中...</div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 60,
+            background: 'white',
+            borderRadius: 12,
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              border: '3px solid #e5e7eb',
+              borderTop: '3px solid #4f46e5',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginBottom: 16
+            }}></div>
+            <div style={{ color: '#6b7280', fontSize: 16 }}>加载模型中...</div>
+          </div>
         ) : (Array.isArray(filteredModels) && filteredModels.length > 0 ? (
-          <div style={{ display:'grid', gridTemplateColumns: embedded ? 'repeat(3, minmax(0, 1fr))' : 'repeat(auto-fit, minmax(360px, 1fr))', gap: 12, alignItems:'start' }}>
+          <div style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+            alignItems: 'stretch'
+          }}>
             {filteredModels.map((m, idx) => (
-              <div key={idx} className="card" style={{ padding: 12, height:'100%' }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                    <button className="btn sm" onClick={() => toggleModel(m.name)}>{expanded[m.name]?.open ? '收起' : '展开'}</button>
-                    <div style={{ fontWeight:700, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{m.name}</div>
-                    <Chip bg={m.config_exists ? '#DCFCE7' : '#FEF3C7'} color={m.config_exists ? '#166534' : '#92400E'}>
-                      <IconDot color={m.config_exists ? '#22c55e' : '#f59e0b'} />
-                      {m.config_exists ? 'config.pbtxt 已存在' : 'config.pbtxt 缺失'}
-                    </Chip>
-                  </div>
-                  <div style={{ position:'relative' }}>
-                    <button className="btn sm" onClick={() => setOpenMenuModel(openMenuModel === m.name ? null : m.name)}>更多 ▾</button>
-                    {openMenuModel === m.name && (
-                      <div className="card" style={{ position:'absolute', right:0, top:'110%', zIndex:10, padding:8, display:'flex', flexDirection:'column', gap:6, minWidth:140 }}>
-                        <button className="btn sm" onClick={() => { copyText(m.name, '已复制模型名称'); setOpenMenuModel(null); }}>复制名称</button>
-                        <button className="btn sm" onClick={() => { copyText(m.path, '已复制模型路径'); setOpenMenuModel(null); }}>复制路径</button>
-                        <button className="btn sm danger" onClick={() => { setOpenMenuModel(null); handleDelete({ modelName: m.name }); }}>删除模型</button>
+              <div 
+                key={idx} 
+                style={{ 
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12,
+                  padding: 0,
+                  height: 'fit-content',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.2s ease',
+                  ':hover': { boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }
+                }}
+              >
+                {/* Model Header */}
+                <div style={{ 
+                  padding: 20,
+                  borderBottom: expanded[m.name]?.open ? '1px solid #f3f4f6' : 'none'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Model Name and Icon */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                        <button 
+                          onClick={() => toggleModel(m.name)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 4,
+                            cursor: 'pointer',
+                            borderRadius: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            transition: 'background-color 0.2s'
+                          }}
+                        >
+                          <ChevronIcon expanded={expanded[m.name]?.open} size={18} color="#6b7280" />
+                        </button>
+                        <FolderIcon size={20} color="#4f46e5" />
+                        <h3 style={{ 
+                          margin: 0,
+                          fontSize: 18,
+                          fontWeight: 600,
+                          color: '#111827',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {m.name}
+                        </h3>
                       </div>
-                    )}
+
+                      {/* Status and Version Info */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <Chip variant={m.config_exists ? 'success' : 'warning'}>
+                          <IconDot color={m.config_exists ? '#22c55e' : '#f59e0b'} size={6} />
+                          {m.config_exists ? 'Config 已配置' : 'Config 缺失'}
+                        </Chip>
+                        
+                        {Array.isArray(m.versions) && m.versions.length > 0 && (
+                          <Chip variant="info">
+                            {m.versions.length} 个版本
+                          </Chip>
+                        )}
+                      </div>
+
+                      {/* Path Info */}
+                      <div style={{ 
+                        fontSize: 12,
+                        color: '#6b7280',
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                        background: '#f9fafb',
+                        padding: '6px 8px',
+                        borderRadius: 4,
+                        border: '1px solid #f3f4f6'
+                      }}>
+                        {m.path}
+                      </div>
+                    </div>
+
+                    {/* Actions Menu */}
+                    <div style={{ position: 'relative' }}>
+                      <button 
+                        onClick={() => setOpenMenuModel(openMenuModel === m.name ? null : m.name)}
+                        style={{
+                          background: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 6,
+                          padding: '6px 10px',
+                          fontSize: 12,
+                          color: '#6b7280',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        ⋯
+                      </button>
+                      {openMenuModel === m.name && (
+                        <div style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: '100%',
+                          marginTop: 4,
+                          zIndex: 10,
+                          background: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 8,
+                          padding: 8,
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                          minWidth: 160
+                        }}>
+                          <button 
+                            onClick={() => { copyText(m.name, '已复制模型名称'); setOpenMenuModel(null); }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              background: 'none',
+                              border: 'none',
+                              padding: '8px 12px',
+                              fontSize: 13,
+                              color: '#374151',
+                              cursor: 'pointer',
+                              borderRadius: 4,
+                              transition: 'background-color 0.2s'
+                            }}
+                          >
+                            复制名称
+                          </button>
+                          <button 
+                            onClick={() => { copyText(m.path, '已复制模型路径'); setOpenMenuModel(null); }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              background: 'none',
+                              border: 'none',
+                              padding: '8px 12px',
+                              fontSize: 13,
+                              color: '#374151',
+                              cursor: 'pointer',
+                              borderRadius: 4,
+                              transition: 'background-color 0.2s'
+                            }}
+                          >
+                            复制路径
+                          </button>
+                          <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+                          <button 
+                            onClick={() => { setOpenMenuModel(null); handleDelete({ modelName: m.name }); }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              background: 'none',
+                              border: 'none',
+                              padding: '8px 12px',
+                              fontSize: 13,
+                              color: '#dc2626',
+                              cursor: 'pointer',
+                              borderRadius: 4,
+                              transition: 'background-color 0.2s'
+                            }}
+                          >
+                            删除模型
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                {/* 版本与文件 */}
+                {/* Versions and Files */}
                 {expanded[m.name]?.open && (
-                  <div style={{ marginTop:10, display:'grid', gridTemplateColumns:'1fr', gap:8 }}>
-                    <div style={{ marginBottom:6, color:'var(--secondary-text-color)', fontSize:12 }}>
-                      版本：{Array.isArray(m.versions) && m.versions.length>0 ? m.versions.join(', ') : '无'}
-                    </div>
-                    {Array.isArray(m.versions) && m.versions.length>0 ? (
-                      <div style={{ display:'grid', gridTemplateColumns: embedded ? '1fr' : '1fr', gap:6 }}>
+                  <div style={{ padding: '0 20px 20px' }}>
+                    {Array.isArray(m.versions) && m.versions.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {m.versions.map((ver) => (
-                          <div key={ver} className="card" style={{ padding: 10 }}>
-                            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                                <Chip bg="#DBEAFE" color="#1E40AF">版本 {ver}</Chip>
-                                <button className="btn sm" onClick={() => {
-                                  const hasFiles = Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length>0;
-                                  if (hasFiles) {
-                                    // 收起文件
-                                    setExpanded(prev => ({
-                                      ...prev,
-                                      [m.name]: {
-                                        ...(prev[m.name] || {}),
-                                        files: { ...(prev[m.name]?.files || {}), [ver]: [] }
-                                      }
-                                    }));
-                                  } else {
-                                    refreshFiles(m.name, ver);
-                                  }
-                                }}>{(Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length>0) ? '收起文件' : '查看文件'}</button>
+                          <div 
+                            key={ver} 
+                            style={{ 
+                              background: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: 8,
+                              padding: 16,
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            {/* Version Header */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <Chip variant="info">
+                                  <IconDot color="#3b82f6" size={6} />
+                                  版本 {ver}
+                                </Chip>
+                                
+                                <button 
+                                  onClick={() => {
+                                    const hasFiles = Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length > 0;
+                                    if (hasFiles) {
+                                      setExpanded(prev => ({
+                                        ...prev,
+                                        [m.name]: {
+                                          ...(prev[m.name] || {}),
+                                          files: { ...(prev[m.name]?.files || {}), [ver]: [] }
+                                        }
+                                      }));
+                                    } else {
+                                      refreshFiles(m.name, ver);
+                                    }
+                                  }}
+                                  style={{
+                                    background: 'white',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: 6,
+                                    padding: '6px 12px',
+                                    fontSize: 12,
+                                    color: '#374151',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  <FileIcon size={14} />
+                                  {(Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length > 0) ? '收起文件' : '查看文件'}
+                                </button>
                               </div>
-                              <div style={{ position:'relative' }}>
-                                <button className="btn sm" onClick={() => setOpenMenuVersion(prev => ({ ...prev, [m.name]: (prev[m.name] === ver ? null : ver) }))}>更多 ▾</button>
+                              
+                              <div style={{ position: 'relative' }}>
+                                <button 
+                                  onClick={() => setOpenMenuVersion(prev => ({ ...prev, [m.name]: (prev[m.name] === ver ? null : ver) }))}
+                                  style={{
+                                    background: 'white',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: 6,
+                                    padding: '6px 10px',
+                                    fontSize: 12,
+                                    color: '#6b7280',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  ⋯
+                                </button>
                                 {openMenuVersion[m.name] === ver && (
-                                  <div className="card" style={{ position:'absolute', right:0, top:'110%', zIndex:10, padding:8, display:'flex', flexDirection:'column', gap:6, minWidth:160 }}>
-                                    <button className="btn sm danger" onClick={() => { setOpenMenuVersion(prev => ({ ...prev, [m.name]: null })); handleDelete({ modelName: m.name, version: ver }); }}>删除该版本</button>
+                                  <div style={{
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: '100%',
+                                    marginTop: 4,
+                                    zIndex: 10,
+                                    background: 'white',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: 8,
+                                    padding: 8,
+                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                    minWidth: 140
+                                  }}>
+                                    <button 
+                                      onClick={() => { setOpenMenuVersion(prev => ({ ...prev, [m.name]: null })); handleDelete({ modelName: m.name, version: ver }); }}
+                                      style={{
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        background: 'none',
+                                        border: 'none',
+                                        padding: '8px 12px',
+                                        fontSize: 13,
+                                        color: '#dc2626',
+                                        cursor: 'pointer',
+                                        borderRadius: 4,
+                                        transition: 'background-color 0.2s'
+                                      }}
+                                    >
+                                      删除版本
+                                    </button>
                                   </div>
                                 )}
                               </div>
                             </div>
-                            {expanded[m.name]?.loading?.[ver] ? (
-                              <div className="tip-box" style={{ marginTop:6 }}>加载文件中...</div>
-                            ) : (Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length>0 ? (
-                              <div style={{ marginTop:6, display:'grid', gridTemplateColumns: embedded ? '1fr' : '1fr 1fr', gap:8 }}>
+
+                            {/* Loading State */}
+                            {expanded[m.name]?.loading?.[ver] && (
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                padding: 12,
+                                background: 'white',
+                                borderRadius: 6,
+                                border: '1px solid #e5e7eb'
+                              }}>
+                                <div style={{
+                                  width: 16,
+                                  height: 16,
+                                  border: '2px solid #e5e7eb',
+                                  borderTop: '2px solid #4f46e5',
+                                  borderRadius: '50%',
+                                  animation: 'spin 1s linear infinite'
+                                }}></div>
+                                <span style={{ color: '#6b7280', fontSize: 13 }}>加载文件中...</span>
+                              </div>
+                            )}
+
+                            {/* Files List */}
+                            {Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length > 0 && (
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
                                 {expanded[m.name]?.files?.[ver].map((fItem, i) => (
-                                  <div key={i} className="card" style={{ padding:8, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                                    <div style={{ fontFamily:'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', fontSize:12 }}>
-                                      <span style={{ fontWeight: /^(model\.(onnx|plan|pt))$/i.test(fItem.name) ? 700 : 400 }}>
-                                        {fItem.name}
-                                      </span>
-                                      {/^(model\.(onnx|plan|pt))$/i.test(fItem.name) && (
-                                        <Chip bg="#EDE9FE" color="#5B21B6" title="主文件">主文件</Chip>
-                                      )}
-                                      <span style={{ marginLeft:8, color:'var(--secondary-text-color)' }}>
-                                        {(fItem.size/1024).toFixed(2)} KB · {new Date((fItem.mtime||0)*1000).toLocaleString()}
-                                      </span>
+                                  <div 
+                                    key={i} 
+                                    style={{ 
+                                      background: 'white',
+                                      border: '1px solid #e5e7eb',
+                                      borderRadius: 6,
+                                      padding: 12,
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      gap: 12
+                                    }}
+                                  >
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                        <FileIcon size={16} color="#6b7280" />
+                                        <span style={{ 
+                                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                                          fontSize: 13,
+                                          fontWeight: /^(model\.(onnx|plan|pt))$/i.test(fItem.name) ? 600 : 400,
+                                          color: '#111827'
+                                        }}>
+                                          {fItem.name}
+                                        </span>
+                                        {/^(model\.(onnx|plan|pt))$/i.test(fItem.name) && (
+                                          <Chip variant="purple" title="主模型文件">
+                                            主文件
+                                          </Chip>
+                                        )}
+                                      </div>
+                                      <div style={{ 
+                                        fontSize: 11,
+                                        color: '#6b7280',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 8
+                                      }}>
+                                        <span>{(fItem.size / 1024).toFixed(2)} KB</span>
+                                        <IconDot color="#d1d5db" size={4} />
+                                        <span>{new Date((fItem.mtime || 0) * 1000).toLocaleString()}</span>
+                                      </div>
                                     </div>
-                                    <div style={{ display:'flex', gap:8 }}>
-                                      <button className="btn sm" onClick={() => copyText(fItem.path, '已复制文件路径')}>复制路径</button>
-                                    </div>
+                                    
+                                    <button 
+                                      onClick={() => copyText(fItem.path, '已复制文件路径')}
+                                      style={{
+                                        background: '#f9fafb',
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: 6,
+                                        padding: '6px 12px',
+                                        fontSize: 12,
+                                        color: '#374151',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        flexShrink: 0
+                                      }}
+                                    >
+                                      复制路径
+                                    </button>
                                   </div>
                                 ))}
                               </div>
-                            ) : (
-                              <div className="tip-box" style={{ marginTop:6 }}>暂无文件</div>
-                            ))}
+                            )}
+
+                            {/* No Files Message */}
+                            {Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length === 0 && !expanded[m.name]?.loading?.[ver] && (
+                              <div style={{
+                                padding: 16,
+                                background: 'white',
+                                borderRadius: 6,
+                                border: '1px solid #e5e7eb',
+                                textAlign: 'center',
+                                color: '#6b7280',
+                                fontSize: 13
+                              }}>
+                                暂无文件
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="tip-box">该模型没有版本目录</div>
+                      <div style={{
+                        padding: 16,
+                        background: '#fef3c7',
+                        border: '1px solid #fde68a',
+                        borderRadius: 8,
+                        color: '#92400e',
+                        fontSize: 13,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8
+                      }}>
+                        <IconDot color="#f59e0b" size={8} />
+                        该模型没有版本目录
+                      </div>
                     )}
                   </div>
                 )}
@@ -285,10 +769,85 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
             ))}
           </div>
         ) : (
-          <div className="tip-box">未发现模型</div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 60,
+            background: 'white',
+            borderRadius: 12,
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+          }}>
+            <FolderIcon size={48} color="#d1d5db" />
+            <div style={{ 
+              marginTop: 16,
+              fontSize: 16,
+              fontWeight: 500,
+              color: '#6b7280',
+              textAlign: 'center'
+            }}>
+              {search ? `未找到匹配 "${search}" 的模型` : '未发现模型'}
+            </div>
+            <div style={{ 
+              marginTop: 8,
+              fontSize: 14,
+              color: '#9ca3af',
+              textAlign: 'center'
+            }}>
+              {search ? '尝试调整搜索条件' : '请检查仓库路径是否正确'}
+            </div>
+          </div>
         ))}
       </div>
-      {toast && <div className="tip-box" style={{ marginTop:8 }}>{toast}</div>}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: 'white',
+          padding: '12px 20px',
+          borderRadius: 8,
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          fontSize: 14,
+          fontWeight: 500,
+          zIndex: 1000,
+          animation: 'slideInUp 0.3s ease-out'
+        }}>
+          {toast}
+        </div>
+      )}
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes slideInUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        button:hover {
+          transform: translateY(-1px);
+        }
+        
+        .card:hover {
+          transform: translateY(-2px);
+        }
+      `}</style>
     </div>
   );
 }

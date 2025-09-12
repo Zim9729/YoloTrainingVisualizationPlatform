@@ -36,6 +36,7 @@
 - Supports multi-task parallel training
 - Supports single image inference testing by uploading image paths
 - Fully local operation, no reliance on cloud platforms
+- Model export supported (ONNX / TorchScript / OpenVINO / TensorRT), with optional integration into a Triton model repository
 
 ## 📦 Installation Instructions
 
@@ -156,6 +157,15 @@ Backend version endpoint: `GET /info`, current `1.0.0`. The frontend checks comp
   - `POST /IModel/uploadTestInput`: upload a test image (multipart form in browser)
   - list/load tasks, index and download result files
 
+Export and artifact endpoints (see root `openapi.yaml` for details):
+
+- `POST /IModel/runModelExport`: start an export task (supports `onnx/torchscript/openvino/engine`)
+- `GET /IModel/getExportTaskLog`: poll export logs (with `exportKey`)
+- `GET /IModel/getExportHistory`: list export history for a training result directory
+- `GET /IModel/getExportHistoryLog`: read persisted log for a finished export task
+- `GET /IModel/listExportArtifacts`: list files under `outputDir/export/`
+- `GET /IModel/downloadExportArtifact`: download a specific export artifact
+
 All endpoints return a unified structure (see `tools/format_output.py`). Frontend uses `src/api.js` to wrap `fetch` calls.
 
 OpenAPI spec: see `openapi.yaml` at repository root (import into Swagger UI / Insomnia / Postman).
@@ -220,6 +230,39 @@ cd app
 yarn dev
 ```
 
+## 📦 Model Export & Deployment
+
+The project provides built-in export via `ultralytics.YOLO`. Artifacts are consolidated under `export/` in the training result directory. Supported formats:
+
+- ONNX (`onnx`)
+- TorchScript (`torchscript`)
+- OpenVINO (`openvino`, produces `.xml` and `.bin`)
+- TensorRT (`engine`)
+
+Trigger export using `POST /IModel/runModelExport` with key fields:
+
+- `outputDir`: training result directory (contains `weights/best.pt`, etc.)
+- `modelType`: weight name without extension, e.g., `best`, `last`, `epoch10`
+- `formats`: array like `["onnx", "openvino"]`
+- `imgsz`, `half`, `simplify`, `opset`, `device`: low-level export parameters
+
+Logs & history:
+
+- Poll logs via `GET /IModel/getExportTaskLog?exportKey=...`
+- List history via `GET /IModel/getExportHistory?outputDir=...`
+- Read persisted log via `GET /IModel/getExportHistoryLog?outputDir=...&exportKey=...`
+- List artifacts via `GET /IModel/listExportArtifacts?outputDir=...` and download with `GET /IModel/downloadExportArtifact`
+
+### Triton Model Repository Browser (optional)
+
+Frontend page: `frontend/src/page/TritonRepoPage.jsx`
+
+- Enter a local Triton `model_repository` path to browse models, versions, and files
+- Copy model/file paths and delete models or specific versions
+- Helps organize exported ONNX/TensorRT models for serving with Triton
+
+Note: some Triton-related backend endpoints are evolving; OpenAPI may not fully cover them. Refer to the page and backend implementation for the latest behavior.
+
 ## 🛠️ Packaging & Release Tips
 
 - Use `pyinstaller` to build backend single executable (set `debug=False` in `backend/main.py`).
@@ -251,7 +294,7 @@ yarn dev
 - [ ] Richer training visualizations (lr, loss breakdowns, PR curves)
 - [ ] Resume training, task cloning & comparison
 - [ ] More dataset formats and auto conversion
-- [ ] Model export (ONNX/TensorRT/OpenVINO) and deployment helper
+- [x] Initial support for model export (ONNX/TorchScript/OpenVINO/TensorRT); deployment helper and Triton integration to be improved continuously
 
 ## 🤝 Contribution Guide
 
