@@ -1,7 +1,7 @@
 from flask import request, Blueprint, send_file
 from tools.format_output import format_output
 from config import get_test_result_files_path, get_tasks_path, get_validation_result_files_path
-from run_in_thread import run_modeltest_in_thread, run_modelval_in_thread
+from run_in_thread import run_modeltest_in_thread, run_modelval_in_thread, run_modelexport_in_thread
 from IModel.validate import _to_plain_python
 import os
 import time
@@ -11,6 +11,8 @@ import re
 import json
 import base64
 import mimetypes
+from pathlib import Path
+from .triton_integration import register_model_to_triton, list_triton_models, remove_triton_model
 
 IModel_bp = Blueprint('IModel', __name__)
 
@@ -18,6 +20,7 @@ TEST_THREADS = {}
 TEST_LIST = []
 VAL_THREADS = {}
 VAL_LIST = []
+EXPORT_THREADS = {}
 
 def get_test_result_file(task_id):
     """
@@ -395,6 +398,514 @@ def get_all_validation():
         "validation": r_data
     })
 
+@IModel_bp.route("/runModelExport", methods=['POST'])
+def run_model_export():
+    """
+    启动模型导出（转换）任务
+    Body JSON: taskID, taskName, outputDir, modelType, formats, imgsz, half, simplify, opset, device
+    - outputDir: 训练结果目录（通常以 result 结尾或其父目录包含 result），导出会写入到 outputDir/export 下
+    - modelType: 要导出的权重名（如 best、last、epoch10），自动追加 .pt
+    - formats: 例如 ["onnx", "openvino", "torchscript", "engine"]
+    """
+    data = request.json or {}
+    task_id = data.get("taskID")
+    task_name = data.get("taskName")
+    output_dir = data.get("outputDir")
+    model_choice = data.get("modelType", "best")
+    formats = data.get("formats")
+    imgsz = int(data.get("imgsz", 640))
+    half = bool(data.get("half", False))
+    simplify = bool(data.get("simplify", False))
+    opset = data.get("opset", None)
+    device = data.get("device", "cpu")
+
+    if not task_id or not task_name or not output_dir:
+        return format_output(code=400, msg="缺少必要的参数(step:1)")
+
+    timestamp = int(time.time())
+
+    # 统一处理 output_dir，若末级目录为 "result"，保留它作为基准导出目录
+    norm_output_dir = os.path.normpath(output_dir)
+    base_output_dir = norm_output_dir
+
+    # 定位权重文件
+    weight_file = f"{model_choice}.pt"
+    weight_path = ""
+    for root, dirs, files in os.walk(base_output_dir):
+        if weight_file in files:
+            weight_path = os.path.join(root, weight_file)
+            break
+
+    if not os.path.exists(weight_path):
+        return format_output(code=404, msg=f"模型权重文件未找到: {model_choice}.pt, {weight_path}")
+
+    try:
+        export_key = f"{task_id}_{timestamp}"
+
+        # Triton 集成参数
+        triton_repo_path = data.get("tritonRepoPath")
+        triton_model_name = data.get("tritonModelName")
+        enable_triton = bool(data.get("enableTriton", False))
+        
+        thread, log_stream = run_modelexport_in_thread(
+            task_id=export_key,
+            model_path=weight_path,
+            output_dir=base_output_dir,
+            result_file_path=None,
+            formats=formats,
+            imgsz=imgsz,
+            half=half,
+            simplify=simplify,
+            opset=opset,
+            device=device,
+            triton_repo_path=triton_repo_path,
+            triton_model_name=triton_model_name,
+            enable_triton=enable_triton,
+        )
+
+        EXPORT_THREADS[export_key] = {
+            "thread": thread,
+            "log": log_stream,
+            "task_id": task_id,
+            "task_name": task_name,
+            "output_dir": base_output_dir,
+            "model_choice": model_choice,
+            "formats": formats,
+            "imgsz": imgsz,
+            "startedAt": timestamp,
+            "triton_repo_path": triton_repo_path,
+            "triton_model_name": triton_model_name,
+            "enable_triton": enable_triton,
+        }
+
+        # 写入导出历史记录到 output_dir/export/export_history.json
+        try:
+            export_dir = os.path.join(base_output_dir, "export")
+            os.makedirs(export_dir, exist_ok=True)
+            history_file = os.path.join(export_dir, "export_history.json")
+            entry = {
+                "exportKey": export_key,
+                "task_id": task_id,
+                "task_name": task_name,
+                "output_dir": base_output_dir,
+                "model_choice": model_choice,
+                "formats": formats,
+                "imgsz": imgsz,
+                "startedAt": timestamp,
+                "triton_repo_path": triton_repo_path,
+                "triton_model_name": triton_model_name,
+                "enable_triton": enable_triton,
+            }
+            history = []
+            try:
+                if os.path.exists(history_file):
+                    with open(history_file, 'r', encoding='utf-8') as hf:
+                        history = json.load(hf) or []
+            except Exception:
+                history = []
+            history.append(entry)
+            with open(history_file, 'w', encoding='utf-8') as hf:
+                json.dump(history, hf, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+        return format_output(msg=f"导出任务 {export_key} 已启动", data={
+            "exportKey": export_key,
+            "output_dir": base_output_dir,
+        })
+    except Exception as e:
+        return format_output(code=500, msg=f"启动导出任务失败: {str(e)}")
+
+@IModel_bp.route("/getExportTaskLog", methods=['GET'])
+def get_export_task_log():
+    """
+    获取导出任务的终端输出
+    Query: exportKey
+    """
+    export_key = request.args.get("exportKey")
+    if not export_key:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    task_info = EXPORT_THREADS.get(export_key)
+    if not task_info:
+        return format_output(code=404, msg="任务未在运行，或不存在")
+
+    log_q = task_info["log"]
+    logs = []
+    while not log_q.empty():
+        logs.append(log_q.get())
+
+    if "log_cache" not in task_info:
+        task_info["log_cache"] = []
+    task_info["log_cache"].extend(logs)
+
+    log_text = "\n".join(task_info["log_cache"])
+    is_running = task_info["thread"].is_alive()
+
+    return format_output(data={
+        "log": log_text,
+        "is_running": is_running,
+        "meta": {
+            "task_id": task_info.get("task_id"),
+            "task_name": task_info.get("task_name"),
+            "output_dir": task_info.get("output_dir"),
+            "model_choice": task_info.get("model_choice"),
+            "formats": task_info.get("formats"),
+            "imgsz": task_info.get("imgsz"),
+            "startedAt": task_info.get("startedAt"),
+        }
+    })
+
+@IModel_bp.route("/getExportHistoryLog", methods=["GET"])
+def get_export_history_log():
+    """
+    读取历史导出任务的日志内容
+    Query: outputDir, exportKey
+    返回: { log: str }
+    """
+    output_dir = request.args.get("outputDir")
+    export_key = request.args.get("exportKey")
+    if not output_dir or not export_key:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    try:
+        log_file = os.path.join(output_dir, "export", f"{export_key}.log")
+        if not os.path.exists(log_file):
+            return format_output(code=404, msg="未找到历史日志文件")
+        with open(log_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return format_output(data={"log": content})
+    except Exception as e:
+        return format_output(code=500, msg=f"读取历史日志失败: {e}")
+
+@IModel_bp.route("/getExportHistory", methods=["GET"])
+def get_export_history():
+    """
+    获取某个输出目录下的导出历史记录
+    Query: outputDir（训练结果目录，通常以 result 结尾）
+    返回: { history: [...] }
+    """
+    output_dir = request.args.get("outputDir")
+    if not output_dir:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    export_dir = os.path.join(output_dir, "export")
+    history_file = os.path.join(export_dir, "export_history.json")
+    try:
+        if os.path.exists(history_file):
+            with open(history_file, 'r', encoding='utf-8') as hf:
+                data = json.load(hf) or []
+        else:
+            data = []
+    except Exception:
+        data = []
+
+    # 按时间倒序
+    if isinstance(data, list):
+        try:
+            data.sort(key=lambda x: x.get("startedAt") or 0, reverse=True)
+        except Exception:
+            pass
+
+    return format_output(data={"history": data})
+
+@IModel_bp.route("/deleteExportHistory", methods=["POST"])
+def delete_export_history():
+    """
+    删除一条导出历史记录，并删除其日志文件
+    Body JSON: { outputDir: str, exportKey: str }
+    """
+    data = request.get_json(silent=True) or {}
+    output_dir = data.get("outputDir")
+    export_key = data.get("exportKey")
+    if not output_dir or not export_key:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    try:
+        export_dir = os.path.join(output_dir, "export")
+        os.makedirs(export_dir, exist_ok=True)
+        history_file = os.path.join(export_dir, "export_history.json")
+        # 删除日志文件
+        log_file = os.path.join(export_dir, f"{export_key}.log")
+        try:
+            if os.path.exists(log_file):
+                os.remove(log_file)
+        except Exception:
+            pass
+
+        # 过滤历史记录
+        history = []
+        try:
+            if os.path.exists(history_file):
+                with open(history_file, 'r', encoding='utf-8') as hf:
+                    history = json.load(hf) or []
+        except Exception:
+            history = []
+
+        new_history = [h for h in history if h.get("exportKey") != export_key]
+        try:
+            with open(history_file, 'w', encoding='utf-8') as hf:
+                json.dump(new_history, hf, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+        return format_output(msg="删除成功")
+    except Exception as e:
+        return format_output(code=500, msg=f"删除失败: {e}")
+
+@IModel_bp.route("/listExportArtifacts", methods=["GET"])
+def list_export_artifacts():
+    """
+    列出导出产物文件（递归）
+    Query: outputDir（训练结果目录，通常以 result 结尾）
+    返回: { files: [ { path, size, mtime, mime } ] }
+    """
+    output_dir = request.args.get("outputDir")
+    if not output_dir:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    base = os.path.normpath(os.path.join(output_dir, "export"))
+    if not os.path.isdir(base):
+        return format_output(data={"files": []})
+
+    files = []
+    for root, dirs, filenames in os.walk(base):
+        for name in filenames:
+            fp = os.path.join(root, name)
+            try:
+                stat = os.stat(fp)
+                mime, _ = mimetypes.guess_type(fp)
+                rel = os.path.relpath(fp, base).replace("\\", "/")
+                files.append({
+                    "path": rel,
+                    "size": stat.st_size,
+                    "mtime": int(stat.st_mtime),
+                    "mime": mime or "application/octet-stream",
+                })
+            except Exception:
+                pass
+
+    files.sort(key=lambda x: x.get("path") or "")
+    return format_output(data={"files": files})
+
+@IModel_bp.route("/downloadExportArtifact", methods=["GET"])
+def download_export_artifact():
+    """
+    下载导出产物文件
+    Query: outputDir, filePath（相对 outputDir/export 的路径，或绝对路径但必须位于该目录下）
+    """
+    output_dir = request.args.get("outputDir")
+    file_path = request.args.get("filePath")
+    if not output_dir or not file_path:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    export_base = Path(os.path.join(output_dir, "export")).resolve()
+
+    if os.path.isabs(file_path):
+        target_path = Path(file_path).resolve()
+    else:
+        target_path = (export_base / file_path).resolve()
+
+    try:
+        # 路径安全校验：必须位于 export_base 下
+        if export_base not in target_path.parents and export_base != target_path:
+            return format_output(code=400, msg="非法路径")
+        if not target_path.exists() or not target_path.is_file():
+            return format_output(code=404, msg="文件不存在")
+        return send_file(str(target_path), as_attachment=True, download_name=target_path.name)
+    except Exception as e:
+        return format_output(code=500, msg=f"下载失败: {e}")
+
+@IModel_bp.route("/registerExportArtifactToTriton", methods=["POST"])
+def register_export_artifact_to_triton():
+    """
+    将单个导出产物注册到 Triton 模型仓库
+    Body JSON: { outputDir: str, filePath: str, tritonRepoPath: str, tritonModelName?: str, imgsz?: int }
+    支持: .onnx, .plan/.engine, .pt
+    """
+    data = request.get_json(silent=True) or {}
+    output_dir = data.get("outputDir")
+    file_path = data.get("filePath")
+    triton_repo_path = data.get("tritonRepoPath")
+    triton_model_name = data.get("tritonModelName")
+    imgsz = int(data.get("imgsz") or 640)
+
+    if not output_dir or not file_path or not triton_repo_path:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    export_base = Path(os.path.join(output_dir, "export")).resolve()
+    target_path = (export_base / file_path).resolve()
+
+    # 路径安全
+    if export_base not in target_path.parents and export_base != target_path:
+        return format_output(code=400, msg="非法路径")
+    if not target_path.exists() or not target_path.is_file():
+        return format_output(code=404, msg="文件不存在")
+
+    # 校验 Triton 仓库路径
+    repo = Path(triton_repo_path)
+    if not repo.exists() or not repo.is_dir():
+        return format_output(code=400, msg="Triton 仓库路径不存在或不是目录")
+    try:
+        testfile = repo / ".write_test.tmp"
+        with open(testfile, 'w', encoding='utf-8') as tf:
+            tf.write("ok")
+        os.remove(testfile)
+    except Exception:
+        return format_output(code=400, msg="Triton 仓库路径不可写")
+
+    ext = target_path.suffix.lower()
+    if ext == ".onnx":
+        fmt = "onnx"
+    elif ext in (".plan", ".engine"):
+        fmt = "engine"
+    elif ext == ".pt":
+        fmt = "torchscript"
+    else:
+        return format_output(code=400, msg=f"暂不支持注册该格式: {ext}")
+
+    base_name = target_path.stem
+    model_name = triton_model_name or f"{base_name}_{fmt}"
+
+    ok = register_model_to_triton(
+        model_path=str(target_path),
+        triton_repo_path=triton_repo_path,
+        model_name=model_name,
+        model_format=fmt,
+        input_shape=[1, 3, imgsz, imgsz],
+        logger=None,
+    )
+    if not ok:
+        return format_output(code=500, msg="注册到 Triton 失败")
+    return format_output(msg="已注册到 Triton", data={"model_name": model_name})
+
+@IModel_bp.route("/listTritonModels", methods=["GET"])
+def list_triton_models_api():
+    """
+    列出 Triton 模型仓库中的所有模型
+    Query: tritonRepoPath
+    返回: { models: [ { name, path, versions, config_exists } ] }
+    """
+    triton_repo_path = request.args.get("tritonRepoPath")
+    if not triton_repo_path:
+        return format_output(code=400, msg="缺少必要参数: tritonRepoPath")
+    try:
+        models = list_triton_models(triton_repo_path)
+        return format_output(data={"models": models})
+    except Exception as e:
+        return format_output(code=500, msg=f"读取 Triton 仓库失败: {e}")
+
+@IModel_bp.route("/listTritonModelFiles", methods=["GET"])
+def list_triton_model_files_api():
+    """
+    列出某个 Triton 模型某版本目录下的文件
+    Query: tritonRepoPath, modelName, version (默认 1)
+    返回: { files: [ { name, size, mtime, path } ] }
+    """
+    triton_repo_path = request.args.get("tritonRepoPath")
+    model_name = request.args.get("modelName")
+    version = request.args.get("version") or "1"
+    if not triton_repo_path or not model_name:
+        return format_output(code=400, msg="缺少必要参数: tritonRepoPath 或 modelName")
+    try:
+        model_dir = Path(triton_repo_path) / model_name / version
+        if not model_dir.exists() or not model_dir.is_dir():
+            return format_output(data={"files": []})
+        files = []
+        for p in model_dir.iterdir():
+            if p.is_file():
+                try:
+                    st = p.stat()
+                    files.append({
+                        "name": p.name,
+                        "size": st.st_size,
+                        "mtime": int(st.st_mtime),
+                        "path": str(p)
+                    })
+                except Exception:
+                    pass
+        files.sort(key=lambda x: x.get("name") or "")
+        return format_output(data={"files": files})
+    except Exception as e:
+        return format_output(code=500, msg=f"读取文件失败: {e}")
+
+@IModel_bp.route("/deleteTritonModel", methods=["POST"])
+def delete_triton_model_api():
+    """
+    删除 Triton 模型或指定版本
+    Body JSON: { tritonRepoPath, modelName, version? }
+    返回: { ok: bool }
+    """
+    data = request.get_json(silent=True) or {}
+    triton_repo_path = data.get("tritonRepoPath")
+    model_name = data.get("modelName")
+    version = data.get("version")
+    if not triton_repo_path or not model_name:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+    try:
+        ok = remove_triton_model(triton_repo_path, model_name, version)
+        if not ok:
+            return format_output(code=400, msg="未找到要删除的目标或删除失败")
+        return format_output(data={"ok": True})
+    except Exception as e:
+        return format_output(code=500, msg=f"删除失败: {e}")
+
+@IModel_bp.route("/listRegisteredExportArtifacts", methods=["POST"])
+def list_registered_export_artifacts():
+    """
+    批量检查哪些导出产物已注册进 Triton 仓库
+    Body JSON: { outputDir: str, tritonRepoPath: str }
+    返回: { items: [ { filePath, model_name, registered } ] }
+    """
+    data = request.get_json(silent=True) or {}
+    output_dir = data.get("outputDir")
+    triton_repo_path = data.get("tritonRepoPath")
+    if not output_dir or not triton_repo_path:
+        return format_output(code=400, msg="缺少必要参数(step:1)")
+
+    export_base = Path(os.path.join(output_dir, "export")).resolve()
+    repo = Path(triton_repo_path)
+    if not export_base.exists() or not repo.exists() or not repo.is_dir():
+        return format_output(code=200, data={"items": []})
+
+    def infer_fmt(path: Path):
+        ext = path.suffix.lower()
+        if ext == ".onnx":
+            return "onnx"
+        if ext in (".plan", ".engine"):
+            return "engine"
+        if ext == ".pt":
+            return "torchscript"
+        return None
+
+    items = []
+    for root, dirs, filenames in os.walk(export_base):
+        for name in filenames:
+            p = Path(root) / name
+            rel = p.relative_to(export_base).as_posix()
+            fmt = infer_fmt(p)
+            if not fmt:
+                continue
+            base = p.stem
+            model_name = f"{base}_{fmt}"
+            model_dir = repo / model_name
+            version_dir = model_dir / "1"
+            # 目标文件名
+            if fmt == "onnx":
+                model_file = version_dir / "model.onnx"
+            elif fmt == "engine":
+                model_file = version_dir / "model.plan"
+            else:
+                model_file = version_dir / "model.pt"
+            registered = model_dir.exists() and version_dir.exists() and model_file.exists()
+            items.append({
+                "filePath": rel,
+                "model_name": model_name,
+                "registered": bool(registered),
+            })
+
+    return format_output(data={"items": items})
+
 @IModel_bp.route("/getValTaskLog", methods=['GET'])
 def get_val_task_log():
     """
@@ -488,7 +999,9 @@ def get_all_trained_models():
             "folder": folder,
             "task_name": None,
             "output_dir": os.path.join(training_dir, folder, "result"),
-            "weights": {}
+            "weights": {},
+            # dataset metadata (to be filled from task config)
+            "dataset": None
         }
 
         try:
@@ -508,6 +1021,24 @@ def get_all_trained_models():
                 with open(task_config_file, "r", encoding="utf-8") as f:
                     task_config = yaml.safe_load(f)
                     model_info["task_name"] = task_config.get("taskName", None)
+                    # datasetPath recorded when task was created
+                    ds_path = task_config.get("datasetPath")
+                    if isinstance(ds_path, str) and os.path.isdir(ds_path):
+                        info_file = os.path.join(ds_path, "yolo_training_visualization_info.yaml")
+                        ds_info = {"path": ds_path}
+                        try:
+                            if os.path.exists(info_file):
+                                with open(info_file, 'r', encoding='utf-8') as f_info:
+                                    info_data = yaml.safe_load(f_info) or {}
+                                ds_info.update({
+                                    "name": info_data.get("name"),
+                                    "version": info_data.get("version"),
+                                    "yaml_file_path": info_data.get("yaml_file_path"),
+                                    "type": info_data.get("type", "YOLO"),
+                                })
+                        except Exception:
+                            pass
+                        model_info["dataset"] = ds_info
         except Exception as e:
             model_info["task_name"] = None
 

@@ -11,6 +11,9 @@ import ModelsPage from "../page/ModelsPage";
 import TaskResultDetailedPage from "../page/TaskResultDetailedPage";
 import ModelTestPage from "../page/ModelTestPage";
 import LabelStudioImportPage from "../page/LabelStudioImportPage";
+import ModelExportPage from "../page/ModelExportPage";
+import SettingsPage from "../page/SettingsPage";
+import TritonRepoPage from "../page/TritonRepoPage";
 
 function Main({ pageUrl = "home", setPageUrl }) {
     // 识别页面类型并提取参数
@@ -44,6 +47,9 @@ function Main({ pageUrl = "home", setPageUrl }) {
         taskResultDetailed: TaskResultDetailedPage,
         modelTest: ModelTestPage,
         labelStudioImport: LabelStudioImportPage,
+        modelExport: ModelExportPage,
+        settings: SettingsPage,
+        tritonRepo: TritonRepoPage,
     };
 
     const PageComponent = PageComponentMap[pageType];

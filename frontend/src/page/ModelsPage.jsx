@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import TritonRepoPage from "./TritonRepoPage";
 
 import Icon_Info_circle_fill from "../assets/icons/info-circle-fill.svg";
 
 function ModelsPage({ setPageUrl, parameter }) {
     const [localModelList, setLocalModelList] = useState([]);
     const [trainedModelList, setTrainedModelList] = useState([]);
-    const [showModelType, setShowModelType] = useState(0);
+    const [showModelType, setShowModelType] = useState(0); // 0: 本地基础模型, 1: 训练结果模型, 2: Triton 仓库
 
     useEffect(() => {
         api.get("/ITraining/getAllBaseModelFromLocal")
@@ -45,9 +46,30 @@ function ModelsPage({ setPageUrl, parameter }) {
         setPageUrl(`modelTest?type=newTest&taskID=${taskID}&taskName=${taskName}&folder=${folder}&weights=${weights}&outputDir=${outputDir}`);
     };
 
-    const startModelValidation = (taskID, taskName, folder, weightsArray, outputDir) => {
-        const weights = weightsArray.join(",");
-        setPageUrl(`modelTest?type=newVal&taskID=${taskID}&taskName=${taskName}&folder=${folder}&weights=${weights}&outputDir=${outputDir}`);
+    const startModelValidation = (model) => {
+        const weights = Object.keys(model.weights).join(",");
+        // 尝试从 model.dataset 拼接数据集信息
+        let datasetPath = "";
+        let datasetYamlPath = "";
+        try {
+            if (model.dataset && model.dataset.path) {
+                datasetPath = model.dataset.path.replace(/\\\\/g, "/");
+                if (model.dataset.yaml_file_path) {
+                    datasetYamlPath = `${datasetPath}/${model.dataset.yaml_file_path}`;
+                }
+            }
+        } catch (_) {}
+        const qs = new URLSearchParams({
+            type: 'newVal',
+            taskID: model.task_id,
+            taskName: model.task_name || '',
+            folder: model.folder,
+            weights,
+            outputDir: model.output_dir || '',
+            datasetPath,
+            datasetYamlPath,
+        }).toString();
+        setPageUrl(`modelTest?${qs}`);
     };
 
     return (
@@ -61,6 +83,9 @@ function ModelsPage({ setPageUrl, parameter }) {
                 </div>
                 <div className={`card hover-enabled${showModelType == 1 ? " click" : ""}`} style={{ flex: '1' }} onClick={() => { setShowModelType(1) }}>
                     <h1 className="title mb12">训练结果模型</h1>
+                </div>
+                <div className={`card hover-enabled${showModelType == 2 ? " click" : ""}`} style={{ flex: '1' }} onClick={() => { setShowModelType(2) }}>
+                    <h1 className="title mb12">Triton 仓库</h1>
                 </div>
             </div>
 
@@ -96,6 +121,21 @@ function ModelsPage({ setPageUrl, parameter }) {
                                 <br />
                                 存放目录名称: {model.folder}
                             </p>
+                            {model.dataset && (
+                                <p className="content">
+                                    <strong>训练数据集</strong>
+                                    <br />
+                                    名称: {model.dataset.name || 'Unknown'}{model.dataset.version ? ` 版本: ${model.dataset.version}` : ''}
+                                    <br />
+                                    路径: {model.dataset.path}
+                                    {model.dataset.yaml_file_path && (
+                                        <>
+                                            <br />
+                                            配置: {model.dataset.yaml_file_path}
+                                        </>
+                                    )}
+                                </p>
+                            )}
                             <p className="content">
                                 {["best.pt", "last.pt"].map(key => (
                                     model.weights[key] && (
@@ -113,7 +153,16 @@ function ModelsPage({ setPageUrl, parameter }) {
                                 )}
                             </p>
                             <button className="btn sm" onClick={() => startModelTest(model.task_id, model.task_name, model.folder, Object.keys(model.weights), model.output_dir)} style={{ marginRight: '8px' }}>进行测试</button>
-                            <button className="btn sm" onClick={() => startModelValidation(model.task_id, model.task_name, model.folder, Object.keys(model.weights), model.output_dir)} style={{ marginRight: '8px' }}>进行验证</button>
+                            <button className="btn sm" onClick={() => startModelValidation(model)} style={{ marginRight: '8px' }}>进行验证</button>
+                            <button className="btn sm" onClick={() => {
+                                const qs = new URLSearchParams({
+                                    taskID: model.task_id,
+                                    taskName: model.task_name || '',
+                                    folder: model.folder,
+                                    outputDir: model.output_dir || '',
+                                }).toString();
+                                setPageUrl(`modelExport?${qs}`);
+                            }} style={{ marginRight: '8px' }}>导出/转换</button>
                             <button className="btn sm" onClick={() => {
                                 try {
                                     const ts = parseInt(model.folder.split('_')[2]);
@@ -127,6 +176,12 @@ function ModelsPage({ setPageUrl, parameter }) {
                     ))}
                 </>
             }
+
+            {showModelType === 2 && (
+                <div className="card" style={{ padding: '10px' }}>
+                    <TritonRepoPage setPageUrl={setPageUrl} embedded={true} />
+                </div>
+            )}
         </div>
     );
 }

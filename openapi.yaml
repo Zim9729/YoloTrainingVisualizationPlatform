@@ -29,6 +29,137 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StdResponse'
+  /IModel/runModelExport:
+    post:
+      summary: Start a model export (conversion) task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                taskID: { type: string }
+                taskName: { type: string }
+                outputDir: { type: string, description: Training result directory (ends with result) }
+                modelType: { type: string, description: Weight name without extension, e.g., best, last, epoch10 }
+                formats:
+                  type: array
+                  items: { type: string, enum: [onnx, torchscript, openvino, engine] }
+                imgsz: { type: integer, default: 640 }
+                half: { type: boolean, default: false }
+                simplify: { type: boolean, default: false }
+                opset: { type: integer, nullable: true }
+                device: { type: string, default: cpu }
+              required: [taskID, taskName, outputDir]
+      responses:
+        '200':
+          description: Started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/getExportTaskLog:
+    get:
+      summary: Get logs for a running export task
+      parameters:
+        - in: query
+          name: exportKey
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/getExportHistory:
+    get:
+      summary: Get export history for a training result directory
+      parameters:
+        - in: query
+          name: outputDir
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: History list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/getExportHistoryLog:
+    get:
+      summary: Get persisted log for a finished export task
+      parameters:
+        - in: query
+          name: outputDir
+          schema: { type: string }
+          required: true
+        - in: query
+          name: exportKey
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Log content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/deleteExportHistory:
+    post:
+      summary: Delete a single export history entry and its log file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                outputDir: { type: string }
+                exportKey: { type: string }
+              required: [outputDir, exportKey]
+      responses:
+        '200':
+          description: Delete status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/listExportArtifacts:
+    get:
+      summary: List exported artifacts under outputDir/export
+      parameters:
+        - in: query
+          name: outputDir
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: File list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/downloadExportArtifact:
+    get:
+      summary: Download a specific export artifact file
+      parameters:
+        - in: query
+          name: outputDir
+          schema: { type: string }
+          required: true
+        - in: query
+          name: filePath
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: File download
+          content:
+            application/octet-stream: {}
   /IModel/uploadTestInput:
     post:
       summary: Upload a test image to the server and return its saved path

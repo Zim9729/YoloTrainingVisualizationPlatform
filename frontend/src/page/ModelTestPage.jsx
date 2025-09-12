@@ -81,6 +81,62 @@ function ValResultImage({ taskID, filePath, style }) {
     return <img src={base64} style={style} alt="验证结果图" loading="lazy" />;
 }
 
+// 内联日志组件：针对某条历史记录，实时轮询日志并渲染到卡片内
+function InlineLogViewer({ filename, taskType }) {
+    const [logText, setLogText] = useState("");
+    const [isRunning, setIsRunning] = useState(false);
+
+    useEffect(() => {
+        if (!filename) return;
+        let timer = null;
+        let mounted = true;
+        const endpoint = taskType === 'validation' ? '/IModel/getValTaskLog' : '/IModel/getTaskLog';
+
+        const poll = async () => {
+            try {
+                const res = await api.get(`${endpoint}?filename=${encodeURIComponent(filename)}`);
+                if (!mounted) return;
+                if (res.code === 200 && res.data) {
+                    setLogText(res.data.log || "");
+                    setIsRunning(!!res.data.is_running);
+                }
+            } catch (e) {
+                if (mounted) {
+                    // 静默失败，避免打断页面
+                }
+            }
+        };
+
+        poll();
+        timer = setInterval(poll, 1000);
+        return () => {
+            mounted = false;
+            if (timer) clearInterval(timer);
+        };
+    }, [filename, taskType]);
+
+    return (
+        <div style={{ marginTop: '8px' }}>
+            <div style={{
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '10px',
+                background: 'var(--card-bg)',
+                maxHeight: '240px',
+                overflow: 'auto',
+                whiteSpace: 'pre-wrap',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                fontSize: '12px'
+            }}>
+                {logText || '暂无日志'}
+            </div>
+            <div style={{ marginTop: '6px', color: 'var(--secondary-text-color)', fontSize: '12px' }}>
+                状态：{isRunning ? '运行中' : '已结束'}
+            </div>
+        </div>
+    );
+}
+
 function ModelTestPage({ setPageUrl, parameter }) {
     const [modelList, setModelList] = useState([]);
     const [trainedModelList, setTrainedModelList] = useState([]);
@@ -94,6 +150,9 @@ function ModelTestPage({ setPageUrl, parameter }) {
     // 验证卡片展开控制
     const [showValPlots, setShowValPlots] = useState([]);   // 用作“显示列表”或“隐藏列表”，取决于默认开关
     const [showValTable, setShowValTable] = useState([]);   // 同上
+    // 历史记录内联日志展开控制
+    const [showTestLog, setShowTestLog] = useState([]);
+    const [showValLog, setShowValLog] = useState([]);
     // 验证历史默认展开选项
     const [defaultValTableOpen, setDefaultValTableOpen] = useState(false);
     const [defaultValPlotsOpen, setDefaultValPlotsOpen] = useState(false);
@@ -183,7 +242,7 @@ function ModelTestPage({ setPageUrl, parameter }) {
 
     const buildPerClassCSV = (rows) => {
         if (!Array.isArray(rows) || rows.length === 0) return '';
-        const header = ['Class','Images','Instances','P','R','mAP50','mAP50_95'];
+        const header = ['Class','Images','Instances','P','R','F1','mAP50','mAP50_95'];
         const escape = (v) => {
             if (v === null || v === undefined) return '';
             if (typeof v === 'number') return String(v);
@@ -250,7 +309,7 @@ function ModelTestPage({ setPageUrl, parameter }) {
     switch (parameter.type) {
         case "newTest":
             return (
-                <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <TestForm
                         modelList={modelList}
                         parameter={parameter}
@@ -265,11 +324,11 @@ function ModelTestPage({ setPageUrl, parameter }) {
                         parameter={parameter}
                         setPageUrl={setPageUrl}
                     />
-                </>
+                </div>
             );
         case "newVal":
             return (
-                <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <ValidationForm
                         modelList={modelList}
                         parameter={parameter}
@@ -284,7 +343,7 @@ function ModelTestPage({ setPageUrl, parameter }) {
                         parameter={parameter}
                         setPageUrl={setPageUrl}
                     />
-                </>
+                </div>
             );
         default:
             return (
@@ -304,6 +363,18 @@ function ModelTestPage({ setPageUrl, parameter }) {
 
                         return (
                             <div>
+                                {model.dataset && (
+                                    <div className="list-card" style={{ marginBottom: '12px', padding: '12px' }}>
+                                        <div style={{ fontWeight: 600, marginBottom: '6px' }}>训练数据集</div>
+                                        <div style={{ color: 'var(--secondary-text-color)', lineHeight: 1.7 }}>
+                                            名称: {model.dataset.name || 'Unknown'}{model.dataset.version ? ` 版本: ${model.dataset.version}` : ''}<br />
+                                            路径: {model.dataset.path}<br />
+                                            {model.dataset.yaml_file_path && (
+                                                <>配置: {model.dataset.yaml_file_path}</>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                                 {/* 显示控制工具栏 */}
                                 <div className="list-card" style={{ marginBottom: '16px', padding: '12px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -379,6 +450,9 @@ function ModelTestPage({ setPageUrl, parameter }) {
                                                                         <button className="btn sm" onClick={() => setShowTestResultImage(prev => prev.includes(k) ? prev.filter(i => i !== k) : [...prev, k])}>
                                                                             {show ? '收起结果图' : '查看结果图'}
                                                                         </button>
+                                                                        <button className="btn sm" onClick={() => setShowTestLog(prev => prev.includes(k) ? prev.filter(i => i !== k) : [...prev, k])}>
+                                                                            {showTestLog.includes(k) ? '收起日志' : '查看日志'}
+                                                                        </button>
                                                                         <button className="btn sm danger" onClick={() => handleDeleteTest(k)}>删除</button>
                                                                     </div>
                                                                 </div>
@@ -414,6 +488,9 @@ function ModelTestPage({ setPageUrl, parameter }) {
                                                                             </a>
                                                                         </div>
                                                                     </div>
+                                                                )}
+                                                                {showTestLog.includes(k) && (
+                                                                    <InlineLogViewer filename={k} taskType="test" />
                                                                 )}
                                                             </div>
                                                         );
@@ -456,6 +533,38 @@ function ModelTestPage({ setPageUrl, parameter }) {
                                                                 <br />
                                                                 <span style={{ fontSize: '13px', color: 'var(--secondary-text-color)' }}>使用 {splitPath(val.model_path).pop()} 进行验证</span>
                                                                 <br />
+                                                                {val.dataset_yaml_path && (
+                                                                    <>
+                                                                        <span style={{ fontSize: '13px', color: 'var(--secondary-text-color)' }}>
+                                                                            数据集：{(() => {
+                                                                                const pathParts = splitPath(val.dataset_yaml_path);
+                                                                                // 获取数据集文件夹名称（dataset.yaml的父目录）
+                                                                                return pathParts.length > 1 ? pathParts[pathParts.length - 2] : splitPath(val.dataset_yaml_path).pop();
+                                                                            })()}
+                                                                        </span>
+                                                                        <br />
+                                                                    </>
+                                                                )}
+                                                                {Array.isArray(val.names) && val.names.length > 0 && (
+                                                                    <>
+                                                                        <span style={{ fontSize: '13px', color: 'var(--secondary-text-color)' }}>类别：{val.names.join(', ')}</span>
+                                                                        <br />
+                                                                    </>
+                                                                )}
+                                                                {val.class_mismatch && (
+                                                                    <div style={{
+                                                                        marginTop: '6px',
+                                                                        padding: '8px 10px',
+                                                                        border: '1px solid #f0c36d',
+                                                                        background: '#fff8e5',
+                                                                        color: '#7a5b00',
+                                                                        borderRadius: '6px',
+                                                                        fontSize: '12px'
+                                                                    }}>
+                                                                        检测到模型类别数与数据集类别数不一致，已禁用图表和 COCO JSON 导出以避免崩溃。
+                                                                        模型类别数：{val.model_nc ?? '-'}；数据集类别数：{val.dataset_nc ?? '-'}。
+                                                                    </div>
+                                                                )}
                                                                 {val.metrics && (
                                                                     <span style={{ fontSize: '13px', color: 'var(--secondary-text-color)' }}>
                                                                         指标摘要：{Object.entries(val.metrics).slice(0, 4).map(([k1, v1]) => `${k1}: ${typeof v1 === 'number' ? v1.toFixed(4) : v1}`).join(' | ')}
@@ -477,6 +586,11 @@ function ModelTestPage({ setPageUrl, parameter }) {
                                                                         {showPlots ? '收起图表' : '查看图表'}
                                                                     </button>
                                                                 )}
+                                                                <button className="btn sm" onClick={() => setShowValLog(prev => 
+                                                                    prev.includes(k) ? prev.filter(i => i !== k) : [...prev, k]
+                                                                )}>
+                                                                    {showValLog.includes(k) ? '收起日志' : '查看日志'}
+                                                                </button>
                                                                 <button className="btn sm danger" onClick={() => handleDeleteValidation(k)}>删除</button>
                                                             </div>
                                                         </div>
@@ -502,21 +616,39 @@ function ModelTestPage({ setPageUrl, parameter }) {
                                                                         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: '680px' }}>
                                                                             <thead>
                                                                                 <tr>
-                                                                                    {['Class','Images','Instances','P','R','mAP50','mAP50_95'].map(h => (
+                                                                                    {['Class','Images','Instances','P','R','F1','mAP50','mAP50_95'].map(h => (
                                                                                         <th key={h} style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)', padding: '6px 8px' }}>{h.replace('mAP50_95','mAP50-95')}</th>
                                                                                     ))}
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
-                                                                                {[...val.per_class_rows].sort((a,b)=> (a.Class==='all')? -1 : (b.Class==='all')? 1 : 0).map((r, irow) => (
+                                                                                {(() => {
+                                                                                    const names = Array.isArray(val.names) ? val.names : null;
+                                                                                    const rows = [...val.per_class_rows];
+                                                                                    rows.sort((a, b) => {
+                                                                                        // 'all' 总是在最前
+                                                                                        if (a.Class === 'all') return -1;
+                                                                                        if (b.Class === 'all') return 1;
+                                                                                        if (names) {
+                                                                                            const ia = names.indexOf(a.Class);
+                                                                                            const ib = names.indexOf(b.Class);
+                                                                                            // 未找到的放到最后，保持稳定性
+                                                                                            const na = ia === -1 ? Number.MAX_SAFE_INTEGER : ia;
+                                                                                            const nb = ib === -1 ? Number.MAX_SAFE_INTEGER : ib;
+                                                                                            if (na !== nb) return na - nb;
+                                                                                        }
+                                                                                        return 0;
+                                                                                    });
+                                                                                    return rows.map((r, irow) => (
                                                                                     <tr key={irow}>
-                                                                                        {['Class','Images','Instances','P','R','mAP50','mAP50_95'].map(c => (
+                                                                                        {['Class','Images','Instances','P','R','F1','mAP50','mAP50_95'].map(c => (
                                                                                             <td key={c} style={{ padding: '6px 8px', borderBottom: '1px dashed var(--border-color)' }}>
                                                                                                 {typeof r[c] === 'number' ? r[c].toFixed(c==='Images'||c==='Instances'?0:3) : (r[c] ?? '')}
                                                                                             </td>
                                                                                         ))}
                                                                                     </tr>
-                                                                                ))}
+                                                                                    ));
+                                                                                })()}
                                                                             </tbody>
                                                                         </table>
                                                                     ) : (
@@ -596,8 +728,16 @@ function ModelTestPage({ setPageUrl, parameter }) {
                                                                 )}
                                                             </div>
                                                         )}
+                                                        {val.class_mismatch && (
+                                                            <div className="tip-box" style={{ marginTop: '8px', color: '#7a5b00', background: '#fff8e5', border: '1px solid #f0c36d' }}>
+                                                                由于类别数不一致，本次验证未生成图表（包括混淆矩阵）。
+                                                            </div>
+                                                        )}
                                                         {val.plots && !showPlots && (
                                                             <div className="tip-box" style={{ marginTop: '8px' }}>包含图表：可点击"查看图表"展开</div>
+                                                        )}
+                                                        {showValLog.includes(k) && (
+                                                            <InlineLogViewer filename={k} taskType="validation" />
                                                         )}
                                                     </div>
                                                 );

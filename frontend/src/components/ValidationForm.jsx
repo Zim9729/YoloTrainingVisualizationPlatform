@@ -25,15 +25,29 @@ function ValidationForm({
             if (res.code === 200) {
                 const dsList = res.data.datasets || [];
                 setDatasetList(dsList);
-                // 默认选择第一个数据集
+
+                // 1) 若页面参数携带了 datasetYamlPath，则优先使用它
+                const fromParamYaml = (parameter?.datasetYamlPath || "").toString();
+                if (fromParamYaml) {
+                    setDatasetYamlPath(fromParamYaml.replace(/\\\\/g, "/"));
+                    return;
+                }
+                // 2) 否则默认选择第一个数据集
                 if (dsList.length > 0) {
                     const first = dsList[0];
                     const yamlAbsPath = `${first.path.replace(/\\\\/g, "/")}/${first.platform_info.yaml_file_path}`;
                     setDatasetYamlPath(yamlAbsPath);
                 }
             }
-        }).catch(err => console.error("获取数据集失败", err));
-    }, [modelList]);
+        }).catch(err => {
+            console.error("获取数据集失败", err)
+            // 即便拉取失败，也尝试使用参数中的 datasetYamlPath
+            const fromParamYaml = (parameter?.datasetYamlPath || "").toString();
+            if (fromParamYaml) {
+                setDatasetYamlPath(fromParamYaml.replace(/\\\\/g, "/"));
+            }
+        });
+    }, [modelList, parameter?.datasetYamlPath]);
 
     const handleStartValidation = async () => {
         if (!datasetYamlPath || !modelName) {
@@ -94,6 +108,16 @@ function ValidationForm({
             <div className="form-group">
                 <label htmlFor="datasetYaml">请选择用于验证的数据集</label>
                 <select id="datasetYaml" value={datasetYamlPath} onChange={(e) => setDatasetYamlPath(e.target.value)}>
+                    {/* 如果参数中给出了 datasetYamlPath，但不在列表中，则先渲染一个可选项 */}
+                    {(() => {
+                        const exists = datasetList.some(ds => `${ds.path.replace(/\\\\/g, "/")}/${ds.platform_info.yaml_file_path}` === datasetYamlPath);
+                        if (datasetYamlPath && !exists) {
+                            return (
+                                <option value={datasetYamlPath}>{datasetYamlPath}（来自任务）</option>
+                            );
+                        }
+                        return null;
+                    })()}
                     {datasetList.map((ds, idx) => {
                         const yamlPath = `${ds.path.replace(/\\\\/g, "/")}/${ds.platform_info.yaml_file_path}`;
                         return (
@@ -108,10 +132,21 @@ function ValidationForm({
                         没有可用数据集。请先在"数据集"页面上传或创建一个数据集。
                     </div>
                 )}
+                {(parameter?.datasetYamlPath || parameter?.datasetPath) && (
+                    <div className="tip-box" style={{ marginTop: '8px' }}>
+                        来自训练任务：
+                        {parameter?.datasetYamlPath && (<>
+                            <br />YAML：{parameter.datasetYamlPath}
+                        </>)}
+                        {parameter?.datasetPath && (<>
+                            <br />数据集目录：{parameter.datasetPath}
+                        </>)}
+                    </div>
+                )}
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
-                <button className="btn primary" onClick={handleStartValidation} disabled={loading || datasetList.length === 0}>
+                <button className="btn primary" onClick={handleStartValidation} disabled={loading || !datasetYamlPath}>
                     {loading ? "验证中..." : "开始验证"}
                 </button>
                 <button className="btn" onClick={() => setPageUrl(buildHistoryUrl())}>

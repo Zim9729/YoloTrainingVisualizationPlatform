@@ -202,7 +202,7 @@ def main(taskfile_path, task_result_file_path, logger=None, task_id=None):
             cache=_cache,
             device=device_arg,
             plots=True,
-            save_period=5
+            # save_period=5
         )
     finally:
         sys.stdout = stdout_backup

@@ -128,13 +128,64 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
 
     try:
         model = YOLO(model_path)
+        # 覆盖模型类名，确保绘图（包括混淆矩阵）使用数据集类别名
+        save_json_flag = True  # 默认导出 JSON
+        plots_flag = True      # 默认生成图表
+        class_mismatch = False
+        ds_names_list = None
+        try:
+            if isinstance(dataset_yaml_path, str) and os.path.exists(dataset_yaml_path):
+                with open(dataset_yaml_path, 'r', encoding='utf-8') as f_yaml_for_names:
+                    ds_yaml_for_names = yaml.safe_load(f_yaml_for_names) or {}
+                ds_names = ds_yaml_for_names.get('names', None)
+                names_dict = None
+                if isinstance(ds_names, list):
+                    ds_names_list = list(ds_names)
+                    names_dict = {i: n for i, n in enumerate(ds_names)}
+                elif isinstance(ds_names, dict):
+                    names_dict = ds_names
+                    # 尝试转为有序列表
+                    try:
+                        ds_names_list = [names_dict[i] for i in range(len(names_dict))]
+                    except Exception:
+                        ds_names_list = list(names_dict.values())
+                if names_dict:
+                    try:
+                        model.names = names_dict  # 优先设置高级封装属性
+                    except Exception:
+                        pass
+                    try:
+                        # 同时尝试设置底层模型属性，增强兼容性
+                        if hasattr(model, 'model') and hasattr(model.model, 'names'):
+                            model.model.names = names_dict
+                    except Exception:
+                        pass
+                # 如果数据集类别数与模型类别数不一致，禁用 save_json 以避免内部 class_map 越界
+                try:
+                    model_nc = None
+                    if hasattr(model, 'model') and hasattr(model.model, 'nc'):
+                        model_nc = int(model.model.nc)
+                    elif hasattr(model, 'names') and isinstance(model.names, (dict, list)):
+                        model_nc = len(model.names)
+                    ds_nc = len(ds_names_list) if isinstance(ds_names_list, list) else None
+                    if isinstance(model_nc, int) and isinstance(ds_nc, int) and model_nc != ds_nc:
+                        class_mismatch = True
+                        save_json_flag = False
+                        plots_flag = False  # 避免 ConfusionMatrix 在内部以数据集类别数构建矩阵时越界
+                        logger.warning(f"[WARN] 模型类别数({model_nc})与数据集类别数({ds_nc})不一致，已禁用 save_json 与图表绘制以避免崩溃。")
+                except Exception:
+                    pass
+        except Exception:
+            # 如果无法覆盖，不影响验证流程
+            pass
+
         # Run validation
         metrics = model.val(
             data=dataset_yaml_path,
             project=output_dir,
             name="result",
-            save_json=True,
-            plots=True,
+            save_json=save_json_flag,
+            plots=plots_flag,
         )
     finally:
         sys.stdout = stdout_backup
@@ -150,6 +201,25 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
         "completedAt": completed_time,
         "log": log_cache
     }
+
+    # 若类别数不一致，记入结果，供前端展示友好提示
+    try:
+        if class_mismatch:
+            result_info['class_mismatch'] = True
+            # 写入简单的数量信息（若可用）
+            try:
+                result_info['dataset_nc'] = len(ds_names_list) if isinstance(ds_names_list, list) else None
+            except Exception:
+                pass
+            try:
+                if hasattr(model, 'model') and hasattr(model.model, 'nc'):
+                    result_info['model_nc'] = int(model.model.nc)
+                elif hasattr(model, 'names') and isinstance(model.names, (dict, list)):
+                    result_info['model_nc'] = len(model.names)
+            except Exception:
+                pass
+    except Exception:
+        pass
 
     # Try to append simple metrics and per-class rows from metrics (preferred over parsing logs)
     try:
@@ -180,32 +250,105 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
         # Per-class rows
         per_class_rows_by_metrics = []
         try:
-            # Class names
-            names = None
-            if hasattr(metrics, 'names') and isinstance(getattr(metrics, 'names'), (list, dict)):
-                names = getattr(metrics, 'names')
-            elif 'names' in raw_metrics if isinstance(raw_metrics, dict) else False:
-                names = raw_metrics['names']
-            # Fallback to model names
-            try:
-                if names is None and hasattr(model, 'names'):
-                    names = model.names
-            except Exception:
-                pass
-
-            # Normalize names to list ordered by index
+            # 1) 优先从数据集 YAML 中获取权威类别名顺序
             names_list = None
-            if isinstance(names, dict):
+            # 预先准备基于数据集统计到的按类图片/实例数量
+            images_per_class = None
+            instances_per_class = None
+            total_val_images = None
+            try:
+                if isinstance(dataset_yaml_path, str) and os.path.exists(dataset_yaml_path):
+                    with open(dataset_yaml_path, 'r', encoding='utf-8') as f_yaml:
+                        ds_yaml = yaml.safe_load(f_yaml) or {}
+                    ds_names = ds_yaml.get('names', None)
+                    # 解析 val 标签目录，统计每类图片数与实例数
+                    try:
+                        # root 默认为 yaml 所在目录
+                        root_dir = ds_yaml.get('path')
+                        if not root_dir:
+                            root_dir = os.path.dirname(os.path.abspath(dataset_yaml_path))
+                        val_path = ds_yaml.get('val')
+                        if isinstance(val_path, str):
+                            # 仅支持本地路径（相对或绝对）
+                            if os.path.isabs(val_path):
+                                images_dir = val_path
+                            else:
+                                images_dir = os.path.join(root_dir, val_path)
+                            # 推导 labels 目录
+                            labels_dir = images_dir.replace('/images', '/labels').replace('\\images', '\\labels')
+                            if os.path.isdir(images_dir):
+                                # 统计总图片数
+                                exts = ('.jpg', '.jpeg', '.png', '.webp')
+                                total_val_images = sum(1 for fn in os.listdir(images_dir) if fn.lower().endswith(exts))
+                            # 统计每类实例与包含该类的图片数量
+                            if ds_names is not None and os.path.isdir(labels_dir):
+                                ncls_est = len(ds_names) if isinstance(ds_names, (list, dict)) else None
+                                if isinstance(ncls_est, int) and ncls_est > 0:
+                                    images_per_class = [0] * ncls_est
+                                    instances_per_class = [0] * ncls_est
+                                    # 遍历 labels 下所有 .txt
+                                    for root_d, _, files in os.walk(labels_dir):
+                                        for f in files:
+                                            if not f.lower().endswith('.txt'):
+                                                continue
+                                            fpath = os.path.join(root_d, f)
+                                            try:
+                                                with open(fpath, 'r', encoding='utf-8') as lf:
+                                                    lines = [ln.strip() for ln in lf.readlines() if ln.strip()]
+                                            except Exception:
+                                                lines = []
+                                            # 按图片统计是否出现过该类
+                                            has_class = set()
+                                            for ln in lines:
+                                                try:
+                                                    cls_idx = int(ln.split()[0])
+                                                except Exception:
+                                                    continue
+                                                if 0 <= cls_idx < ncls_est:
+                                                    instances_per_class[cls_idx] += 1
+                                                    has_class.add(cls_idx)
+                                            for cls_idx in has_class:
+                                                images_per_class[cls_idx] += 1
+                    except Exception:
+                        images_per_class = None
+                        instances_per_class = None
+                        total_val_images = None
+                    # names 可以是 list 或 dict（id->name）
+                    if isinstance(ds_names, dict):
+                        try:
+                            names_list = [ds_names[i] for i in range(len(ds_names))]
+                        except Exception:
+                            names_list = list(ds_names.values())
+                    elif isinstance(ds_names, list):
+                        names_list = ds_names
+            except Exception:
+                names_list = None
+
+            # 2) 若数据集未提供，则回退到 metrics / model 的 names
+            if names_list is None:
+                names = None
+                if hasattr(metrics, 'names') and isinstance(getattr(metrics, 'names'), (list, dict)):
+                    names = getattr(metrics, 'names')
+                elif 'names' in raw_metrics if isinstance(raw_metrics, dict) else False:
+                    names = raw_metrics['names']
+                # Fallback to model names
                 try:
-                    names_list = [names[i] for i in range(len(names))]
+                    if names is None and hasattr(model, 'names'):
+                        names = model.names
                 except Exception:
-                    names_list = list(names.values())
-            elif isinstance(names, list):
-                names_list = names
+                    pass
+
+                if isinstance(names, dict):
+                    try:
+                        names_list = [names[i] for i in range(len(names))]
+                    except Exception:
+                        names_list = list(names.values())
+                elif isinstance(names, list):
+                    names_list = names
 
             ncls = len(names_list) if names_list else None
 
-            # Collect per-class arrays from possible attributes
+            # 3) 收集各类指标数组（不同版本字段名不同，做兼容）
             def _as_list(arr):
                 try:
                     return list(arr) if arr is not None else None
@@ -218,7 +361,6 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
             map50_list = None
             map5095_list = None
 
-            # Common variants across versions
             for cand in ['maps', 'map50_per_class', 'ap50', 'ap50_per_class']:
                 if hasattr(metrics, 'box') and hasattr(metrics.box, cand):
                     map50_list = _as_list(getattr(metrics.box, cand))
@@ -230,7 +372,7 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
                     if map5095_list:
                         break
 
-            # If lengths mismatch, try to trim/pad
+            # 4) 对齐长度（以类别数为准）
             def _norm_len(lst, L):
                 if lst is None or L is None:
                     return lst
@@ -247,6 +389,7 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
                 map5095_list = _norm_len(map5095_list, ncls)
                 nt_list = _norm_len(nt_list, ncls)
 
+            # 5) 生成行，严格按照 names_list 顺序输出，避免类别错位
             if names_list and (p_list or r_list or map50_list or map5095_list):
                 for i, cname in enumerate(names_list):
                     row = {
@@ -254,12 +397,32 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
                         'Images': None,
                         'Instances': None,
                     }
+                    # 优先填充来自数据集的统计
+                    try:
+                        if images_per_class is not None and i < len(images_per_class):
+                            row['Images'] = int(images_per_class[i])
+                    except Exception:
+                        pass
+                    try:
+                        if instances_per_class is not None and i < len(instances_per_class):
+                            row['Instances'] = int(instances_per_class[i])
+                    except Exception:
+                        pass
                     if p_list and i < len(p_list):
                         try: row['P'] = float(p_list[i])
                         except Exception: row['P'] = p_list[i]
                     if r_list and i < len(r_list):
                         try: row['R'] = float(r_list[i])
                         except Exception: row['R'] = r_list[i]
+                    # Derive F1 when possible
+                    try:
+                        if isinstance(row.get('P'), (int, float)) and isinstance(row.get('R'), (int, float)):
+                            p_v, r_v = float(row['P']), float(row['R'])
+                            denom = (p_v + r_v)
+                            if denom > 0:
+                                row['F1'] = 2 * p_v * r_v / denom
+                    except Exception:
+                        pass
                     if nt_list and i < len(nt_list):
                         try: row['Instances'] = int(nt_list[i])
                         except Exception: row['Instances'] = nt_list[i]
@@ -273,6 +436,17 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
 
             # Add overall row 'all'
             overall_row = {'Class': 'all', 'Images': None, 'Instances': None}
+            # 总图片/实例数（来自数据集统计）
+            try:
+                if total_val_images is not None:
+                    overall_row['Images'] = int(total_val_images)
+            except Exception:
+                pass
+            try:
+                if instances_per_class is not None:
+                    overall_row['Instances'] = int(sum(instances_per_class))
+            except Exception:
+                pass
             try:
                 if hasattr(metrics, 'box'):
                     if hasattr(metrics.box, 'mp'):
@@ -283,6 +457,15 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
                         overall_row['mAP50'] = float(metrics.box.map50)
                     if hasattr(metrics.box, 'map'):
                         overall_row['mAP50_95'] = float(metrics.box.map)
+                    # Derive overall F1 when possible
+                    try:
+                        if isinstance(overall_row.get('P'), (int, float)) and isinstance(overall_row.get('R'), (int, float)):
+                            p_v, r_v = float(overall_row['P']), float(overall_row['R'])
+                            denom = (p_v + r_v)
+                            if denom > 0:
+                                overall_row['F1'] = 2 * p_v * r_v / denom
+                    except Exception:
+                        pass
             except Exception:
                 pass
             # 仅在至少有一个字段时加入
@@ -294,6 +477,11 @@ def validate_model(model_path, dataset_yaml_path, output_dir, result_file_path, 
 
         if per_class_rows_by_metrics:
             result_info['per_class_rows'] = _to_plain_python(per_class_rows_by_metrics)
+            # 同时持久化类别名，前端/后端后续可直接使用
+            try:
+                result_info['names'] = _to_plain_python([r['Class'] for r in per_class_rows_by_metrics if 'Class' in r and r['Class'] != 'all'])
+            except Exception:
+                pass
     except Exception:
         pass
 

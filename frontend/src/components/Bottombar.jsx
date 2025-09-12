@@ -27,13 +27,15 @@ function Bottombar({ setPageUrl }) {
     }, []);
 
     return (
-        <div className="bottombar">
-            {runningTasksList.length > 0 &&
-                <span className="info-text" onClick={() => { setPageUrl("tasks") }}>
-                    <img src={Icon_Grid_3x3} className="icon" style={{ marginBottom: '-3px', marginRight: '8px' }} />
-                    训练中: {runningTasksList.length}
-                </span>
-            }
+        <div className="bottombar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+                {runningTasksList.length > 0 &&
+                    <span className="info-text" onClick={() => { setPageUrl("tasks") }}>
+                        <img src={Icon_Grid_3x3} className="icon" style={{ marginBottom: '-3px', marginRight: '8px' }} />
+                        训练中: {runningTasksList.length}
+                    </span>
+                }
+            </div>
         </div>
     );
 }
