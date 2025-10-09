@@ -57,12 +57,18 @@ async function request(method, endpoint, { data, params, headers, signal, timeou
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
-    // 使用传入的signal或超时signal
-    options.signal = signal || controller.signal;
+    // 如果有外部signal，监听其abort事件并传播到内部controller
+    if (signal) {
+        signal.addEventListener('abort', () => {
+            controller.abort();
+        }, { once: true });
+    }
+    
+    // 始终使用内部controller的signal（这样超时和外部取消都能工作）
+    options.signal = controller.signal;
 
     try {
         const response = await fetch(url, options);
-        clearTimeout(timeoutId);
         
         const contentType = response.headers.get("content-type");
         const isJson = contentType && contentType.includes("application/json");
@@ -82,13 +88,13 @@ async function request(method, endpoint, { data, params, headers, signal, timeou
 
         return result;
     } catch (error) {
-        clearTimeout(timeoutId);
-        
         // 处理不同类型的错误
         if (error.name === 'AbortError') {
-            const timeoutError = new Error('请求超时，请检查网络连接');
-            timeoutError.code = 'TIMEOUT';
-            console.error(`[API TIMEOUT] ${method} ${endpoint}:`, timeoutError);
+            // 区分是超时还是手动取消
+            const wasTimeout = !signal || !signal.aborted;
+            const timeoutError = new Error(wasTimeout ? '请求超时，请检查网络连接' : '请求已取消');
+            timeoutError.code = wasTimeout ? 'TIMEOUT' : 'CANCELLED';
+            console.error(`[API ${timeoutError.code}] ${method} ${endpoint}:`, timeoutError);
             throw timeoutError;
         }
         
@@ -101,6 +107,9 @@ async function request(method, endpoint, { data, params, headers, signal, timeou
         
         console.error(`[API ERROR] ${method} ${endpoint}:`, error);
         throw error;
+    } finally {
+        // 确保超时定时器总是被清理
+        clearTimeout(timeoutId);
     }
 }
 
@@ -111,15 +120,20 @@ async function upload(endpoint, formData, { params, signal, timeout = 60000 } = 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
+    // 如果有外部signal，监听其abort事件
+    if (signal) {
+        signal.addEventListener('abort', () => {
+            controller.abort();
+        }, { once: true });
+    }
+    
     try {
         const response = await fetch(url, {
             method: "POST",
             // 不要手动设置 Content-Type，浏览器会自动设置 multipart 边界
             body: formData,
-            signal: signal || controller.signal,
+            signal: controller.signal,
         });
-        
-        clearTimeout(timeoutId);
         
         const contentType = response.headers.get("content-type");
         const isJson = contentType && contentType.includes("application/json");
@@ -138,12 +152,12 @@ async function upload(endpoint, formData, { params, signal, timeout = 60000 } = 
 
         return result;
     } catch (error) {
-        clearTimeout(timeoutId);
-        
         if (error.name === 'AbortError') {
-            const timeoutError = new Error('上传超时，请检查网络连接或文件大小');
-            timeoutError.code = 'UPLOAD_TIMEOUT';
-            console.error(`[API UPLOAD TIMEOUT] ${endpoint}:`, timeoutError);
+            // 区分是超时还是手动取消
+            const wasTimeout = !signal || !signal.aborted;
+            const timeoutError = new Error(wasTimeout ? '上传超时，请检查网络连接或文件大小' : '上传已取消');
+            timeoutError.code = wasTimeout ? 'UPLOAD_TIMEOUT' : 'UPLOAD_CANCELLED';
+            console.error(`[API ${timeoutError.code}] ${endpoint}:`, timeoutError);
             throw timeoutError;
         }
         
@@ -156,6 +170,9 @@ async function upload(endpoint, formData, { params, signal, timeout = 60000 } = 
         
         console.error(`[API ERROR] UPLOAD ${endpoint}:`, error);
         throw error;
+    } finally {
+        // 确保超时定时器总是被清理
+        clearTimeout(timeoutId);
     }
 }
 

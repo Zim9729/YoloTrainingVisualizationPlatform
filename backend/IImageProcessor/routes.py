@@ -12,6 +12,7 @@ import cv2
 import uuid
 import time
 import json
+import atexit
 from datetime import datetime
 from pathlib import Path
 
@@ -27,8 +28,19 @@ IImageProcessor_bp = Blueprint('IImageProcessor', __name__)
 # 全局TCP客户端实例
 tcp_client = None
 
+def cleanup_tcp_client():
+    """清理TCP客户端资源"""
+    global tcp_client
+    if tcp_client:
+        try:
+            tcp_client.close()
+            print("TCP客户端已关闭")
+        except Exception as e:
+            print(f"关闭TCP客户端时出错: {e}")
+        tcp_client = None
+
 def get_tcp_client():
-    """获取TCP客户端实例"""
+    """获取TCP客户端实例（单例模式）"""
     global tcp_client
     if tcp_client is None:
         from config import get_tcp_image_service_config
@@ -39,6 +51,10 @@ def get_tcp_client():
         )
         tcp_client.connection_timeout = config['timeout']
         tcp_client.max_retries = config['max_retries']
+        
+        # 注册清理函数（仅注册一次）
+        atexit.register(cleanup_tcp_client)
+    
     return tcp_client
 
 def get_history_path():

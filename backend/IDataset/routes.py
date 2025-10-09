@@ -66,7 +66,18 @@ def load_dataset_yoloinfofile(dataset_path, yaml_path, dataset_type):
     download_url_or_script = data.get("download", "")
 
     if dataset_type.upper() == "YOLO":
-        train_img_count, train_label_count = count_images_and_labels(root_path, os.path.join(dataset_path, train_path), train_path.replace("/images", "/labels"))
+        # 使用 Path 进行跨平台路径处理
+        train_images_path = str(Path(root_path) / train_path)
+        # 正确替换 images 为 labels
+        train_labels_path = train_images_path.replace(os.sep + "images" + os.sep, os.sep + "labels" + os.sep)
+        if train_labels_path == train_images_path:  # 如果没有替换成功，尝试末尾替换
+            train_labels_path = train_images_path.replace(os.sep + "images", os.sep + "labels")
+        
+        train_img_count, train_label_count = count_images_and_labels(
+            root_path, 
+            train_path, 
+            train_labels_path.replace(str(root_path) + os.sep, "")
+        )
     elif dataset_type.upper() == "COCO":
         train_img_count = count_images(os.path.join(dataset_path, train_path))
         ann_file = os.path.join(Path(train_path).parent.parent, "annotations", "instances_train.json")

@@ -45,8 +45,13 @@ def run_main_in_thread(taskfile_path, task_id, task_result_file_path):
         except Exception as e:
             logger.exception(f"训练线程发生异常: {e}")
 
-    t = Thread(target=target, args=(), daemon=True)
-    t.start()
+    t = Thread(target=target, args=(), daemon=True, name=f"training-{task_id}")
+    try:
+        t.start()
+        logger.info(f"训练线程已启动: {t.name}")
+    except Exception as e:
+        logger.error(f"启动训练线程失败: {e}")
+        raise
 
     return t, log_q
 
@@ -101,8 +106,13 @@ def run_modelexport_in_thread(task_id,
         except Exception as e:
             logger.exception(f"导出线程发生异常: {e}")
 
-    t = Thread(target=target, args=(), daemon=True)
-    t.start()
+    t = Thread(target=target, args=(), daemon=True, name=f"export-{task_id}")
+    try:
+        t.start()
+        logger.info(f"导出线程已启动: {t.name}")
+    except Exception as e:
+        logger.error(f"启动导出线程失败: {e}")
+        raise
 
     return t, log_q
 
@@ -130,8 +140,13 @@ def run_modeltest_in_thread(task_id, model_path, input_path, output_dir, result_
         except Exception as e:
             logger.exception(f"测试线程发生异常: {e}")
 
-    t = Thread(target=target, args=(), daemon=True)
-    t.start()
+    t = Thread(target=target, args=(), daemon=True, name=f"test-{task_id}")
+    try:
+        t.start()
+        logger.info(f"测试线程已启动: {t.name}")
+    except Exception as e:
+        logger.error(f"启动测试线程失败: {e}")
+        raise
 
     return t, log_q
 
@@ -159,7 +174,12 @@ def run_modelval_in_thread(task_id, model_path, dataset_yaml_path, output_dir, r
         except Exception as e:
             logger.exception(f"验证线程发生异常: {e}")
 
-    t = Thread(target=target, args=(), daemon=True)
-    t.start()
+    t = Thread(target=target, args=(), daemon=True, name=f"validation-{task_id}")
+    try:
+        t.start()
+        logger.info(f"验证线程已启动: {t.name}")
+    except Exception as e:
+        logger.error(f"启动验证线程失败: {e}")
+        raise
 
     return t, log_q

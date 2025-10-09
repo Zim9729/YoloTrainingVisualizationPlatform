@@ -11,11 +11,14 @@ import os
 import mimetypes
 import random
 import re
+import threading
 
 
 ITraining_bp = Blueprint('ITraining', __name__)
 TASK_THREADS = {}
 TASK_LIST = []
+# 线程安全锁
+TASK_LOCK = threading.Lock()
 
 def get_task_result_file(task_id):
     """
@@ -238,17 +241,18 @@ def start_task():
         return format_output(code=400, msg="缺少必要参数(step:1)")
     
     # 检查是否有相同任务ID正在运行（防止重复启动同一任务）
-    for task in TASK_LIST:
-        if task["task_id"] == task_id:
-            thread_info = TASK_THREADS.get(filename)
+    with TASK_LOCK:
+        for task in TASK_LIST:
+            if task["task_id"] == task_id:
+                thread_info = TASK_THREADS.get(filename)
 
-            if thread_info and thread_info["thread"].is_alive():
-                return format_output(code=400, msg="相同任务正在运行中，无法重复启动")
-            else:
-                # 清理已完成的任务记录
-                TASK_THREADS.pop(filename, None)
-                TASK_LIST.remove(task)
-            break
+                if thread_info and thread_info["thread"].is_alive():
+                    return format_output(code=400, msg="相同任务正在运行中，无法重复启动")
+                else:
+                    # 清理已完成的任务记录
+                    TASK_THREADS.pop(filename, None)
+                    TASK_LIST.remove(task)
+                break
 
     file_path = os.path.join(tasks_path, filename)
 
@@ -285,16 +289,17 @@ def start_task():
 
         thread, log_stream = run_main_in_thread(file_path, task_id, task_result_file_path)
 
-        # 保存
-        TASK_THREADS[filename] = {
-            "thread": thread,
-            "log": log_stream,
-        }
-        TASK_LIST.append({
-            "task_id": task_id,
-            "taskname": taskname,
-            "filename": filename
-        })
+        # 保存（使用锁保护）
+        with TASK_LOCK:
+            TASK_THREADS[filename] = {
+                "thread": thread,
+                "log": log_stream,
+            }
+            TASK_LIST.append({
+                "task_id": task_id,
+                "taskname": taskname,
+                "filename": filename
+            })
 
     except Exception as e:
         print("启动训练任务失败:", e)
@@ -338,19 +343,21 @@ def get_all_running_tasks():
     获取所有正在运行中的任务
     """
     r_data = []
-    for _ in TASK_LIST:
-        try:
-            task_info = TASK_THREADS[_["filename"]]
-        except:
-            pass
-        is_running = task_info["thread"].is_alive()
-        
-        if is_running:
-            r_data.append({
-                "filename": _["filename"],
-                "taskname": _["taskname"],
-                "task_id": _["task_id"]
-            })
+    with TASK_LOCK:
+        for _ in TASK_LIST:
+            try:
+                task_info = TASK_THREADS[_["filename"]]
+                is_running = task_info["thread"].is_alive()
+                
+                if is_running:
+                    r_data.append({
+                        "filename": _["filename"],
+                        "taskname": _["taskname"],
+                        "task_id": _["task_id"]
+                    })
+            except Exception as e:
+                print(f"获取任务状态时出错: {e}")
+                continue
     
     return format_output(data={ "tasks": r_data })
 

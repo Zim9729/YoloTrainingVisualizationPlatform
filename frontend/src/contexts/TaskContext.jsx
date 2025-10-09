@@ -8,15 +8,28 @@ export function TaskProvider({ children }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
+        let intervalId = null;
+
         const fetchRunningTasks = async () => {
+            // 检查组件是否还挂载
+            if (!isMounted) return;
+            
             try {
-                const data = await api.get("/ITraining/getAllRunningTasks", { params: {} });
-                setRunningTasks(data.data.tasks || []);
-                setIsLoading(false);
+                const data = await api.get("/ITraining/getAllRunningTasks");
+                
+                // 再次检查，因为请求可能需要时间
+                if (isMounted) {
+                    setRunningTasks(data.data.tasks || []);
+                    setIsLoading(false);
+                }
             } catch (err) {
                 console.error("获取正在运行的训练任务失败:", err);
-                setRunningTasks([]);
-                setIsLoading(false);
+                
+                if (isMounted) {
+                    setRunningTasks([]);
+                    setIsLoading(false);
+                }
             }
         };
 
@@ -24,9 +37,19 @@ export function TaskProvider({ children }) {
         fetchRunningTasks();
 
         // 每 5 秒轮询一次
-        const intervalId = setInterval(fetchRunningTasks, 5000);
+        intervalId = setInterval(() => {
+            if (isMounted) {
+                fetchRunningTasks();
+            }
+        }, 5000);
 
-        return () => clearInterval(intervalId);
+        // 清理函数
+        return () => {
+            isMounted = false;
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
     }, []);
 
     // 手动刷新函数

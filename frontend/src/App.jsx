@@ -10,38 +10,63 @@ import { api } from "./api"
 
 function App() {
     const [pageUrl, setPageUrl] = useState("home");
-    const [isDownloadHelperComponents, setIsDownloadHelperComponents] = useState(false);
-    const [healthCheckAttempts, setHealthCheckAttempts] = useState(0);
+    const [isBackendHealthy, setIsBackendHealthy] = useState(false);
+    const [isCheckingHealth, setIsCheckingHealth] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
+        let retryCount = 0;
+        const maxRetries = 3;
+        const retryDelay = 2000;
+
         const checkBackendHealth = async () => {
+            if (!isMounted) return;
+            
             try {
-                const data = await api.get("/", { params: {} });
-                setIsDownloadHelperComponents(true);
-                console.log("已下载助手组件", data);
-            } catch (err) {
-                console.error("健康检查失败:", err);
+                await api.get("/");
                 
-                // 最多重试3次
-                if (healthCheckAttempts < 3) {
-                    console.log(`健康检查重试 ${healthCheckAttempts + 1}/3`);
+                if (isMounted) {
+                    setIsBackendHealthy(true);
+                    setIsCheckingHealth(false);
+                    console.log("后端连接成功");
+                }
+            } catch (err) {
+                console.error(`健康检查失败 (尝试 ${retryCount + 1}/${maxRetries + 1}):`, err);
+                
+                retryCount++;
+                
+                if (retryCount <= maxRetries && isMounted) {
+                    console.log(`将在 ${retryDelay}ms 后重试...`);
                     setTimeout(() => {
-                        setHealthCheckAttempts(prev => prev + 1);
-                    }, 2000);
-                } else {
-                    setIsDownloadHelperComponents(false);
+                        checkBackendHealth();
+                    }, retryDelay);
+                } else if (isMounted) {
+                    setIsBackendHealthy(false);
+                    setIsCheckingHealth(false);
+                    console.error("后端连接失败，已达到最大重试次数");
                 }
             }
         };
 
         checkBackendHealth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [healthCheckAttempts])
+        
+        // 清理函数
+        return () => {
+            isMounted = false;
+        };
+    }, [])
 
     return (
         <>
             <Titlebar />
-            {!isDownloadHelperComponents ? (
+            {isCheckingHealth ? (
+                <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <div className="card" style={{ marginTop: '15px' }}>
+                        <h1 className="title">正在连接后端服务...</h1>
+                        <p className="content">请稍候</p>
+                    </div>
+                </div>
+            ) : !isBackendHealthy ? (
                 <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <div className="card" style={{ marginTop: '15px' }}>
                         <h1 className="title">未识别到训练助手组件</h1>

@@ -10,11 +10,28 @@ TASKS_RESULT_YAML_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualiza
 TEST_RESULT_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "test_result_files")
 VALIDATION_RESULT_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "validation_result_files")
 
+def _safe_int_env(key: str, default: int) -> int:
+    """
+    安全地从环境变量获取整数值
+    
+    Args:
+        key: 环境变量键名
+        default: 默认值
+    
+    Returns:
+        整数值
+    """
+    try:
+        return int(os.getenv(key, str(default)))
+    except (ValueError, TypeError) as e:
+        print(f"警告: 环境变量 {key} 的值无效 ({os.getenv(key)}), 使用默认值 {default}")
+        return default
+
 # TCP图像处理服务配置
 TCP_IMAGE_SERVICE_HOST = os.getenv('TCP_IMAGE_SERVICE_HOST', '127.0.0.1')
-TCP_IMAGE_SERVICE_PORT = int(os.getenv('TCP_IMAGE_SERVICE_PORT', '16000'))
-TCP_CONNECTION_TIMEOUT = int(os.getenv('TCP_CONNECTION_TIMEOUT', '5'))
-TCP_MAX_RETRIES = int(os.getenv('TCP_MAX_RETRIES', '3'))
+TCP_IMAGE_SERVICE_PORT = _safe_int_env('TCP_IMAGE_SERVICE_PORT', 16000)
+TCP_CONNECTION_TIMEOUT = _safe_int_env('TCP_CONNECTION_TIMEOUT', 5)
+TCP_MAX_RETRIES = _safe_int_env('TCP_MAX_RETRIES', 3)
 
 # 图像处理历史存储路径
 IMAGE_PROCESSING_HISTORY_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "image_processing_history")
