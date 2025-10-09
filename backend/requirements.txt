@@ -37,8 +37,10 @@ scipy==1.16.0
 setuptools==80.9.0
 six==1.17.0
 sympy==1.14.0
-torch==2.7.1
-torchvision==0.22.1
+# PyTorch with CUDA support - install with:
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch==2.7.1+cu121
+torchvision==0.22.1+cu121
 tqdm==4.67.1
 typing_extensions==4.14.1
 tzdata==2025.2

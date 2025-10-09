@@ -3,9 +3,25 @@ info:
   title: YOLO Training Visualization Platform API
   version: 1.0.0
   description: |
-    REST API for dataset management, training tasks, and model testing used by the YOLO Training Visualization Platform.
+    REST API for YOLO Training Visualization Platform - A comprehensive tool for dataset management, 
+    model training, testing, validation, export, and TCP-based image processing.
+    
+    ## Modules
+    - **IDataset**: Dataset management and Label Studio integration
+    - **ITraining**: Training task creation, execution and monitoring
+    - **IModel**: Model testing, validation, export and Triton deployment
+    - **IImageProcessor**: TCP image processing service integration
+    
+  contact:
+    name: chzane
+    email: slxzane@outlook.com
+    url: https://github.com/chzane/YoloTrainingVisualizationPlatform
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 servers:
   - url: http://localhost:10799
+    description: Local development server
 paths:
   /:
     get:
@@ -543,6 +559,448 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StdResponse'
+  /IModel/getAllValidation:
+    get:
+      summary: Get all validation tasks for a training task
+      parameters:
+        - in: query
+          name: taskID
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Validation task list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/getValResultImageBase64:
+    get:
+      summary: Get Base64 image of validation result (confusion matrix, PR curve, etc.)
+      parameters:
+        - in: query
+          name: taskID
+          schema: { type: string }
+          required: true
+        - in: query
+          name: filePath
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Base64 image content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/downloadValResultFile:
+    get:
+      summary: Download validation result file
+      parameters:
+        - in: query
+          name: taskID
+          schema: { type: string }
+          required: true
+        - in: query
+          name: filePath
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: File download
+          content:
+            application/octet-stream: {}
+  /IModel/deleteTestResult:
+    post:
+      summary: Delete a test result record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename: { type: string }
+              required: [filename]
+      responses:
+        '200':
+          description: Delete status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/deleteValidationResult:
+    post:
+      summary: Delete a validation result record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename: { type: string }
+              required: [filename]
+      responses:
+        '200':
+          description: Delete status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/registerExportArtifactToTriton:
+    post:
+      summary: Register an exported model to Triton model repository
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                outputDir: { type: string }
+                filePath: { type: string }
+                tritonRepoPath: { type: string }
+                tritonModelName: { type: string }
+                imgsz: { type: integer, default: 640 }
+              required: [outputDir, filePath, tritonRepoPath]
+      responses:
+        '200':
+          description: Registration status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/listTritonModels:
+    get:
+      summary: List all models in Triton repository
+      parameters:
+        - in: query
+          name: tritonRepoPath
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IModel/deleteTritonModel:
+    post:
+      summary: Delete a model or model version from Triton repository
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tritonRepoPath: { type: string }
+                modelName: { type: string }
+                version: { type: string, nullable: true }
+              required: [tritonRepoPath, modelName]
+      responses:
+        '200':
+          description: Delete status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IDataset/listLabelStudioProjects:
+    get:
+      summary: List Label Studio projects
+      parameters:
+        - in: query
+          name: base_url
+          schema: { type: string }
+          required: true
+          description: Label Studio server URL
+        - in: query
+          name: token
+          schema: { type: string }
+          required: false
+          description: Label Studio API token (optional)
+      responses:
+        '200':
+          description: Project list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IDataset/buildDatasetFromLabelStudio:
+    post:
+      summary: Build YOLO dataset from Label Studio project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                base_url: { type: string, description: Label Studio server URL }
+                token: { type: string, description: API token (optional) }
+                project_id: { type: integer, description: Project ID }
+                name: { type: string, description: Dataset name }
+                version: { type: string, description: Dataset version }
+                description: { type: string }
+                exportType: { type: string, default: CSV }
+                splits: { type: array, items: { type: number }, example: [0.8, 0.2, 0.0] }
+                seed: { type: integer, default: 42 }
+                download_images: { type: boolean, default: true }
+                class_names: { type: array, items: { type: string }, nullable: true }
+              required: [base_url, project_id, name, version]
+      responses:
+        '200':
+          description: Dataset build status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/info:
+    get:
+      tags:
+        - IImageProcessor
+      summary: Get IImageProcessor module information
+      responses:
+        '200':
+          description: Module info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/testConnection:
+    get:
+      tags:
+        - IImageProcessor
+      summary: Test TCP service connection
+      responses:
+        '200':
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/processImage:
+    post:
+      tags:
+        - IImageProcessor
+      summary: Process uploaded image via TCP service
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Image file to process
+                camera_id:
+                  type: integer
+                  default: 203
+                  description: Camera ID
+                image_id:
+                  type: integer
+                  description: Image ID (auto-generated if not provided)
+              required: [image]
+      responses:
+        '200':
+          description: Processing result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/processDatasetImage:
+    post:
+      tags:
+        - IImageProcessor
+      summary: Process image from dataset via TCP service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dataset_path: { type: string }
+                image_path: { type: string }
+                camera_id: { type: integer, default: 203 }
+                image_id: { type: integer }
+              required: [dataset_path, image_path]
+      responses:
+        '200':
+          description: Processing result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/processFolderImages:
+    post:
+      tags:
+        - IImageProcessor
+      summary: Batch process all images in a folder (recursive)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder_path: { type: string, description: Folder path to process }
+                camera_id: { type: integer, default: 203 }
+              required: [folder_path]
+      responses:
+        '200':
+          description: Batch processing results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/getFolderImageList:
+    post:
+      tags:
+        - IImageProcessor
+      summary: Get list of images in folder (recursive scan)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder_path: { type: string }
+              required: [folder_path]
+      responses:
+        '200':
+          description: Image file list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/getProcessingHistory:
+    get:
+      tags:
+        - IImageProcessor
+      summary: Get processing history with pagination
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Processing history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/getProcessingStatistics:
+    get:
+      tags:
+        - IImageProcessor
+      summary: Get processing statistics (deprecated, use getStatistics)
+      responses:
+        '200':
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/getStatistics:
+    get:
+      tags:
+        - IImageProcessor
+      summary: Get comprehensive processing statistics
+      responses:
+        '200':
+          description: Comprehensive statistics with daily breakdown and format analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/getServiceStatus:
+    get:
+      tags:
+        - IImageProcessor
+      summary: Get TCP service status
+      responses:
+        '200':
+          description: Service status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/deleteProcessingRecord:
+    post:
+      tags:
+        - IImageProcessor
+      summary: Delete a single processing record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                record_id: { type: string }
+              required: [record_id]
+      responses:
+        '200':
+          description: Delete status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/clearProcessingHistory:
+    post:
+      tags:
+        - IImageProcessor
+      summary: Clear all processing history
+      responses:
+        '200':
+          description: Clear status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StdResponse'
+  /IImageProcessor/downloadProcessingResult/{record_id}:
+    get:
+      tags:
+        - IImageProcessor
+      summary: Download processing result as JSON
+      parameters:
+        - in: path
+          name: record_id
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: JSON file download
+          content:
+            application/json: {}
+  /IImageProcessor/downloadBatchResults:
+    post:
+      tags:
+        - IImageProcessor
+      summary: Download multiple processing results as single JSON
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                record_ids: { type: array, items: { type: string } }
+              required: [record_ids]
+      responses:
+        '200':
+          description: Batch results JSON file
+          content:
+            application/json: {}
 components:
   schemas:
     StdResponse:

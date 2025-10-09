@@ -7,6 +7,7 @@ import Icon_Dataset from "../assets/icons/database-fill.svg";
 import Icon_Boxes from "../assets/icons/boxes.svg";
 import Icon_Box_seam_fill from "../assets/icons/box-seam-fill.svg";
 import Icon_Gear_fill from "../assets/icons/gear-fill.svg";
+import Icon_Terminal from "../assets/icons/terminal-fill.svg";
 
 function Navbar({ pageUrl, setPageUrl }) {
     const [helperComponents, setHelperComponents] = useState("null");
@@ -35,6 +36,12 @@ function Navbar({ pageUrl, setPageUrl }) {
             name: '模型',
             icon: Icon_Box_seam_fill,
             pageUrl: 'models'
+        },
+        {
+            id: '5',
+            name: '服务',
+            icon: Icon_Terminal,
+            pageUrl: 'services'
         }
     ]
 
@@ -54,7 +61,7 @@ function Navbar({ pageUrl, setPageUrl }) {
             {navbarItem.map((item) => (
                 <div
                     key={item.id}
-                    className={`navbar-item${pageUrl.split('?')[0] == item.pageUrl ? " clicked" : ""}`}
+                    className={`navbar-item${pageUrl.split('?')[0] === item.pageUrl ? " clicked" : ""}`}
                     onClick={() => {
                         setPageUrl(item.pageUrl);
                     }}
@@ -66,12 +73,12 @@ function Navbar({ pageUrl, setPageUrl }) {
 
             <p className="navbar-version">
                 <button className="btn sm" onClick={() => {
-                    window.open("https://github.com/chzane/YoloTrainingVisualizationPlatform/issues")
+                    window.open("https://github.com/Zim9729/YoloTrainingVisualizationPlatform/issues")
                 }}>
                     BUG 反馈
                 </button>
                 <br />
-                <a href="https://github.com/chzane/YoloTrainingVisualizationPlatform" style={{ color: 'var(--light-color)' }} target="_blank">关于</a>
+                <a href="https://github.com/Zim9729/YoloTrainingVisualizationPlatform" style={{ color: 'var(--light-color)' }} target="_blank">关于</a>
                 <br />
                 前端版本: {CONFIGS.FRONTEND_VERSION}
                 <br />

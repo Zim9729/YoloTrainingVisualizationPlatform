@@ -24,24 +24,12 @@ def run_main_in_thread(taskfile_path, task_id, task_result_file_path):
     q_handler.setFormatter(formatter)
     logger.addHandler(q_handler)
 
-    # Persist export logs to file
-    try:
-        if output_dir:
-            export_dir = os.path.join(output_dir, "export")
-            os.makedirs(export_dir, exist_ok=True)
-            logfile = os.path.join(export_dir, f"{task_id}.log")
-            f_handler = logging.FileHandler(logfile, encoding="utf-8")
-            f_handler.setFormatter(formatter)
-            logger.addHandler(f_handler)
-    except Exception:
-        pass
-
     # File log handler for persistence
     try:
-        if output_dir:
-            export_dir = os.path.join(output_dir, "export")
-            os.makedirs(export_dir, exist_ok=True)
-            logfile = os.path.join(export_dir, f"{task_id}.log")
+        # 从任务结果文件路径推断输出目录
+        if task_result_file_path:
+            result_dir = os.path.dirname(task_result_file_path)
+            logfile = os.path.join(result_dir, f"{task_id}.log")
             f_handler = logging.FileHandler(logfile, encoding="utf-8")
             f_handler.setFormatter(formatter)
             logger.addHandler(f_handler)

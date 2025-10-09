@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { api } from "../api";
 
 function TritonRepoPage({ setPageUrl, embedded = false }) {
@@ -13,6 +13,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
   const [sortKey, setSortKey] = useState("name"); // name | config | versions
   const [openMenuModel, setOpenMenuModel] = useState(null); // 当前展开的模型更多菜单
   const [openMenuVersion, setOpenMenuVersion] = useState({}); // { [modelName]: version }
+  const toastTimerRef = useRef(null);
 
   // Enhanced UI helpers
   const Chip = ({ color = '#64748b', bg = '#e2e8f0', children, title, variant = 'default' }) => {
@@ -80,6 +81,25 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
     try { setRepo(localStorage.getItem('triton_repo_path') || ""); } catch(_) {}
   }, []);
 
+  // 清理toast定时器
+  useEffect(() => {
+    if (toast) {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+      toastTimerRef.current = setTimeout(() => {
+        setToast("");
+        toastTimerRef.current = null;
+      }, 1500);
+    }
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = null;
+      }
+    };
+  }, [toast]);
+
   const load = async () => {
     setErr("");
     setLoading(true);
@@ -143,7 +163,6 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
     } catch (e) {
       setToast('复制失败');
     }
-    setTimeout(() => setToast(""), 1500);
   };
 
   const refreshFiles = async (modelName, version = "1") => {
@@ -177,7 +196,6 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
         }
       }));
       setToast('加载文件失败');
-      setTimeout(() => setToast(""), 1500);
     }
   };
 
@@ -202,7 +220,6 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
     } catch (e) {
       setToast('删除失败');
     }
-    setTimeout(() => setToast(""), 1500);
   };
 
   return (

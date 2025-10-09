@@ -10,7 +10,10 @@ import './assets/style/table.css';
 import './assets/style/tag.css';
 
 import App from './App.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 createRoot(document.getElementById('root')).render(
-  <App />,
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>,
 )

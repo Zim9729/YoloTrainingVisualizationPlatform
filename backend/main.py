@@ -23,6 +23,7 @@ def info():
 from IDataset.routes import IDataset_bp
 from ITraining.routes import ITraining_bp
 from IModel.routes import IModel_bp
+from IImageProcessor.routes import IImageProcessor_bp
 
 # 注册蓝图
 app.register_blueprint(
@@ -37,6 +38,11 @@ app.register_blueprint(
     IModel_bp,
     url_prefix='/IModel'
 )
+app.register_blueprint(
+    IImageProcessor_bp,
+    url_prefix='/IImageProcessor'
+)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=10799, host='0.0.0.0')
+    app.run(debug=False, port=10799, host='0.0.0.0')
+    # app.run(debug=True, port=10799, host='0.0.0.0')

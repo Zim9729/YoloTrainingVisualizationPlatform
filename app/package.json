@@ -1,12 +1,16 @@
 {
   "name": "yolo_training_visualization_app",
   "version": "1.0.0",
+  "description": "YOLO Training Visualization Platform - A comprehensive tool for YOLO model training, testing, and visualization",
   "main": "index.js",
   "repository": "https://github.com/chzane/YoloTrainingVisualizationPlatform/",
   "author": "chzane",
   "build": {
     "appId": "com.solariix.yolo_training_visualization_app",
     "productName": "YoloTrainingVisualizationApp",
+    "directories": {
+      "output": "dist"
+    },
     "files": [
       "index.js",
       "preload.js",
@@ -14,7 +18,12 @@
         "from": "resources",
         "to": "resources",
         "filter": [
-          "**/*"
+          "**/*",
+          "!**/.venv/**",
+          "!**/build/**",
+          "!**/dist/**",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
         ]
       }
     ],
@@ -22,7 +31,8 @@
       "target": "dmg"
     },
     "win": {
-      "target": "nsis"
+      "target": "dir",
+      "requestedExecutionLevel": "asInvoker"
     },
     "asarUnpack": [
       "resources/backend/**"
@@ -30,13 +40,25 @@
     "extraResources": [
       {
         "from": "resources/backend",
-        "to": "resources/backend"
+        "to": "resources/backend",
+        "filter": [
+          "**/*",
+          "!**/.venv/**",
+          "!**/build/**",
+          "!**/dist/**",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
+        ]
       }
     ]
   },
   "scripts": {
     "dev": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build:dir": "electron-builder --dir",
+    "build:win": "electron-builder --win --x64",
+    "build:fix": "powershell -ExecutionPolicy Bypass -File build-fix.ps1",
+    "build:clean": "powershell -ExecutionPolicy Bypass -File build-fix.ps1 -Clean"
   },
   "license": "MIT",
   "dependencies": {

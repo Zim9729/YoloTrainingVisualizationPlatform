@@ -1,7 +1,7 @@
 from run_in_thread import run_main_in_thread
 from flask import Blueprint, request
 from tools.format_output import format_output
-from config import get_tasks_path, get_tasks_result_files_path, get_tasks_yaml_file_path, get_yolo_model_list_url, get_models_path, get_yolo_model_cahce_expiration_time
+from config import get_tasks_path, get_tasks_result_files_path, get_tasks_yaml_file_path, get_yolo_model_list_url, get_models_path, get_yolo_model_cache_expiration_time
 import yaml
 import json
 import time
@@ -98,7 +98,7 @@ def create_task():
     datasetPath = data.get("datasetPath", None)
     trainingType = data.get("trainingType", None)
     
-    if taskName == None or datasetPath == None or trainingType == None:
+    if taskName is None or datasetPath is None or trainingType is None:
         return format_output(code=400, msg="缺少必要的参数(step:1)")
     if taskName == "":
         return format_output(code=400, msg="训练任务名称不能为空[参数非法(step:2)]")
@@ -108,7 +108,7 @@ def create_task():
     match int(trainingType):
         case 0:
             baseModelID = data.get("baseModelID", None)
-            if baseModelID == None:
+            if baseModelID is None:
                 return format_output(code=400, msg="缺少必要的参数(step:3)")
             extra_params["baseModelID"] = str(baseModelID)
             
@@ -209,7 +209,7 @@ def delete_dataset():
     task_path = get_tasks_path()
     
     path = request.json.get("path", None)
-    if path == None:
+    if path is None:
         return format_output(code=400, msg="缺少必要的参数")
     
     filePath = os.path.join(task_path, path)
@@ -237,13 +237,15 @@ def start_task():
     if not task_id or not filename or not taskname:
         return format_output(code=400, msg="缺少必要参数(step:1)")
     
+    # 检查是否有相同任务ID正在运行（防止重复启动同一任务）
     for task in TASK_LIST:
         if task["task_id"] == task_id:
             thread_info = TASK_THREADS.get(filename)
 
             if thread_info and thread_info["thread"].is_alive():
-                return format_output(code=400, msg="任务正在运行中，无法同时启动")
+                return format_output(code=400, msg="相同任务正在运行中，无法重复启动")
             else:
+                # 清理已完成的任务记录
                 TASK_THREADS.pop(filename, None)
                 TASK_LIST.remove(task)
             break
@@ -467,7 +469,7 @@ def get_all_base_models_from_github():
             with open(cache_file_path, "r", encoding="utf-8") as f:
                 cache = json.load(f)
                 cached_time = cache.get("timestamp", 0)
-                if time.time() - cached_time < int(get_yolo_model_cahce_expiration_time()):
+                if time.time() - cached_time < int(get_yolo_model_cache_expiration_time()):
                     return format_output(data={"models": cache.get("models", []), "from_github": False, "has_network_error": False, "has_fileread_error": False})
     except:
         pass

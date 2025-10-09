@@ -28,15 +28,44 @@
 
 ## ✨ Features
 
-- Simple interface, quick and easy to use
-- Supports multiple data formats such as YOLO and COCO
-- Visual configuration of training parameters (epoch, batch size, image size, etc.)
-- Supports selecting base models for transfer learning
-- Visual display of training logs, loss changes, mAP, and other key metrics
-- Supports multi-task parallel training
-- Supports single image inference testing by uploading image paths
-- Fully local operation, no reliance on cloud platforms
-- Model export supported (ONNX / TorchScript / OpenVINO / TensorRT), with optional integration into a Triton model repository
+### Dataset Management
+- 📦 Supports YOLO, COCO and other formats
+- 🏷️ Label Studio integration: One-click dataset import from annotation platform
+- 📤 ZIP upload with auto-extraction and configuration
+- 📊 Dataset statistics and visualization
+
+### Model Training
+- 🎯 Visual training parameter configuration (epoch, batch size, image size, etc.)
+- 🔧 Base model selection for transfer learning
+- 📈 Visual training logs, loss curves, mAP and key metrics
+- ⚡ Multi-task parallel training support
+- 💾 Training history management
+- 🎨 Training result visualization (confusion matrix, PR curves, etc.)
+
+### Model Testing & Validation
+- 🖼️ Single image inference testing
+- 🎥 Video inference (coming soon)
+- ✅ Dataset validation
+- 📊 Detailed performance metrics reports
+
+### Model Export & Deployment
+- 📦 Multi-format export (ONNX / TorchScript / OpenVINO / TensorRT)
+- 🚀 One-click Triton Inference Server integration
+- 📥 Export history management and artifact download
+- 🔄 Triton model repository browsing and management
+
+### TCP Image Processing Service 🆕
+- 🔌 Seamless integration with C++ TCP service
+- 🖼️ Single image upload processing
+- 📁 Batch folder processing (recursive)
+- 📊 Processing history and statistical analysis
+- 📈 Real-time performance monitoring
+
+### Other Features
+- 💻 Fully local operation, no cloud dependency
+- 🔒 Data privacy protection, all data stays local
+- 🌐 Cross-platform support (Windows / macOS / Linux)
+- 📱 Modern responsive interface
 
 ## 📦 Installation Instructions
 
@@ -121,21 +150,58 @@ Yolo_Training_Visualization_Platform/
 
 ## 🧩 Architecture
 
-- Frontend (`frontend/`): React + Vite. Dev server runs at `5173`. HTTP calls are centralized in `src/api.js`, using `API_BASE_URL` from `src/config.js` (default `http://localhost:10799`).
-  - Can be overridden via environment variables: set `VITE_API_BASE_URL` in `frontend/.env.development` and `frontend/.env.production`.
-- Backend (`backend/`): Flask app with three blueprints registered in `backend/main.py`:
-  - `IDataset` (`backend/IDataset/routes.py`): dataset import, statistics and validation
-  - `ITraining` (`backend/ITraining/`): training task management and YOLO training workflow
-  - `IModel` (`backend/IModel/routes.py`): inference and visualization on trained models
-- Desktop (`app/`): Electron shell. Dev mode loads `http://localhost:5173`, production loads `resources/frontend/index.html`.
+### Three-Tier Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│     Electron Desktop App (Cross-platform)          │
+│  • Dev mode: loads http://localhost:5173           │
+│  • Prod mode: loads resources/frontend/index.html  │
+├─────────────────────────────────────────────────────┤
+│              React + Vite Frontend                  │
+│  • Port: 5173 (development)                        │
+│  • API Base URL: http://localhost:10799            │
+│  • State Management: Context API (TaskContext)    │
+│  • Real-time Updates: Polling (5s interval)       │
+├─────────────────────────────────────────────────────┤
+│              Flask Backend API                      │
+│  • Port: 10799                                      │
+│  • Host: 0.0.0.0 (external access allowed)        │
+│  • Architecture: Modular Blueprint Design          │
+│  • Concurrency: Multi-threaded Task Management    │
+└─────────────────────────────────────────────────────┘
+```
+
+### Backend Module Architecture
+
+- **Frontend (`frontend/`)**: React + Vite, default dev port `5173`
+  - API Client: `src/api.js` wraps all HTTP requests
+  - Configuration: `src/config.js` defines API URL and constants
+  - Environment Variables: Supports `.env.development` and `.env.production` overrides
+  - State Management: TaskContext manages global task state
+
+- **Backend (`backend/`)**: Flask-based, main entry `backend/main.py`, four blueprints:
+  - **IDataset** (`/IDataset`): Dataset import, statistics, validation, and Label Studio integration
+  - **ITraining** (`/ITraining`): Training task management, multi-task parallel execution, log streaming
+  - **IModel** (`/IModel`): Model inference testing, validation, export, and Triton deployment
+  - **IImageProcessor** (`/IImageProcessor`): TCP image processing service, batch processing, history management 🆕
+
+- **Desktop (`app/`)**: Electron shell. Dev mode loads `http://localhost:5173`, production loads `resources/frontend/index.html`.
+
+### Data Storage Directories
 
 Runtime data directories (see `backend/config.py`, can be customized):
 
-- Datasets: `~/.yolo_training_visualization_platform/dataset`
-- Tasks: `~/.yolo_training_visualization_platform/tasks`
-- Models: `~/.yolo_training_visualization_platform/models`
-- Training result metadata: `~/.yolo_training_visualization_platform/tasks_result_files`
-- Test result metadata: `~/.yolo_training_visualization_platform/test_result_files`
+| Directory | Path | Description |
+|-----------|------|-------------|
+| Datasets | `~/.yolo_training_visualization_platform/dataset` | Uploaded training datasets |
+| Task Configs | `~/.yolo_training_visualization_platform/tasks` | Training task YAML files |
+| Training Output | `~/.yolo_training_visualization_platform/tasks/training` | Model weights and training artifacts |
+| Model Cache | `~/.yolo_training_visualization_platform/models/base` | Downloaded pretrained models |
+| Training Metadata | `~/.yolo_training_visualization_platform/tasks_result_files` | Training task records |
+| Test Metadata | `~/.yolo_training_visualization_platform/test_result_files` | Inference test records |
+| Validation Metadata | `~/.yolo_training_visualization_platform/validation_result_files` | Model validation records |
+| Image Processing History 🆕 | `~/.yolo_training_visualization_platform/image_processing_history` | TCP processing history |
 
 Backend version endpoint: `GET /info`, current `1.0.0`. The frontend checks compatibility via `SUPPORTED_BACKEND_VERSIONS` in `src/config.js`.
 
@@ -294,7 +360,10 @@ Note: some Triton-related backend endpoints are evolving; OpenAPI may not fully 
 - [ ] Richer training visualizations (lr, loss breakdowns, PR curves)
 - [ ] Resume training, task cloning & comparison
 - [ ] More dataset formats and auto conversion
-- [x] Initial support for model export (ONNX/TorchScript/OpenVINO/TensorRT); deployment helper and Triton integration to be improved continuously
+- [x] Model export (ONNX/TorchScript/OpenVINO/TensorRT) with Triton integration
+- [x] TCP image processing service integration (C++ service communication)
+- [ ] Video inference support
+- [ ] Model performance analysis and optimization recommendations
 
 ## 🤝 Contribution Guide
 

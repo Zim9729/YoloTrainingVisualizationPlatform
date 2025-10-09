@@ -6,6 +6,7 @@ import { api } from "../api";
 function TerminalViewer({ filename, setIsRunning, trainingCompleted }) {
     const terminalRef = useRef(null);
     const termInstance = useRef(null);
+    const timerRef = useRef(null);
 
     useEffect(() => {
         termInstance.current = new Terminal({
@@ -33,7 +34,9 @@ function TerminalViewer({ filename, setIsRunning, trainingCompleted }) {
                             termInstance.current.write(log.replace(/\n/g, "\r\n"));
                         }
                         if (!is_running) {
-                            clearInterval(timerRef.current);
+                            if (timerRef.current) {
+                                clearInterval(timerRef.current);
+                            }
                             trainingCompleted();
                         }
 
@@ -45,15 +48,15 @@ function TerminalViewer({ filename, setIsRunning, trainingCompleted }) {
                 });
         };
 
-        const timerRef = { current: null };
-
         fetchLog();
         timerRef.current = setInterval(fetchLog, 3000); // 每3秒请求一次
 
         return () => {
-            clearInterval(timerRef.current);
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
         };
-    }, [filename]);
+    }, [filename, setIsRunning, trainingCompleted]);
 
     return (
         <div style={{ width: "100%", height: "400px", backgroundColor: "#000" }}>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
 import { splitPath } from "../tools";
+import { useRunningTasks } from "../contexts/TaskContext";
 import confetti from 'canvas-confetti';
 import yaml from 'js-yaml';
 import hljs from 'highlight.js';
@@ -24,6 +25,8 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     const [lastLog, setLastLog] = useState("");
 
     const [showModelInfoCardDetails, setShowModelInfoCardDetails] = useState([]);
+    
+    const { isTaskRunning, refreshRunningTasks } = useRunningTasks();
 
     const startTask = (filename, taskname, taskID) => {
         if (confirm("真的要开始训练该任务吗？")) {
@@ -36,9 +39,10 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
 
             api.post("/ITraining/startTask", { data: data, params: {} })
                 .then(data => {
-                    if (data.code == 200) {
+                    if (data.code === 200) {
                         setTrainingCompleted(false);
                         setIsRunning(true);
+                        refreshRunningTasks(); // 刷新运行任务列表
                     } else {
                         alert(data.msg);
                     }
@@ -60,7 +64,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
             }
         })
             .then(data => {
-                if (data.code == 200) {
+                if (data.code === 200) {
                     setTaskData(data.data);
                 }
             })
@@ -69,21 +73,12 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                 alert(err);
             });
 
-        api.get("/ITraining/getAllRunningTasks")
-            .then(data => {
-                if (data.code == 200) {
-                    const runningList = data.data.tasks || [];
-                    const matched = runningList.find(t => t.filename === parameter.filename);
-                    setIsRunning(!!matched);
-                }
-            })
-            .catch(err => {
-                console.error("获取运行中任务失败:", err);
-            });
-    }, [parameter.filename]);
+        // 使用 Context 中的状态检查是否运行中
+        setIsRunning(isTaskRunning(parameter.filename));
+    }, [parameter.filename, isTaskRunning]);
 
     useEffect(() => {
-        if (taskData.trainingType == 0) {
+        if (taskData.trainingType === "0") {
             setBasicInfo([
                 { name: "创建时间", data: new Date(taskData.createTime * 1000).toLocaleString() },
                 { name: "数据集", data: taskData.datasetPath ? splitPath(taskData.datasetPath).pop() : "", details: taskData.datasetPath },
@@ -104,7 +99,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                     url: taskData.baseModelInfo.uploader.html_url
                 }
             ]);
-        } else if (taskData.trainingType == 1) {
+        } else if (taskData.trainingType === "1") {
             setBasicInfo([
                 { name: "创建时间", data: new Date(taskData.createTime * 1000).toLocaleString() },
                 {
@@ -135,7 +130,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
             }
         })
             .then(data => {
-                if (data.code == 200) {
+                if (data.code === 200) {
                     console.log("获取训练任务训练历史记录: " + data.data.history);
                     setTaskHistory(data.data.history);
                 }

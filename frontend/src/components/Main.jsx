@@ -14,6 +14,8 @@ import LabelStudioImportPage from "../page/LabelStudioImportPage";
 import ModelExportPage from "../page/ModelExportPage";
 import SettingsPage from "../page/SettingsPage";
 import TritonRepoPage from "../page/TritonRepoPage";
+import ServicesPage from "../page/ServicesPage";
+import TcpImageProcessorPage from "../page/TcpImageProcessorPage";
 
 function Main({ pageUrl = "home", setPageUrl }) {
     // 识别页面类型并提取参数
@@ -50,6 +52,8 @@ function Main({ pageUrl = "home", setPageUrl }) {
         modelExport: ModelExportPage,
         settings: SettingsPage,
         tritonRepo: TritonRepoPage,
+        services: ServicesPage,
+        'services/tcp-image-processor': TcpImageProcessorPage,
     };
 
     const PageComponent = PageComponentMap[pageType];

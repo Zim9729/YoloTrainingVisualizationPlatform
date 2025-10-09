@@ -1,7 +1,6 @@
 import os
 import sys
 import yaml
-import os
 import time
 import requests
 import logging
@@ -79,11 +78,11 @@ def main(taskfile_path, task_result_file_path, logger=None, task_id=None):
         handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
         logger.addHandler(handler)
     
-    if task_id == None:
+    if task_id is None:
         logger.info("未获取到Task ID")
         sys.exit(1)
         
-    if task_result_file_path == None:
+    if task_result_file_path is None:
         logger.info("未获取到Task Result File Path")
         sys.exit(1)
         
@@ -114,7 +113,7 @@ def main(taskfile_path, task_result_file_path, logger=None, task_id=None):
     
     platform_infofile = load_platform_infofile(dataset_path, logger)
     dataset_yamlfile = platform_infofile.get('yaml_file_path', None)
-    if dataset_yamlfile == None:
+    if dataset_yamlfile is None:
         logger.info(f"[ERROR] 数据集平台配置文件信息缺失: 找不到数据集Yaml配置文件")
         sys.exit(1) 
     
@@ -124,12 +123,12 @@ def main(taskfile_path, task_result_file_path, logger=None, task_id=None):
     match training_type:
         case 0:
             extra_params['base_model_info'] = config.get('baseModelInfo', None)
-            if extra_params['base_model_info'] == None:
+            if extra_params['base_model_info'] is None:
                 logger.info(f"[ERROR] 加载基础模型配置时出错")
                 sys.exit(1) 
         case 1:
             extra_params['modelYamlFile'] = config.get('modelYamlFile', None)
-            if extra_params['modelYamlFile'] == None:
+            if extra_params['modelYamlFile'] is None:
                 logger.info(f"[ERROR] 加载模型结构Yaml文件配置时出错")
                 sys.exit(1) 
         case _:
@@ -161,7 +160,7 @@ def main(taskfile_path, task_result_file_path, logger=None, task_id=None):
         case 1:
             try:
                 model_path = config.get('modelYamlFile', None)
-                if model_path == None:
+                if model_path is None:
                     logger.info(f"[ERROR] 模型结构 Yaml 文件为空")
                     sys.exit(1) 
             except Exception as e:

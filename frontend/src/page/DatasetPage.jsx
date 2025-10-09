@@ -7,51 +7,10 @@ import 'highlight.js/styles/github.css';
 import Logo_Coco from "../assets/logo/coco_sm.png";
 import Logo_Ultralytics from "../assets/logo/ultralytics.svg";
 
-function uploadDataset({ setPageUrl, datasetType, includeYaml, trainPath, valPath, testPath, nc, names }) {
-    const formData = new FormData();
-
-    const name = document.getElementById("datasetName").value;
-    const description = document.getElementById("datasetDescription").value;
-    const version = document.getElementById("datasetVersion").value;
-    const file = document.querySelector('input[type="file"]').files[0];
-
-    formData.append("name", name);
-    formData.append("description", description);
-    formData.append("version", version);
-    formData.append("type", datasetType);
-    formData.append("include_yaml", includeYaml);
-    formData.append("file", file);
-
-    if (includeYaml == 0) {
-        formData.append("train", trainPath);
-        formData.append("val", valPath);
-        formData.append("test", testPath || "");
-        formData.append("nc", nc);
-        formData.append("names", names);
-    }
-
-    fetch(`${CONFIGS.API_BASE_URL}/IDataset/uploadDataset`, {
-        method: "POST",
-        body: formData,
-    })
-        .then(async res => {
-            if (!res.ok) throw await res.text();
-            return res.json();
-        })
-        .then(data => {
-            alert(data.msg);
-            if (data.code == 200) setPageUrl("home");
-        })
-        .catch(err => {
-            alert("上传失败：" + err);
-            console.error("上传失败：", err);
-        });
-}
-
 function DatasetPage({ setPageUrl, parameter }) {
     const [datasetsList, setDatasetsList] = useState([]);
     const [datasetType, setDatasetType] = useState("yolo");
-    const [includeYaml, setIncludeYaml] = useState(1);
+    const [includeYaml, setIncludeYaml] = useState("1");
     const [trainPath, setTrainPath] = useState("");
     const [valPath, setValPath] = useState("");
     const [testPath, setTestPath] = useState("");
@@ -62,7 +21,7 @@ function DatasetPage({ setPageUrl, parameter }) {
 
     useEffect(() => {
         hljs.highlightAll();
-    });
+    }, []);
 
     useEffect(() => {
         api.get("/IDataset/getAllDatasets", { params: {} })
@@ -86,7 +45,7 @@ function DatasetPage({ setPageUrl, parameter }) {
             api.post("/IDataset/deleteDataset", { data: data, params: {} })
                 .then(data => {
                     alert(data.msg);
-                    if (data.code == 200) setPageUrl("home");
+                    if (data.code === 200) setPageUrl("home");
                 })
                 .catch(err => {
                     console.error("删除数据集失败:", err);
@@ -95,6 +54,54 @@ function DatasetPage({ setPageUrl, parameter }) {
         } else {
             console.log("用户取消删除操作");
         }
+    };
+
+    // 上传数据集函数
+    const uploadDataset = () => {
+        const name = document.getElementById("datasetName").value;
+        const description = document.getElementById("datasetDescription").value;
+        const version = document.getElementById("datasetVersion").value;
+        const file = document.querySelector('input[type="file"]').files[0];
+
+        if (!name.trim()) {
+            alert("请输入数据集名称");
+            setIsUploading(false);
+            return;
+        }
+
+        if (!file) {
+            alert("请选择要上传的数据集文件");
+            setIsUploading(false);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("name", name);
+        formData.append("description", description);
+        formData.append("version", version);
+        formData.append("type", datasetType);
+        formData.append("include_yaml", includeYaml);
+        formData.append("file", file);
+
+        if (includeYaml === "0") {
+            formData.append("train", trainPath);
+            formData.append("val", valPath);
+            formData.append("test", testPath || "");
+            formData.append("nc", nc);
+            formData.append("names", names);
+        }
+
+        api.upload("/IDataset/uploadDataset", formData, { params: {} })
+            .then(data => {
+                setIsUploading(false);
+                alert(data.msg);
+                if (data.code === 200) setPageUrl("home");
+            })
+            .catch(err => {
+                setIsUploading(false);
+                alert("上传失败：" + err.message);
+                console.error("上传失败：", err);
+            });
     };
 
     switch (parameter.type) {
@@ -160,13 +167,13 @@ function DatasetPage({ setPageUrl, parameter }) {
                         <div>
                             <div className="form-group">
                                 <label htmlFor="includeYaml">是否包含Yaml文件</label>
-                                <select id="datasetType" value={includeYaml} onChange={(e) => setIncludeYaml(e.target.value)}>
+                                <select id="includeYaml" value={includeYaml} onChange={(e) => setIncludeYaml(e.target.value)}>
                                     <option value="1">包含</option>
                                     <option value="0">不包含</option>
                                 </select>
                             </div>
 
-                            {includeYaml == "1" &&
+                            {includeYaml === "1" &&
                                 <div className="tip-box">
                                     <p>
                                         请确保您的 <code>.yaml</code> 文件格式正确，即包含以下字段:
@@ -205,7 +212,7 @@ function DatasetPage({ setPageUrl, parameter }) {
                                 </div>
                             }
 
-                            {includeYaml == "0" && (
+                            {includeYaml === "0" && (
                                 <div className="manual-yaml-input">
                                     <div className="tip-box">
                                         请手动填写 <code>.yaml</code> 文件所需信息（路径请使用压缩包内的<b>相对路径</b>）
@@ -285,7 +292,7 @@ function DatasetPage({ setPageUrl, parameter }) {
 
                     <button className="btn sm upload-btn" onClick={() => {
                         setIsUploading(true);
-                        uploadDataset({ setPageUrl, datasetType, includeYaml, trainPath, valPath, testPath, nc, names });
+                        uploadDataset();
                     }}>
                         {isUploading ? (<>正在上传中</>) : (<>上传数据集</>)}
                     </button>
@@ -299,13 +306,11 @@ function DatasetPage({ setPageUrl, parameter }) {
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                         <button className="btn sm" onClick={() => setPageUrl("dataset?type=uploadDataset")}>上传数据集</button>
                         <button className="btn sm" onClick={() => {
-                            const base_url = encodeURIComponent("http://10.10.10.96:8080");
-                            const token = encodeURIComponent("Token c438e617f6488a1d77ee04208e4c917723e25a34");
-                            setPageUrl(`labelStudioImport?base_url=${base_url}&token=${token}`);
+                            setPageUrl(`labelStudioImport`);
                         }}>从 Label Studio 导入</button>
                     </div>
                     {datasetsList.map((dataset, index) => (
-                        <div key={index} className="card" style={{ marginBottom: '10px' }}>
+                        <div key={dataset.path} className="card" style={{ marginBottom: '10px' }}>
                             <p className="tag-group">
                                 <span className="tag" style={{ fontSize: '12px', marginRight: '10px' }}>{CONFIGS.DATASET_TYPE[dataset.platform_info.type]}</span>
                             </p>

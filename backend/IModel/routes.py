@@ -12,15 +12,49 @@ import json
 import base64
 import mimetypes
 from pathlib import Path
+import threading
+import weakref
 from .triton_integration import register_model_to_triton, list_triton_models, remove_triton_model
 
 IModel_bp = Blueprint('IModel', __name__)
 
+# 使用线程安全的数据结构和弱引用
 TEST_THREADS = {}
 TEST_LIST = []
 VAL_THREADS = {}
 VAL_LIST = []
 EXPORT_THREADS = {}
+
+# 线程管理锁
+thread_lock = threading.Lock()
+
+# 定期清理已完成的线程
+def cleanup_finished_threads():
+    """清理已完成的线程，防止内存泄漏"""
+    with thread_lock:
+        # 清理测试线程
+        finished_test = []
+        for key, info in TEST_THREADS.items():
+            if info and 'thread' in info and not info['thread'].is_alive():
+                finished_test.append(key)
+        for key in finished_test:
+            TEST_THREADS.pop(key, None)
+            
+        # 清理验证线程
+        finished_val = []
+        for key, info in VAL_THREADS.items():
+            if info and 'thread' in info and not info['thread'].is_alive():
+                finished_val.append(key)
+        for key in finished_val:
+            VAL_THREADS.pop(key, None)
+            
+        # 清理导出线程
+        finished_export = []
+        for key, info in EXPORT_THREADS.items():
+            if info and 'thread' in info and not info['thread'].is_alive():
+                finished_export.append(key)
+        for key in finished_export:
+            EXPORT_THREADS.pop(key, None)
 
 def get_test_result_file(task_id):
     """
@@ -143,11 +177,13 @@ def run_model_test():
             
         thread, log_stream = run_modeltest_in_thread(task_id, weight_path, os.path.join(input_file_target_path, input_filename), test_output_dir, test_result_file_path, "image")
         
-        # 保存
-        TEST_THREADS[test_result_file_path] = {
-            "thread": thread,
-            "log": log_stream,
-        }
+        # 保存线程信息（使用线程锁保护）
+        with thread_lock:
+            TEST_THREADS[test_result_file_path] = {
+                "thread": thread,
+                "log": log_stream,
+                "created_at": time.time(),
+            }
         TEST_LIST.append({
             "task_id": task_id,
             "taskname": task_name,
@@ -199,11 +235,14 @@ def get_all_test():
             data["result_file_path"] = None
             
         try:
-            test_info = TEST_THREADS.get(item)
-            is_running = test_info["thread"].is_alive()
-            data["is_running"] = is_running
-        except Exception as e:
-            data["is_running"] = False
+            with thread_lock:
+                test_info = TEST_THREADS.get(item)
+                if not test_info:
+                    continue
+                is_running = test_info and test_info.get("thread") and test_info["thread"].is_alive()
+                data["is_running"] = bool(is_running)
+        except:
+            continue
         
         data["task_id"] = task_id
             
@@ -292,10 +331,13 @@ def run_model_validation():
 
         thread, log_stream = run_modelval_in_thread(task_id, weight_path, dataset_yaml_path, val_output_dir, result_file_path)
 
-        VAL_THREADS[result_file_path] = {
-            "thread": thread,
-            "log": log_stream,
-        }
+        # 保存线程信息（使用线程锁保护）
+        with thread_lock:
+            VAL_THREADS[result_file_path] = {
+                "thread": thread,
+                "log": log_stream,
+                "created_at": time.time(),
+            }
         VAL_LIST.append({
             "task_id": task_id,
             "taskname": task_name,
@@ -351,11 +393,12 @@ def get_all_validation():
         parsed["task_id"] = task_id
 
         # 4) 线程运行状态（VAL_THREADS 中可能没有该项或值为 None，都视为不在运行）
-        val_info = VAL_THREADS.get(item)
         is_running = False
         try:
-            if val_info and "thread" in val_info and val_info["thread"] is not None:
-                is_running = bool(val_info["thread"].is_alive())
+            with thread_lock:
+                val_info = VAL_THREADS.get(item)
+                if val_info and "thread" in val_info and val_info["thread"] is not None:
+                    is_running = bool(val_info["thread"].is_alive())
         except Exception:
             is_running = False
         parsed["is_running"] = is_running
@@ -463,20 +506,23 @@ def run_model_export():
             enable_triton=enable_triton,
         )
 
-        EXPORT_THREADS[export_key] = {
-            "thread": thread,
-            "log": log_stream,
-            "task_id": task_id,
-            "task_name": task_name,
-            "output_dir": base_output_dir,
-            "model_choice": model_choice,
-            "formats": formats,
-            "imgsz": imgsz,
-            "startedAt": timestamp,
-            "triton_repo_path": triton_repo_path,
-            "triton_model_name": triton_model_name,
-            "enable_triton": enable_triton,
-        }
+        # 保存线程信息（使用线程锁保护）
+        with thread_lock:
+            EXPORT_THREADS[export_key] = {
+                "thread": thread,
+                "log": log_stream,
+                "task_id": task_id,
+                "task_name": task_name,
+                "output_dir": base_output_dir,
+                "model_choice": model_choice,
+                "formats": formats,
+                "imgsz": imgsz,
+                "startedAt": timestamp,
+                "triton_repo_path": triton_repo_path,
+                "triton_model_name": triton_model_name,
+                "enable_triton": enable_triton,
+                "created_at": time.time(),
+            }
 
         # 写入导出历史记录到 output_dir/export/export_history.json
         try:
@@ -526,9 +572,13 @@ def get_export_task_log():
     if not export_key:
         return format_output(code=400, msg="缺少必要参数(step:1)")
 
-    task_info = EXPORT_THREADS.get(export_key)
-    if not task_info:
-        return format_output(code=404, msg="任务未在运行，或不存在")
+    # 先清理已完成的线程
+    cleanup_finished_threads()
+    
+    with thread_lock:
+        task_info = EXPORT_THREADS.get(export_key)
+        if not task_info:
+            return format_output(code=404, msg="任务未在运行，或不存在")
 
     log_q = task_info["log"]
     logs = []
@@ -707,11 +757,25 @@ def download_export_artifact():
         target_path = (export_base / file_path).resolve()
 
     try:
-        # 路径安全校验：必须位于 export_base 下
-        if export_base not in target_path.parents and export_base != target_path:
-            return format_output(code=400, msg="非法路径")
+        # 加强路径安全校验：必须位于 export_base 下
+        try:
+            # 检查路径是否在允许的目录内
+            target_path.relative_to(export_base)
+        except ValueError:
+            return format_output(code=400, msg="非法路径：文件必须位于导出目录内")
+        
+        # 检查路径遍历攻击
+        if '..' in str(target_path) or str(target_path).startswith('/'):
+            return format_output(code=400, msg="非法路径：包含危险字符")
+            
         if not target_path.exists() or not target_path.is_file():
             return format_output(code=404, msg="文件不存在")
+            
+        # 检查文件大小限制（防止下载过大文件）
+        max_file_size = 500 * 1024 * 1024  # 500MB
+        if target_path.stat().st_size > max_file_size:
+            return format_output(code=413, msg="文件过大，无法下载")
+            
         return send_file(str(target_path), as_attachment=True, download_name=target_path.name)
     except Exception as e:
         return format_output(code=500, msg=f"下载失败: {e}")
@@ -736,9 +800,16 @@ def register_export_artifact_to_triton():
     export_base = Path(os.path.join(output_dir, "export")).resolve()
     target_path = (export_base / file_path).resolve()
 
-    # 路径安全
-    if export_base not in target_path.parents and export_base != target_path:
-        return format_output(code=400, msg="非法路径")
+    # 加强路径安全校验
+    try:
+        target_path.relative_to(export_base)
+    except ValueError:
+        return format_output(code=400, msg="非法路径：文件必须位于导出目录内")
+    
+    # 检查路径遍历攻击
+    if '..' in str(target_path) or str(target_path).startswith('/'):
+        return format_output(code=400, msg="非法路径：包含危险字符")
+        
     if not target_path.exists() or not target_path.is_file():
         return format_output(code=404, msg="文件不存在")
 
@@ -945,7 +1016,6 @@ def get_task_log():
     if not filename:
         return format_output(code=400, msg="缺少必要参数(step:1)")
     
-    print(TEST_THREADS)
 
     task_info = TEST_THREADS.get(filename)
     if not task_info:

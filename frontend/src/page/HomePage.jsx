@@ -1,23 +1,10 @@
-import { useState, useEffect } from "react";
-import { api } from "../api";
+import { useRunningTasks } from "../contexts/TaskContext";
 
 import BACKGROUND_IMAGE from "@/assets/background_3.png";
 import Icon_rocket_takeoff from "../assets/icons/rocket-takeoff-fill.svg";
 
 function HomePage({ setPageUrl, parameter }) {
-    const [runningTasksList, setRunningTasksList] = useState([]);
-
-    useEffect(() => {
-        api.get("/ITraining/getAllRunningTasks", { params: {} })
-            .then(data => {
-                console.log("获取正在运行的训练任务:", data.data.tasks);
-                setRunningTasksList(data.data.tasks);
-            })
-            .catch(err => {
-                console.error("获取正在运行的训练任务失败:", err);
-                alert(err);
-            });
-    }, [])
+    const { runningTasks } = useRunningTasks();
 
     return (
         <div className="main">
@@ -61,11 +48,11 @@ function HomePage({ setPageUrl, parameter }) {
 
                 <div style={{ marginTop: '40px' }}>
                     <h1 className="home-page-title">进行中的训练</h1>
-                    {runningTasksList.length <= 0 ? (
+                    {runningTasks.length <= 0 ? (
                         <span style={{ color: 'var(--secondary-text-color)' }}>空空如也</span>
                     ) : (
                         <div className="list-card-group">
-                            {runningTasksList.map((item, index) => (
+                            {runningTasks.map((item, index) => (
                                 <div key={`runningTaskList_${index}`} className="list-card" style={{ wordBreak: 'break-all' }} onClick={() => setPageUrl(`tasksDetailed?filename=${item.filename}`)}>
                                     <span style={{ fontSize: '18px', fontWeight: 'bold', marginRight: '4px' }}>
                                         {item.taskname}

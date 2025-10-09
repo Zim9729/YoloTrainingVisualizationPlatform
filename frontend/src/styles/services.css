@@ -1,0 +1,127 @@
+/* 服务页面样式 */
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid #e3f2fd;
+    border-top: 4px solid #2196f3;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 24px;
+}
+
+.service-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.service-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.service-status-badge {
+    transition: all 0.2s ease;
+}
+
+.service-button {
+    transition: all 0.2s ease;
+}
+
+.service-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.gradient-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.gradient-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.05"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.05"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    pointer-events: none;
+}
+
+.stats-card {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .service-card {
+        margin-bottom: 16px;
+    }
+    
+    .gradient-header {
+        padding: 24px 16px !important;
+    }
+    
+    .stats-container {
+        flex-direction: column;
+        gap: 12px !important;
+    }
+    
+    .stats-card {
+        width: 100%;
+    }
+}
+
+/* 状态指示器动画 */
+.status-indicator {
+    position: relative;
+}
+
+.status-indicator.online::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: inherit;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    70% {
+        transform: translate(-50%, -50%) scale(1.4);
+        opacity: 0;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.4);
+        opacity: 0;
+    }
+}
+
+/* 卡片阴影效果 */
+.card-shadow {
+    box-shadow: 
+        0 1px 3px rgba(0,0,0,0.12),
+        0 1px 2px rgba(0,0,0,0.24);
+}
+
+.card-shadow:hover {
+    box-shadow: 
+        0 14px 28px rgba(0,0,0,0.25),
+        0 10px 10px rgba(0,0,0,0.22);
+}

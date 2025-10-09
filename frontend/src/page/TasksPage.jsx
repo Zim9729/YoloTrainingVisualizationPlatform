@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
+import { useRunningTasks } from "../contexts/TaskContext";
 import CONFIGS from "../config";
 
 function TasksPage({ setPageUrl, parameter }) {
@@ -41,7 +42,8 @@ function TasksPage({ setPageUrl, parameter }) {
 
     const [errorList, setErrorList] = useState([]);
 
-    const [runningTasksList, setRunningTasksList] = useState([]);
+    const { getRunningFilenames, refreshRunningTasks } = useRunningTasks();
+    const runningTasksList = getRunningFilenames();
 
     useEffect(() => {
         api.get("/ITraining/getAllTasks", { params: {} })
@@ -68,17 +70,17 @@ function TasksPage({ setPageUrl, parameter }) {
                 console.error("获取数据集失败:", err);
                 alert(err);
             });
-    }, [])
+    }, [parameter.datasetPath])
 
     useEffect(() => {
         if (parameter.datasetPath) {
             console.log("自动加载数据集" + parameter.datasetPath);
             setDatasetPath(parameter.datasetPath);
         }
-    }, [])
+    }, [parameter.datasetPath])
 
     useEffect(() => {
-        if (parameter.type == "newTask") {
+        if (parameter.type === "newTask") {
             api.get("/ITraining/getAllBaseModelsFromGithub")
                 .then(data => {
                     console.log("获取基础模型列表: " + JSON.stringify(data.data));
@@ -100,64 +102,58 @@ function TasksPage({ setPageUrl, parameter }) {
                     setGetModelListError(err.message);
                 });
         }
-    }, []);
+    }, [parameter.type]);
 
     useEffect(() => {
         const found = modelList.find(item => item.id === parseInt(baseModelID));
         setSelectedBaseModel(found || null);
-    }, [baseModelID]);
+    }, [baseModelID, modelList]);
 
-    useEffect(() => {
-        api.get("/ITraining/getAllRunningTasks", { params: {} })
-            .then(data => {
-                console.log("获取正在运行的训练任务:", data.data.tasks);
-                for (var i = 0; i < data.data.tasks.length; i++) {
-                    setRunningTasksList(data.data.tasks[i]["filename"]);
-                }
-            })
-            .catch(err => {
-                console.error("获取正在运行的训练任务失败:", err);
-                alert(err);
-            });
-    }, [])
-
-    useEffect(() => {
-        if (tabIndex == 5) {
-            setCanBackLastTab(true);
-
-            setErrorList([]);
-            if (taskName == "") {
-                setErrorList(prev => [...prev, "taskName"]);
-            }
-            if (datasetPath == "") {
-                setErrorList(prev => [...prev, "datasetPath"])
-            }
-            if (epochs < 1) {
-                setErrorList(prev => [...prev, "epochs"]);
-            }
-            if (batchSize < 1) {
-                setErrorList(prev => [...prev, "batchSize"]);
-            }
-            if (imgSize < 1) {
-                setErrorList(prev => [...prev, "imgSize"]);
-            }
-            if (device == "gpu" && gpuCUDAIndex == "") {
-                setErrorList(prev => [...prev, "gpuCUDAIndex"]);
-            }
-            if (device == "gpu_idlefirst" && gpuCUDANum < 1) {
-                setErrorList(prev => [...prev, "gpuCUDANum"]);
-            }
-            if (!(trainSeed === "" || /^\d+$/.test(String(trainSeed)))) {
-                setErrorList(prev => [...prev, "trainSeed"]);
-            }
-            if (modelYamlFile == "" && trainingType == "1") {
-                setErrorList(prev => [...prev, "modelYamlFile"]);
-            }
-            if (!selectedBaseModel) {
-                setErrorList(prev => [...prev, "baseModelID"]);
-            }
+    // 表单验证函数
+    const validateForm = () => {
+        const errors = [];
+        
+        if (taskName.trim() === "") {
+            errors.push("taskName");
         }
-    }, [tabIndex]);
+        if (datasetPath === "") {
+            errors.push("datasetPath");
+        }
+        if (epochs < 1) {
+            errors.push("epochs");
+        }
+        if (batchSize < 1) {
+            errors.push("batchSize");
+        }
+        if (imgSize < 1) {
+            errors.push("imgSize");
+        }
+        if (device === "gpu" && gpuCUDAIndex === "") {
+            errors.push("gpuCUDAIndex");
+        }
+        if (device === "gpu_idlefirst" && gpuCUDANum < 1) {
+            errors.push("gpuCUDANum");
+        }
+        if (!(trainSeed === "" || /^\d+$/.test(String(trainSeed)))) {
+            errors.push("trainSeed");
+        }
+        if (trainingType === "1" && modelYamlFile === "") {
+            errors.push("modelYamlFile");
+        }
+        if (trainingType === "0" && !selectedBaseModel) {
+            errors.push("baseModelID");
+        }
+        
+        return errors;
+    };
+
+    useEffect(() => {
+        if (tabIndex === 5) {
+            setCanBackLastTab(true);
+            const errors = validateForm();
+            setErrorList(errors);
+        }
+    }, [tabIndex, taskName, datasetPath, epochs, batchSize, imgSize, device, gpuCUDAIndex, gpuCUDANum, trainSeed, trainingType, modelYamlFile, selectedBaseModel]);
 
     const createTask = () => {
         setIsUploading(true);
@@ -180,10 +176,10 @@ function TasksPage({ setPageUrl, parameter }) {
         };
 
         api.post("/ITraining/createTask", { data: data, params: {} })
-            .then(data => {
+                .then(data => {
                 setIsUploading(false);
                 alert(data.msg);
-                if (data.code == 200) setPageUrl("home");
+                if (data.code === 200) setPageUrl("home");
             })
             .catch(err => {
                 alert("创建失败：" + err.message);
@@ -202,8 +198,8 @@ function TasksPage({ setPageUrl, parameter }) {
 
             api.post("/ITraining/startTask", { data: data, params: {} })
                 .then(data => {
-                    if (data.code == 200) {
-                        setRunningTasksList(prev => [...prev, filename]);
+                    if (data.code === 200) {
+                        refreshRunningTasks(); // 刷新运行任务列表
                         setPageUrl(`tasksDetailed?filename=${filename}`)
                     } else {
                         alert(data.msg);
@@ -228,7 +224,7 @@ function TasksPage({ setPageUrl, parameter }) {
             api.post("/ITraining/deleteTask", { data: data, params: {} })
                 .then(data => {
                     alert(data.msg);
-                    if (data.code == 200) setPageUrl("home");
+                    if (data.code === 200) setPageUrl("home");
                 })
                 .catch(err => {
                     console.error("删除训练任务失败:", err);
@@ -301,17 +297,17 @@ function TasksPage({ setPageUrl, parameter }) {
                         <div className="form-group">
                             <label htmlFor="trainingType">你想要...</label>
                             <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-                                <div className={`card hover-enabled${trainingType == 0 ? " click" : ""}`} style={{ flex: '1' }} onClick={() => { setTrainingType(0) }}>
+                                <div className={`card hover-enabled${trainingType === "0" ? " click" : ""}`} style={{ flex: '1' }} onClick={() => { setTrainingType("0") }}>
                                     <h1 className="title">直接微调官方模型</h1>
                                     <p>加载一个完整的、已训练的预训练模型（常用方式）</p>
                                 </div>
-                                <div className={`card hover-enabled${trainingType == 1 ? " click" : ""}`} style={{ flex: '1' }} onClick={() => { setTrainingType(1) }}>
+                                <div className={`card hover-enabled${trainingType === "1" ? " click" : ""}`} style={{ flex: '1' }} onClick={() => { setTrainingType("1") }}>
                                     <h1 className="title">从头训练自定义结构</h1>
                                     <p className="des">从 <code>.yaml</code> 配置文件构建一个新模型（不含任何权重）</p>
                                 </div>
                             </div>
                             <div className="tip-box">
-                                {trainingType == 0 &&
+                                {trainingType === "0" &&
                                     <>
                                         <p>
                                             对于“直接微调官方模型”:
@@ -332,7 +328,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                         </p>
                                     </>
                                 }
-                                {trainingType == 1 &&
+                                {trainingType === "1" &&
                                     <>
                                         <p>
                                             对于“训练自定义结构”:
@@ -367,7 +363,7 @@ function TasksPage({ setPageUrl, parameter }) {
                             </h1>
                         </div>
 
-                        {trainingType == 0 && !getModelListError &&
+                        {trainingType === "0" && !getModelListError &&
                             <>
                                 <div className="form-group">
                                     <label htmlFor="baseModelID">选择基础模型</label>
@@ -469,7 +465,7 @@ function TasksPage({ setPageUrl, parameter }) {
                             </div>
                         )}
 
-                        {trainingType == 1 &&
+                        {trainingType === "1" &&
                             <>
                                 <div className="form-group">
                                     <label htmlFor="modelYamlFile">模型<code>.yaml</code>文件</label>
@@ -530,14 +526,14 @@ function TasksPage({ setPageUrl, parameter }) {
                             </select>
                         </div>
 
-                        {device == "gpu" &&
+                        {device === "gpu" &&
                             <div className="form-group">
                                 <label htmlFor="gpuCUDAIndex">设置CUDA设备编号（如有多个CUDA设备，请使用英文逗号","分割）</label>
                                 <input type="text" id="gpuCUDAIndex" value={gpuCUDAIndex} onChange={(e) => { setGpuCUDAIndex(e.target.value) }} placeholder="例: 0,1,2" />
                             </div>
                         }
 
-                        {device == "gpu_idlefirst" &&
+                        {device === "gpu_idlefirst" &&
                             <div className="form-group">
                                 <label htmlFor="gpuCUDANum">设置CUDA设备数量</label>
                                 <input type="number" id="gpuCUDANum" min="1" value={gpuCUDANum} onChange={(e) => setGpuCUDANum(parseInt(e.target.value))} />
@@ -586,7 +582,7 @@ function TasksPage({ setPageUrl, parameter }) {
 
                         {errorList.length !== 0 && (
                             <div className="tip-box">
-                                请检查<span style={{ color: 'red', fontWeight: 'bold' }}>{errorList.map(key => CONFIGS.TASK_CONFIGURATiON_ITEMS[key]).join(", ")}</span>配置项是否正确
+                                请检查<span style={{ color: 'red', fontWeight: 'bold' }}>{errorList.map(key => CONFIGS.TASK_CONFIGURATION_ITEMS[key]).join(", ")}</span>配置项是否正确
                             </div>
                         )}
 
@@ -606,10 +602,10 @@ function TasksPage({ setPageUrl, parameter }) {
                                 </tr>
                                 <tr onClick={() => setTabIndex(2)}>
                                     <td>{renderCheckIcon("trainingType")} <strong>训练方式</strong></td>
-                                    <td>{trainingType == 0 ? "微调预训练模型" : "自定义结构"}</td>
+                                    <td>{trainingType === "0" ? "微调预训练模型" : "自定义结构"}</td>
                                 </tr>
 
-                                {trainingType == 0 && selectedBaseModel ? (
+                                {trainingType === "0" && selectedBaseModel ? (
                                     <>
                                         <tr onClick={() => setTabIndex(3)}>
                                             <td>{renderCheckIcon("baseModelID")} <strong>基础模型</strong></td>
@@ -629,7 +625,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                     </>
                                 )}
 
-                                {trainingType == 1 && (
+                                {trainingType === "1" && (
                                     <tr onClick={() => setTabIndex(3)}>
                                         <td>{renderCheckIcon("modelYamlFile")} <strong>模型结构定义</strong></td>
                                         <td><pre style={{ whiteSpace: 'pre-wrap' }}>{modelYamlFile}</pre></td>
@@ -687,7 +683,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                 setTabIndex(Math.min(tabIndex + 1, tabIndexCount));
                             }
                         }}>
-                            {isUploading ? "正在上传中" : ((tabIndex == tabIndexCount && !isUploading) ? "完成" : "下一步")}
+                                        {isUploading ? "正在上传中" : ((tabIndex === tabIndexCount && !isUploading) ? "完成" : "下一步")}
                         </button>
                         {canBackLastTab &&
                             <button className="btn" style={{ flex: '1' }} onClick={() => { setTabIndex(5) }}>返回配置确认</button>
@@ -725,7 +721,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                         <br />
                                         数据集: {task.datasetPath}
                                         <br />
-                                        训练设备: {CONFIGS.DEVICE_TYPE[task.device]} {task.device == "gpu" ? `(CUDA 编号: ${task.gpuCUDAIndex})` : (task.device == "gpu_idlefirst" ? `(将要唤起的 GPU 数量: ${task.gpuCUDANum})` : "")}
+                                        训练设备: {CONFIGS.DEVICE_TYPE[task.device]} {task.device === "gpu" ? `(CUDA 编号: ${task.gpuCUDAIndex})` : (task.device === "gpu_idlefirst" ? `(将要唤起的 GPU 数量: ${task.gpuCUDANum})` : "")}
                                         <br />
                                         训练轮数(epochs): {task.epochs}
                                         <br />
@@ -733,7 +729,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                         <br />
                                         输入图像尺寸 (imgsz): {task.imgSize}
                                         <br />
-                                        {task.trainingType == 0 && (
+                                        {task.trainingType === "0" && (
                                             <>
                                                 基础模型ID: {task.baseModelID}
                                                 <br />
@@ -746,7 +742,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                                 模型上传者: <a href={task.baseModelInfo.uploader.html_url} target="_blank">{task.baseModelInfo.uploader.login}</a>
                                             </>
                                         )}
-                                        {task.trainingType == 1 && (
+                                        {task.trainingType === "1" && (
                                             <>
                                                 模型结构Yaml文件: {task.modelYamlFile}
                                             </>

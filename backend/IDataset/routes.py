@@ -170,7 +170,7 @@ def upload_dataset():
     dataset_type = request.form.get("type", None)
     include_yaml = request.form.get("include_yaml", None)
     
-    if name == None or dataset_type == None or include_yaml == None:
+    if name is None or dataset_type is None or include_yaml is None:
         return format_output(code=400, msg="缺少必要的参数")
     
     include_yaml = (include_yaml == "1")
@@ -243,7 +243,7 @@ def delete_dataset():
     删除一个数据集
     """
     path = request.json.get("path", None)
-    if path == None:
+    if path is None:
         return format_output(code=400, msg="缺少必要的参数")
     
     try:

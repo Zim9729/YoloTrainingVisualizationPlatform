@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>路由测试 - YOLO训练可视化平台</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .route-item {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .route-item h3 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        .route-item p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.new {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.existing {
+            background: #cce5ff;
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 YOLO训练可视化平台 - 路由测试</h1>
+        <p>以下是所有可用的路由和页面：</p>
+        
+        <h2>📋 现有路由</h2>
+        
+        <div class="route-item">
+            <h3>主页 <span class="status existing">现有</span></h3>
+            <p><strong>路由:</strong> <code>home</code></p>
+            <p><strong>组件:</strong> HomePage.jsx</p>
+            <p><strong>描述:</strong> 系统主页和概览</p>
+        </div>
+        
+        <div class="route-item">
+            <h3>数据集 <span class="status existing">现有</span></h3>
+            <p><strong>路由:</strong> <code>dataset</code></p>
+            <p><strong>组件:</strong> DatasetPage.jsx</p>
+            <p><strong>描述:</strong> 数据集管理和上传</p>
+        </div>
+        
+        <div class="route-item">
+            <h3>训练任务 <span class="status existing">现有</span></h3>
+            <p><strong>路由:</strong> <code>tasks</code></p>
+            <p><strong>组件:</strong> TasksPage.jsx</p>
+            <p><strong>描述:</strong> 训练任务管理和监控</p>
+        </div>
+        
+        <div class="route-item">
+            <h3>模型 <span class="status existing">现有</span></h3>
+            <p><strong>路由:</strong> <code>models</code></p>
+            <p><strong>组件:</strong> ModelsPage.jsx</p>
+            <p><strong>描述:</strong> 模型管理和测试</p>
+        </div>
+        
+        <h2>🆕 新增路由</h2>
+        
+        <div class="route-item">
+            <h3>服务管理 <span class="status new">新增</span></h3>
+            <p><strong>路由:</strong> <code>services</code></p>
+            <p><strong>组件:</strong> ServicesPage.jsx</p>
+            <p><strong>描述:</strong> 外部服务状态监控和管理</p>
+            <p><strong>功能:</strong> TCP服务、Triton服务、Label Studio服务状态检查</p>
+        </div>
+        
+        <div class="route-item">
+            <h3>TCP图像处理服务 <span class="status new">新增</span></h3>
+            <p><strong>路由:</strong> <code>services/tcp-image-processor</code></p>
+            <p><strong>组件:</strong> TcpImageProcessorPage.jsx</p>
+            <p><strong>描述:</strong> TCP图像处理服务专用页面</p>
+            <p><strong>功能:</strong> 图像上传处理、历史记录、统计信息、服务状态监控</p>
+        </div>
+        
+        <h2>🔗 后端API端点</h2>
+        
+        <div class="route-item">
+            <h3>IImageProcessor API <span class="status new">新增</span></h3>
+            <p><strong>基础路径:</strong> <code>/IImageProcessor</code></p>
+            <p><strong>端点:</strong></p>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+                <li><code>GET /info</code> - 获取模块信息</li>
+                <li><code>GET /testConnection</code> - 测试TCP连接</li>
+                <li><code>POST /processImage</code> - 处理上传图像</li>
+                <li><code>POST /processImageFromDataset</code> - 处理数据集图像</li>
+                <li><code>GET /getProcessingHistory</code> - 获取处理历史</li>
+                <li><code>GET /getProcessingStatistics</code> - 获取统计信息</li>
+                <li><code>GET /getServiceStatus</code> - 获取服务状态</li>
+                <li><code>POST /deleteProcessingRecord</code> - 删除处理记录</li>
+                <li><code>POST /clearProcessingHistory</code> - 清空历史记录</li>
+            </ul>
+        </div>
+        
+        <h2>🎯 测试步骤</h2>
+        
+        <ol>
+            <li><strong>启动后端服务:</strong> 运行 <code>python backend/main.py</code></li>
+            <li><strong>启动前端服务:</strong> 运行 <code>npm run dev</code></li>
+            <li><strong>访问服务页面:</strong> 点击导航栏中的"服务"按钮</li>
+            <li><strong>测试TCP服务:</strong> 进入TCP图像处理服务页面</li>
+            <li><strong>检查状态:</strong> 验证服务状态显示是否正常</li>
+            <li><strong>测试功能:</strong> 上传图像进行处理（需要C++服务运行）</li>
+        </ol>
+        
+        <h2>⚠️ 注意事项</h2>
+        
+        <ul>
+            <li>TCP图像处理功能需要C++服务在 <code>10.10.21.224:16000</code> 运行</li>
+            <li>可以通过环境变量修改TCP服务地址和端口</li>
+            <li>所有处理记录会保存在用户主目录的 <code>.yolo_training_visualization_platform/image_processing_history</code></li>
+            <li>支持的图像格式：JPG, PNG, BMP, TIFF, WEBP</li>
+            <li>最大文件大小限制：10MB</li>
+        </ul>
+        
+        <div style="margin-top: 30px; padding: 15px; background: #e8f5e8; border-radius: 4px;">
+            <h3 style="margin: 0 0 10px 0; color: #155724;">✅ 集成完成</h3>
+            <p style="margin: 0; color: #155724;">
+                TCP图像处理服务模块已成功集成到YOLO训练可视化平台中，
+                包括完整的前后端功能、API接口、状态监控和用户界面。
+            </p>
+        </div>
+    </div>
+</body>
+</html>

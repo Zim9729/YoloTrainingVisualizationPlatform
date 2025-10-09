@@ -18,7 +18,7 @@ const CONFIGS = {
         "0": "微调",
         "1": "从头构建"
     },
-    TASK_CONFIGURATiON_ITEMS: {
+    TASK_CONFIGURATION_ITEMS: {
         "taskName": "任务名称",
         "taskDescription": "任务描述",
         "datasetPath": "数据集路径",

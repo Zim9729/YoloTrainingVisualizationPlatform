@@ -14,11 +14,11 @@ def test_model(model_path, input_path, output_dir, result_file_path, test_type="
         handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
         logger.addHandler(handler)
     
-    if task_id == None:
+    if task_id is None:
         logger.info("未获取到Task ID")
         sys.exit(1)
         
-    if result_file_path == None:
+    if result_file_path is None:
         logger.info("未获取到Test Result File Path")
         sys.exit(1)
         
