@@ -2,8 +2,10 @@ import os
 import json
 import shutil
 import logging
+import requests
 from pathlib import Path
 from typing import Dict, List, Optional
+from datetime import datetime
 
 
 def generate_triton_config(model_name: str, 
@@ -262,3 +264,88 @@ def remove_triton_model(triton_repo_path: str, model_name: str, version: str = N
         return False
     except Exception:
         return False
+
+
+def check_triton_server_status(host: str = "localhost", 
+                               port: int = 8000,
+                               timeout: int = 5) -> Dict:
+    """
+    检查 Triton 推理服务器状态
+    
+    Args:
+        host: Triton 服务器地址
+        port: Triton HTTP 端口 (默认 8000)
+        timeout: 请求超时时间（秒）
+    
+    Returns:
+        服务状态字典，包含:
+        - is_connected: 是否连接成功
+        - status: 状态 (online/offline/error)
+        - server_info: 服务器信息 (如果连接成功)
+        - models_count: 模型数量 (如果连接成功)
+        - error_message: 错误信息 (如果连接失败)
+        - response_time: 响应时间（毫秒）
+    """
+    url = f"http://{host}:{port}/v2/health/ready"
+    result = {
+        "is_connected": False,
+        "status": "offline",
+        "host": host,
+        "port": port,
+        "server_info": None,
+        "models_count": 0,
+        "error_message": None,
+        "response_time": None,
+        "last_check": datetime.now().isoformat()
+    }
+    
+    try:
+        # 健康检查
+        start_time = datetime.now()
+        response = requests.get(url, timeout=timeout)
+        end_time = datetime.now()
+        response_time = (end_time - start_time).total_seconds() * 1000  # 毫秒
+        
+        result["response_time"] = round(response_time, 2)
+        
+        if response.status_code == 200:
+            result["is_connected"] = True
+            result["status"] = "online"
+            
+            # 获取服务器元数据
+            try:
+                metadata_url = f"http://{host}:{port}/v2"
+                metadata_response = requests.get(metadata_url, timeout=timeout)
+                if metadata_response.status_code == 200:
+                    metadata = metadata_response.json()
+                    result["server_info"] = {
+                        "name": metadata.get("name", "triton"),
+                        "version": metadata.get("version", "unknown")
+                    }
+            except Exception:
+                pass
+            
+            # 获取模型列表
+            try:
+                models_url = f"http://{host}:{port}/v2/models"
+                models_response = requests.get(models_url, timeout=timeout)
+                if models_response.status_code == 200:
+                    models_data = models_response.json()
+                    result["models_count"] = len(models_data.get("models", []))
+            except Exception:
+                pass
+        else:
+            result["status"] = "error"
+            result["error_message"] = f"HTTP {response.status_code}: {response.text}"
+            
+    except requests.exceptions.Timeout:
+        result["status"] = "error"
+        result["error_message"] = f"连接超时（>{timeout}秒）"
+    except requests.exceptions.ConnectionError:
+        result["status"] = "offline"
+        result["error_message"] = f"无法连接到 {host}:{port}"
+    except Exception as e:
+        result["status"] = "error"
+        result["error_message"] = str(e)
+    
+    return result

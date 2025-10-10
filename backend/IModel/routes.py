@@ -1480,4 +1480,32 @@ def get_val_result_image_base64():
     except Exception as e:
         return format_output(code=500, msg=f"读取图片文件失败: {str(e)}")
 
+@IModel_bp.route("/getTritonServiceStatus", methods=['GET'])
+def get_triton_service_status():
+    """获取 Triton 推理服务状态"""
+    try:
+        from config import get_triton_server_config
+        from .triton_integration import check_triton_server_status
+        
+        # 获取配置
+        config = get_triton_server_config()
+        
+        # 检查服务状态
+        status = check_triton_server_status(
+            host=config['host'],
+            port=config['port'],
+            timeout=config['timeout']
+        )
+        
+        return format_output(
+            data=status,
+            msg="获取 Triton 服务状态成功"
+        )
+        
+    except Exception as e:
+        return format_output(
+            code=500,
+            msg=f"获取 Triton 服务状态失败: {str(e)}"
+        )
+
 load_test_list()
