@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 from tools.format_output import format_output
-from config import get_dataset_path
+from config import get_dataset_path, get_label_studio_config
 import os
 from glob import glob
 import yaml
@@ -9,9 +9,12 @@ import time
 import shutil
 import zipfile
 import json
+import requests
+from datetime import datetime
 from IDataset.process_annotation_projects import (
     get_projects_name as ls_get_projects_name,
     build_yolo_dataset_from_label_studio,
+    _build_auth_header,
 )
 
 
@@ -372,3 +375,99 @@ def build_dataset_from_label_studio():
         except Exception:
             pass
         return format_output(code=500, msg=f"构建数据集失败: {e}")
+
+# -----------------------------
+# Label Studio Service Status API
+# -----------------------------
+
+@IDataset_bp.route('/getLabelStudioServiceStatus', methods=["GET"])
+def get_label_studio_service_status():
+    """
+    获取 Label Studio 服务状态
+    
+    Query 参数（可选）：
+    - base_url: 自定义 Label Studio 服务地址，如 http://127.0.0.1:8080
+    - token: 自定义 Label Studio API Token
+    
+    如果不提供参数，则使用配置文件或环境变量中的默认值
+    """
+    # 获取配置
+    config = get_label_studio_config()
+    
+    # 允许通过请求参数覆盖配置
+    custom_base_url = request.args.get("base_url", None)
+    custom_token = request.args.get("token", None)
+    
+    if custom_base_url:
+        # 解析自定义URL
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(custom_base_url)
+            host = parsed.hostname or config['host']
+            port = parsed.port or config['port']
+            base_url = custom_base_url
+        except Exception:
+            host = config['host']
+            port = config['port']
+            base_url = f"http://{host}:{port}"
+    else:
+        host = config['host']
+        port = config['port']
+        base_url = f"http://{host}:{port}"
+    
+    token = custom_token if custom_token else config['api_token']
+    timeout = config['timeout']
+    
+    # 构建响应数据
+    status_data = {
+        "service_type": "http",
+        "host": host,
+        "port": port,
+        "last_check": datetime.now().isoformat(),
+        "error_message": None,
+        "status": "unknown"
+    }
+    
+    try:
+        # 测试连接 - 访问 /api/projects/ 端点
+        headers = _build_auth_header(token)
+        response = requests.get(
+            f'{base_url.rstrip("/")}/api/projects/',
+            headers=headers,
+            params={"page_size": 1},  # 只获取1条记录来测试连接
+            timeout=timeout
+        )
+        
+        # 检查响应状态
+        if response.status_code == 200:
+            status_data["status"] = "online"
+            # 可选：获取项目数量
+            try:
+                data = response.json()
+                status_data["projects_count"] = data.get("count", 0)
+            except Exception:
+                pass
+        elif response.status_code == 401:
+            status_data["status"] = "error"
+            status_data["error_message"] = "认证失败：API Token无效或未提供"
+        elif response.status_code == 403:
+            status_data["status"] = "error"
+            status_data["error_message"] = "权限不足：无法访问项目列表"
+        else:
+            status_data["status"] = "error"
+            status_data["error_message"] = f"HTTP {response.status_code}: {response.reason}"
+            
+    except requests.exceptions.ConnectionError:
+        status_data["status"] = "offline"
+        status_data["error_message"] = f"无法连接到 {base_url}"
+    except requests.exceptions.Timeout:
+        status_data["status"] = "error"
+        status_data["error_message"] = f"连接超时（{timeout}秒）"
+    except Exception as e:
+        status_data["status"] = "error"
+        status_data["error_message"] = f"连接异常: {str(e)}"
+    
+    return format_output(
+        data=status_data,
+        msg="获取Label Studio服务状态成功"
+    )

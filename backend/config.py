@@ -41,6 +41,17 @@ MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
 SUPPORTED_IMAGE_FORMATS = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp']
 JPEG_QUALITY = 100
 
+# Triton 推理服务配置
+TRITON_SERVER_HOST = os.getenv('TRITON_SERVER_HOST', 'localhost')
+TRITON_SERVER_PORT = _safe_int_env('TRITON_SERVER_PORT', 8000)
+TRITON_CONNECTION_TIMEOUT = _safe_int_env('TRITON_CONNECTION_TIMEOUT', 5)
+
+# Label Studio 标注服务配置
+LABEL_STUDIO_HOST = os.getenv('LABEL_STUDIO_HOST', '10.10.10.96')
+LABEL_STUDIO_PORT = _safe_int_env('LABEL_STUDIO_PORT', 8080)
+LABEL_STUDIO_API_TOKEN = os.getenv('LABEL_STUDIO_API_TOKEN', 'Token c438e617f6488a1d77ee04208e4c917723e25a34')  # 请替换为实际的 Token
+LABEL_STUDIO_CONNECTION_TIMEOUT = _safe_int_env('LABEL_STUDIO_CONNECTION_TIMEOUT', 5)
+
 YOLO_MODEL_LIST_URL = "https://api.github.com/repos/ultralytics/assets/releases/latest"
 
 YOLO_MODEL_CACHE_EXPIRATION_TIME = 3600
@@ -147,4 +158,25 @@ def get_image_processing_config():
         "max_image_size": MAX_IMAGE_SIZE,
         "supported_formats": SUPPORTED_IMAGE_FORMATS,
         "jpeg_quality": JPEG_QUALITY
+    }
+
+def get_triton_server_config():
+    """
+    获取Triton服务器配置
+    """
+    return {
+        "host": TRITON_SERVER_HOST,
+        "port": TRITON_SERVER_PORT,
+        "timeout": TRITON_CONNECTION_TIMEOUT
+    }
+
+def get_label_studio_config():
+    """
+    获取Label Studio服务配置
+    """
+    return {
+        "host": LABEL_STUDIO_HOST,
+        "port": LABEL_STUDIO_PORT,
+        "api_token": LABEL_STUDIO_API_TOKEN,
+        "timeout": LABEL_STUDIO_CONNECTION_TIMEOUT
     }

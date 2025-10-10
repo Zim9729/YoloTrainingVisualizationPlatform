@@ -1,203 +1,146 @@
-# Changelog
+# 更新日志
 
-All notable changes to this project will be documented in this file.
+本文档记录 YOLO 可视化训练平台的所有重要更新和变更。
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
+并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+
+---
 
 ## [Unreleased]
 
-### Added - 2025-01 🆕
+### 新增 🎉
 
-#### IImageProcessor Module - TCP Image Processing Service
-- **feat**: New backend module `backend/IImageProcessor/` for TCP-based image processing service integration
-  - `routes.py` (860 lines): Complete REST API with 15 endpoints
-  - `tcp_image_client.py` (235 lines): TCP client implementation with custom protocol
-  - `image_processor.py` (173 lines): Image preprocessing utilities (resize, format conversion, RGB normalization)
-  - `models.py` (187 lines): Data models (ProcessingRecord, ServiceStatus) with JSON persistence
-  - `utils.py`: Helper functions for image validation and metadata extraction
-- **feat**: TCP protocol implementation with Big-Endian byte order
-  - Custom header: `{[(tcp_header)]}` (16 bytes)
-  - Custom tail: `{[(tcp_tail)]}` (14 bytes)
-  - Request structure: Header + CameraID(2) + ImageID(2) + Height(2) + Width(2) + Channels(2) + FileSize(4) + ImageData + Tail
-  - Response structure: Header + CameraID(2) + ImageID(2) + JSONLength(2) + JSON + Tail
-- **feat**: Image processing capabilities
-  - Single image upload processing with multipart form-data
-  - Dataset image processing (process images from existing datasets)
-  - Batch folder processing with recursive directory scanning
-  - Support for multiple formats: `.jpg`, `.jpeg`, `.png`, `.bmp`, `.tiff`, `.webp`
-  - Automatic image preprocessing (max 1920×1080, RGB conversion, JPEG encoding)
-- **feat**: Processing history and statistics
-  - Paginated history retrieval (default 20 records per page)
-  - Comprehensive statistics: success rate, processing time distribution, daily breakdown
-  - Individual record deletion and bulk history clearing
-  - JSON export for single and batch results
-  - Batch processing records with detailed file-level results
-- **feat**: Connection management
-  - Automatic retry mechanism (max 3 retries)
-  - Connection timeout control (default 30s)
-  - Health check endpoint
-  - Service status monitoring (online/offline/error)
-- **feat**: Configuration via environment variables
-  - `TCP_IMAGE_SERVICE_HOST` (default: 127.0.0.1)
-  - `TCP_IMAGE_SERVICE_PORT` (default: 16000)
-  - `TCP_CONNECTION_TIMEOUT` (default: 5s)
-  - `TCP_MAX_RETRIES` (default: 3)
+#### 服务管理中心 (2025-01-09)
+- 新增统一的服务状态监控面板 (`frontend/src/page/ServicesPage.jsx`)
+- 支持实时检测外部服务连接状态
+- 支持三种服务类型的状态检查：
+  - 🏷️ Label Studio 标注服务（HTTP）
+  - 🚀 Triton 推理服务（HTTP）
+  - 🖼️ TCP 图像处理服务（TCP）
 
-#### Frontend Enhancements
-- **feat**: New frontend page `frontend/src/page/TcpImageProcessorPage.jsx` for TCP image processing
-  - Connection testing and service status display
-  - Single image upload with drag-and-drop
-  - Batch folder processing interface
-  - Processing history table with pagination
-  - Statistics dashboard with charts
-  - Result download (single/batch JSON export)
-- **feat**: New frontend page `frontend/src/page/ServicesPage.jsx` for service management
-  - Central hub for all service modules
-  - Service status overview
-  - Quick access to different processing services
-- **feat**: Error boundary component `frontend/src/components/ErrorBoundary.jsx`
-  - Graceful error handling for React components
-  - Error stack trace display in development mode
-  - Fallback UI for production
-- **feat**: Global state management with Context API
-  - `frontend/src/contexts/TaskContext.jsx`: Manage running tasks globally
-  - Auto-refresh every 5 seconds
-  - Task status monitoring across all pages
-  - Utility hooks: `useRunningTasks()`, `isTaskRunning()`, `getRunningFilenames()`
-- **feat**: API client improvements in `frontend/src/api.js`
-  - Health check with 30s interval caching
-  - Automatic retry for network errors (max 2 retries with exponential backoff)
-  - Better timeout handling (default 30s, upload 60s)
-  - Improved error messages with error codes
-  - Support for both raw and retry-enabled requests
+#### Label Studio 服务状态检查
+- 新增 API 端点：`GET /IDataset/getLabelStudioServiceStatus`
+- 支持通过环境变量配置服务地址和 Token
+- 自动检测认证状态（401/403 错误处理）
+- 显示项目数量统计
+- 支持自定义 base_url 和 token 参数覆盖配置
 
-#### Documentation
-- **docs**: Comprehensive documentation updates
-  - New `TCP_IMAGE_PROCESSOR_README.md`: Complete TCP service usage guide
-  - New `INSTALLATION_GUIDE.md`: Detailed installation instructions
-  - New `TROUBLESHOOTING_GUIDE.md`: Common issues and solutions
-  - New `FRONTEND_BUG_FIXES_SUMMARY.md`: Frontend optimization summary
-  - New `FRONTEND_OPTIMIZATION_SUMMARY.md`: Performance improvements log
-  - New `DUPLICATE_LOADING_FIXES_SUMMARY.md`: Loading optimization details
-  - New `FINAL_UPDATE_GUIDE.md`: Comprehensive update guide
-- **docs**: README.md major update (Chinese version)
-  - Restructured features section with 6 major categories
-  - Detailed project structure tree with line counts
-  - Visual three-tier architecture diagram
-  - Table-format data directory documentation
-  - Complete API overview for all 4 backend modules
-  - New section: TCP Image Processing Service Configuration
-  - Updated roadmap with completed items
-- **docs**: README_en.md synchronized update (English version)
-  - All new content translated professionally
-  - Consistent structure with Chinese version
-- **docs**: OpenAPI specification greatly expanded (`openapi.yaml`)
-  - Added complete IImageProcessor module documentation (15 endpoints)
-  - Added missing IModel validation and Triton endpoints
-  - Added Label Studio integration endpoints
-  - Improved metadata: contact info, license, module descriptions
-  - All endpoints now have detailed parameter and response schemas
-  - Total: 560 lines → 1000+ lines (+440 lines)
+#### Triton 服务状态检查
+- 新增 API 端点：`GET /IModel/getTritonServiceStatus`
+- 显示服务器版本信息
+- 显示已加载模型数量
+- 显示 API 响应时间
+- 自动健康检查机制
 
-#### Backend Improvements
-- **feat**: Enhanced configuration in `backend/config.py`
-  - New function: `get_tcp_image_service_config()`
-  - New function: `get_image_processing_history_path()`
-  - New function: `get_image_processing_config()`
-  - Image processing constants: `MAX_IMAGE_SIZE`, `SUPPORTED_IMAGE_FORMATS`, `JPEG_QUALITY`
-- **feat**: Main application updated `backend/main.py`
-  - Register new IImageProcessor blueprint at `/IImageProcessor`
-  - Now supports 4 major blueprint modules (was 3)
-- **feat**: Test files for new module
-  - `backend/test_image_processor.py`: Unit tests for image processor
-  - `backend/test_tcp_image_processing.py`: Integration tests for TCP service
+#### TCP 服务状态检查
+- API 端点：`GET /IImageProcessor/getServiceStatus`
+- TCP 连接测试
+- 显示主机地址和端口信息
+- 错误详情展示
 
-#### Build and Deployment
-- **build**: Electron app packaging improvements
-  - New build scripts: `app/build.sh`, `app/build.bat`, `app/build-fix.ps1`
-  - New `app/README_BUILD.md`: Packaging guide
-  - Resource optimization and filtering
+#### 配置增强
+- 在 `backend/config.py` 新增 Label Studio 配置项：
+  - `LABEL_STUDIO_HOST`
+  - `LABEL_STUDIO_PORT`
+  - `LABEL_STUDIO_API_TOKEN`
+  - `LABEL_STUDIO_CONNECTION_TIMEOUT`
+- 新增配置函数：`get_label_studio_config()`
+- 支持通过环境变量覆盖默认配置
 
-### Previous Features
-- feat: Backend model validation module `backend/IModel/validate.py` using `ultralytics.YOLO`, outputs overall metrics and optional per-class rows with robust serialization.
-- feat: Backend model export pipeline `backend/IModel/export.py` with formats `onnx/torchscript/openvino/engine`, unified output under `export/`, and optional Triton model repository integration via `backend/IModel/triton_integration.py`.
-- feat: Frontend components for test/validation flows:
-  - `frontend/src/components/TestForm.jsx` (model selection, file browse/upload, start test with `/IModel/runModelTest`).
-  - `frontend/src/components/ValidationForm.jsx` (dataset list `/IDataset/getAllDatasets`, start validation with `/IModel/runModelValidation`).
-  - `frontend/src/components/LogPanel.jsx` (poll logs via `/IModel/getTaskLog` or `/IModel/getValTaskLog`).
-- feat: Frontend page `frontend/src/page/TritonRepoPage.jsx` to browse Triton model repository, list versions/files, copy paths, and delete models/versions.
-- feat: API client enhancements in `frontend/src/api.js`:
-  - Request `signal` support (AbortController friendly).
-  - `api.upload()` for multipart uploads, used by test input upload.
-- docs: Frontend README adds env vars (`.env.development`, `.env.production` with `VITE_API_BASE_URL`), directory structure, Prism code highlight usage, and troubleshooting; README bilingual docs updated with Export & Triton sections.
-- build: Add dependency `vite-plugin-prismjs` and corresponding Vite configuration notes.
-- chore: Add environment files `frontend/.env.development` and `frontend/.env.production`.
-- test/data: Add dataset sample `test/datasets_3/`.
+### 改进 ✨
 
-### Fixed
-- **fix**: Thread management memory leak prevention
-  - Added `cleanup_finished_threads()` in `backend/IModel/routes.py`
-  - Using `weakref` to prevent memory leaks
-  - Thread-safe operations with `threading.Lock`
-- **fix**: Temporary file cleanup in Windows
-  - Enhanced file handle management in `backend/IImageProcessor/routes.py`
-  - Multiple retry attempts for file deletion
-  - Delayed cleanup thread for stubborn files
-- **fix**: Image loading with proper resource release
-  - New `load_image_safe()` method in `image_processor.py`
-  - Immediate file handle release after loading
-  - Memory optimization with image copy strategy
-- fix: Ensure thread starts in `backend/run_in_thread.py` by adding `t.start()`.
-- fix: Return `VALIDATION_RESULT_FILES_PATH` in `backend/config.py` to avoid missing return value.
-- fix: Frontend robustness and UX improvements in new components (validation/test forms and log polling).
+#### 前端优化
+- 服务卡片 UI 美化
+  - 渐变色标题栏
+  - 状态指示器优化（在线/离线/错误/未知）
+  - 服务图标与信息展示
+  - 悬浮效果和阴影
+- 服务状态刷新功能
+  - 全局刷新按钮
+  - 单个服务刷新按钮
+  - 刷新状态加载指示
+- 错误信息友好展示
+  - 详细错误提示
+  - 配置建议
+  - 故障排查指引
 
-### Changed
-- **refactor**: Backend blueprint architecture now supports 4 modules (was 3)
-  - IDataset: Dataset management + Label Studio integration
-  - ITraining: Training task management + multi-task execution
-  - IModel: Testing + validation + export + Triton deployment
-  - IImageProcessor: TCP image processing service (NEW)
-- **improve**: Data storage structure expanded
-  - New directory: `~/.yolo_training_visualization_platform/image_processing_history`
-  - Total: 7 directories → 8 directories
-- **improve**: Frontend routing enhanced
-  - Total pages: 11 → 13 pages (added ServicesPage, TcpImageProcessorPage)
-  - Improved navigation structure
-- docs: Keep bilingual READMEs aligned; clarify environment variable usage in frontend and base64 image return convention; document model export endpoints and Triton integration page.
-- build: Update `frontend/package.json` to include `vite-plugin-prismjs`.
+#### 后端优化
+- 统一的服务状态响应格式
+- 完善的错误处理机制：
+  - 连接失败（ConnectionError）
+  - 连接超时（Timeout）
+  - 认证失败（401）
+  - 权限不足（403）
+- 服务状态数据模型标准化
 
-### Deprecated
-- **deprecated**: `getProcessingStatistics` endpoint (use `getStatistics` instead)
-  - The new endpoint provides more comprehensive statistics
+#### 安全性
+- API Token 通过环境变量配置，避免硬编码
+- 支持动态 Token 传递（请求参数覆盖）
+- 敏感信息不记录到日志
 
-### Security
-- **security**: Enhanced path validation in download endpoints
-  - Prevent path traversal attacks with `Path.relative_to()` check
-  - File size limits (max 500MB) to prevent resource exhaustion
-  - Strict path sanitization for file operations
+### 文档更新 📚
+- README.md 更新：
+  - 新增"服务管理中心"功能说明
+  - 新增服务状态监控系统介绍
+  - 新增 Label Studio 状态 API 文档
+  - 更新 Triton 和 TCP 服务状态 API 文档
+  - 新增配置方式说明
+  - 新增故障排查指南
+- 创建 CHANGELOG.md 记录版本更新
 
-### Performance
-- **perf**: Optimized image processing pipeline
-  - Lazy loading of TCP client (singleton pattern)
-  - Context manager for automatic connection cleanup
-  - Batch processing with progress reporting
-- **perf**: Frontend optimization
-  - Task context with 5s polling instead of per-component polling
-  - Shared state reduces duplicate API calls
-  - Lazy component loading with React.lazy (planned)
+---
 
-### Known Issues
-- OpenAPI specification greatly improved but may need further refinement as features evolve
-- Video inference support is planned but not yet implemented
-- Batch processing for very large folders (10000+ images) may need pagination
+## [1.0.0] - 2024-XX-XX
 
-## [1.0.0] - 2025-09-05
-### Added
-- Initial public release of YOLO Visualization Training Platform
-- Electron-based desktop app, Flask backend, React + Vite frontend
-- Dataset upload/validation, training task management, log streaming, model testing & result visualization
+### 新增
+- 🎯 YOLO 模型训练可视化界面
+- 📦 数据集管理（YOLO/COCO 格式支持）
+- 🏷️ Label Studio 集成（一键导入数据集）
+- 🔧 可视化训练配置
+- 📈 实时训练日志与指标监控
+- ⚡ 多任务并行训练
+- 🖼️ 模型测试与验证
+- 📦 多格式模型导出（ONNX/TorchScript/OpenVINO/TensorRT）
+- 🚀 Triton 推理服务器集成
+- 🔌 TCP 图像处理服务模块
+- 💻 Electron 桌面应用
+- 🌐 跨平台支持（Windows/macOS/Linux）
 
-[Unreleased]: https://github.com/Zim9729/YoloTrainingVisualizationPlatform/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/Zim9729/YoloTrainingVisualizationPlatform/releases/tag/v1.0.0
+### 技术栈
+- **前端**: React + Vite + Context API
+- **后端**: Flask + Ultralytics YOLO + 多线程
+- **桌面**: Electron
+- **推理**: Triton Inference Server
+- **标注**: Label Studio
 
+---
+
+## 版本说明
+
+### 版本命名规则
+- **主版本号（Major）**：不兼容的 API 修改
+- **次版本号（Minor）**：向下兼容的功能性新增
+- **修订号（Patch）**：向下兼容的问题修正
+
+### 更新类型标识
+- 🎉 **新增（Added）**：新功能
+- ✨ **改进（Changed）**：对现有功能的变更
+- 🐛 **修复（Fixed）**：Bug 修复
+- 🗑️ **移除（Removed）**：移除的功能
+- ⚠️ **弃用（Deprecated）**：即将移除的功能
+- 🔒 **安全（Security）**：安全相关更新
+- 📚 **文档（Documentation）**：文档更新
+
+---
+
+## 相关链接
+- [项目主页](https://github.com/Zim9729/YoloTrainingVisualizationPlatform)
+- [问题反馈](https://github.com/Zim9729/YoloTrainingVisualizationPlatform/issues)
+- [发布页面](https://github.com/Zim9729/YoloTrainingVisualizationPlatform/releases)
+
+---
+
+**维护者**: [@chzane](https://github.com/chzane)  
+**最后更新**: 2025-01-09
 

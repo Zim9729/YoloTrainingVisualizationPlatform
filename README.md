@@ -61,6 +61,16 @@
 - 📊 处理历史记录与统计分析
 - 📈 实时性能监控
 
+### 服务管理中心 🆕
+- 🛠️ 统一的服务状态监控面板
+- 🔍 实时检测服务连接状态
+- 📡 支持多种服务类型（TCP / HTTP）
+- 🏷️ Label Studio 标注服务状态检查
+- 🚀 Triton 推理服务状态检查
+- 🖼️ TCP 图像处理服务状态检查
+- 🔄 一键刷新服务状态
+- 📊 服务统计信息展示
+
 ### 其他特性
 - 💻 完全本地运行，无需依赖云平台
 - 🔒 数据隐私保护，所有数据留在本地
@@ -266,6 +276,8 @@ YoloTrainingVisualizationPlatform/
   - 参数：`base_url`(必填), `token`(可选)
 - `POST /IDataset/buildDatasetFromLabelStudio`：从 Label Studio 构建数据集
   - Body: `base_url`, `project_id`, `name`, `version`, `splits`, `download_images`, `class_names`
+- `GET /IDataset/getLabelStudioServiceStatus`：获取 Label Studio 服务状态 🆕
+  - 参数：`base_url`(可选), `token`(可选)
 
 ### ITraining 模块 - 训练管理
 - `GET /ITraining/getAllTasks`：获取所有训练任务
@@ -298,13 +310,14 @@ YoloTrainingVisualizationPlatform/
 - `POST /IModel/registerExportArtifactToTriton`：注册模型到 Triton
 - `GET /IModel/listTritonModels`：列出 Triton 模型
 - `POST /IModel/deleteTritonModel`：删除 Triton 模型
+- `GET /IModel/getTritonServiceStatus`：获取 Triton 服务状态 🆕
 
 ### IImageProcessor 模块 - TCP 图像处理 🆕
 
 **连接与状态**：
 - `GET /IImageProcessor/info`：获取模块信息
 - `GET /IImageProcessor/testConnection`：测试 TCP 连接
-- `GET /IImageProcessor/getServiceStatus`：获取服务状态
+- `GET /IImageProcessor/getServiceStatus`：获取 TCP 服务状态 🆕
 
 **图像处理**：
 - `POST /IImageProcessor/processImage`：处理上传的图片
@@ -527,6 +540,79 @@ curl http://localhost:10799/IImageProcessor/getStatistics
 
 详细使用说明请参考：[TCP_IMAGE_PROCESSOR_README.md](./TCP_IMAGE_PROCESSOR_README.md)
 
+## 🔌 服务状态监控系统 🆕
+
+### 概述
+平台提供了统一的服务管理中心，可以实时监控所有外部服务的连接状态。
+
+### 支持的服务
+1. **TCP 图像处理服务** 
+   - 类型：TCP 协议
+   - 检测：连接测试 + 健康检查
+   - 信息：主机地址、端口、最后检查时间
+
+2. **Triton 推理服务**
+   - 类型：HTTP 协议
+   - 检测：HTTP API 调用
+   - 信息：服务器版本、已加载模型数量、响应时间
+
+3. **Label Studio 标注服务**
+   - 类型：HTTP 协议
+   - 检测：API 认证 + 项目列表访问
+   - 信息：主机地址、端口、项目数量、认证状态
+
+### 状态类型
+- 🟢 **在线（online）**：服务正常运行，连接成功
+- 🔴 **离线（offline）**：无法连接到服务
+- 🟠 **错误（error）**：连接异常或认证失败
+- ⚪ **未知（unknown）**：状态检查中
+
+### 配置方式
+
+#### Label Studio 配置
+在 `backend/config.py` 中配置或使用环境变量：
+```python
+LABEL_STUDIO_HOST = os.getenv('LABEL_STUDIO_HOST', 'localhost')
+LABEL_STUDIO_PORT = _safe_int_env('LABEL_STUDIO_PORT', 8080)
+LABEL_STUDIO_API_TOKEN = os.getenv('LABEL_STUDIO_API_TOKEN', '')
+```
+
+环境变量示例：
+```bash
+export LABEL_STUDIO_HOST=10.10.10.96
+export LABEL_STUDIO_PORT=8080
+export LABEL_STUDIO_API_TOKEN="Token your_token_here"
+```
+
+#### Triton 服务配置
+```python
+TRITON_SERVER_HOST = os.getenv('TRITON_SERVER_HOST', 'localhost')
+TRITON_SERVER_PORT = _safe_int_env('TRITON_SERVER_PORT', 8000)
+```
+
+#### TCP 图像服务配置
+```python
+TCP_IMAGE_SERVICE_HOST = os.getenv('TCP_IMAGE_SERVICE_HOST', '127.0.0.1')
+TCP_IMAGE_SERVICE_PORT = _safe_int_env('TCP_IMAGE_SERVICE_PORT', 16000)
+```
+
+### 使用方法
+1. 启动平台后，访问前端页面
+2. 点击导航栏的 **"服务"** 按钮
+3. 查看所有服务的实时状态
+4. 点击 **"刷新状态"** 按钮手动更新
+5. 点击 **"进入服务"** 跳转到对应功能页面
+
+### API 端点
+- `GET /IDataset/getLabelStudioServiceStatus` - Label Studio 状态
+- `GET /IModel/getTritonServiceStatus` - Triton 状态
+- `GET /IImageProcessor/getServiceStatus` - TCP 服务状态
+
+### 故障排查
+- **离线状态**：检查服务是否启动、网络连接、防火墙设置
+- **认证错误**：检查 API Token 是否正确、是否已过期
+- **连接超时**：增加超时时间或检查网络延迟
+
 ## 🗺️ 路线图
 
 - [ ] 训练过程更丰富的可视化（lr、各损失分项、PR 曲线）
@@ -534,8 +620,10 @@ curl http://localhost:10799/IImageProcessor/getStatistics
 - [ ] 更多数据集格式支持与自动转换
 - [x] 模型导出（ONNX/TorchScript/OpenVINO/TensorRT）初步支持；部署助手与 Triton 集成持续完善
 - [x] TCP 图像处理服务集成（与 C++ 服务通信）
+- [x] 统一服务状态监控系统（Label Studio / Triton / TCP）
 - [ ] 视频推理支持
 - [ ] 模型性能分析与优化建议
+- [ ] 更多外部服务集成（MLflow、W&B等）
 
 
 ## 🤝 贡献指南

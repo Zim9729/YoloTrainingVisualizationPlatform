@@ -51,7 +51,9 @@ function ServicesPage({ setPageUrl }) {
         const statusPromises = serviceConfigs.map(async (service) => {
             try {
                 let response;
+                
                 if (service.id === 'tcp-image-processor') {
+                    // TCP 图像处理服务
                     response = await api.get(`${service.apiPath}/getServiceStatus`);
                     return { 
                         ...service, 
@@ -60,6 +62,32 @@ function ServicesPage({ setPageUrl }) {
                         port: response.data.port,
                         last_check: response.data.last_check,
                         error_message: response.data.error_message
+                    };
+                } else if (service.id === 'triton-inference') {
+                    // Triton 推理服务
+                    response = await api.get('/IModel/getTritonServiceStatus');
+                    return { 
+                        ...service, 
+                        status: response.data.status,
+                        host: response.data.host,
+                        port: response.data.port,
+                        last_check: response.data.last_check,
+                        error_message: response.data.error_message,
+                        server_info: response.data.server_info,
+                        models_count: response.data.models_count,
+                        response_time: response.data.response_time
+                    };
+                } else if (service.id === 'label-studio') {
+                    // Label Studio 标注服务
+                    response = await api.get('/IDataset/getLabelStudioServiceStatus');
+                    return { 
+                        ...service, 
+                        status: response.data.status,
+                        host: response.data.host,
+                        port: response.data.port,
+                        last_check: response.data.last_check,
+                        error_message: response.data.error_message,
+                        projects_count: response.data.projects_count
                     };
                 } else {
                     // 其他服务的状态检查逻辑
@@ -201,6 +229,52 @@ function ServicesPage({ setPageUrl }) {
                                 }}>
                                     {service.host}:{service.port}
                                 </code>
+                            </div>
+                        )}
+                        
+                        {/* Triton 服务额外信息 */}
+                        {service.id === 'triton-inference' && service.status === 'online' && (
+                            <div style={{ marginBottom: '8px' }}>
+                                {service.server_info && (
+                                    <div style={{ 
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        marginBottom: '4px'
+                                    }}>
+                                        <span style={{ fontSize: '12px', color: '#6c757d', fontWeight: '500' }}>
+                                            服务器版本:
+                                        </span>
+                                        <code style={{ 
+                                            fontSize: '13px', 
+                                            color: '#28a745',
+                                            backgroundColor: '#d4edda',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            fontFamily: 'Monaco, Consolas, monospace'
+                                        }}>
+                                            {service.server_info.version}
+                                        </code>
+                                    </div>
+                                )}
+                                <div style={{ 
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '16px',
+                                    fontSize: '12px',
+                                    color: '#6c757d'
+                                }}>
+                                    {service.models_count !== undefined && (
+                                        <span>
+                                            📦 已加载模型: <strong style={{ color: '#495057' }}>{service.models_count}</strong>
+                                        </span>
+                                    )}
+                                    {service.response_time && (
+                                        <span>
+                                            ⚡ 响应时间: <strong style={{ color: '#495057' }}>{service.response_time}ms</strong>
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         )}
                         
