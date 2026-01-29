@@ -1,36 +1,286 @@
+/* ==================== Table Component ==================== */
 table {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
+    background-color: var(--background-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 
 th,
 td {
-    padding: 10px;
-    border: 1px solid var(--secondary-color);
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
     text-align: left;
-    font-size: 14px;
+    font-size: var(--text-sm);
 }
 
+th {
+    background-color: var(--secondary-color);
+    font-weight: 600;
+    color: var(--text-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+tr:hover {
+    background-color: var(--secondary-color);
+}
+
+tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.01);
+}
+
+tr:nth-child(even):hover {
+    background-color: var(--secondary-color);
+}
+
+/* ==================== Config Table ==================== */
 .config-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
+    overflow: hidden;
 }
 
 .config-table tr:hover {
     cursor: pointer;
+    background-color: var(--secondary-color);
 }
 
 .config-table td {
-    border: 1px solid var(--light-color);
-    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    padding: 12px 16px;
     vertical-align: top;
 }
 
 .config-table td:first-child {
-    font-weight: bold;
+    font-weight: 600;
     width: 180px;
     color: var(--text-color);
-    background-color: var(--background-color);
+    background-color: var(--secondary-color);
+}
+
+.config-table tr:hover td:first-child {
+    background-color: var(--light-color);
+}
+
+/* ==================== Responsive Table ==================== */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-wrapper table {
+    margin-bottom: 0;
+}
+
+/* ==================== Table Variants ==================== */
+.table-striped tr:nth-child(even) {
+    background-color: var(--secondary-color);
+}
+
+.table-bordered {
+    border: 1px solid var(--border-color);
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid var(--border-color);
+}
+
+.table-hover tr:hover {
+    background-color: var(--secondary-color);
+}
+
+.table-compact th,
+.table-compact td {
+    padding: 8px 12px;
+}
+
+/* ==================== Table Status ==================== */
+.table-row-success {
+    background-color: var(--green-light) !important;
+}
+
+.table-row-warning {
+    background-color: var(--yellow-light) !important;
+}
+
+.table-row-error {
+    background-color: var(--red-light) !important;
+}
+
+/* ==================== Empty State ==================== */
+.table-empty {
+    padding: var(--spacing-2xl) !important;
+    text-align: center;
+    color: var(--tertiary-text-color);
+    font-size: var(--text-sm);
+}
+
+/* ==================== Modern Table Styles ==================== */
+table.modern {
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+table.modern thead {
+    background: var(--gradient-blue);
+    color: white;
+}
+
+table.modern th {
+    padding: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: var(--text-xs);
+    letter-spacing: 0.5px;
+    border: none;
+    color: white;
+}
+
+table.modern tbody tr {
+    transition: all var(--transition-fast);
+    border-bottom: 1px solid var(--border-color);
+}
+
+table.modern tbody tr:last-child {
+    border-bottom: none;
+}
+
+table.modern tbody tr:hover {
+    background: var(--secondary-color);
+    transform: scale(1.005);
+    box-shadow: var(--shadow-sm);
+}
+
+table.modern td {
+    padding: 16px;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+}
+
+table.modern tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ==================== Status Badges ==================== */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all var(--transition-fast);
+}
+
+.status-badge.success {
+    background: var(--green-light);
+    color: #155724;
+}
+
+.status-badge.error {
+    background: var(--red-light);
+    color: #721c24;
+}
+
+.status-badge.warning {
+    background: var(--yellow-light);
+    color: #856404;
+}
+
+.status-badge.info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-badge.neutral {
+    background: var(--secondary-color);
+    color: var(--secondary-text-color);
+    border: 1px solid var(--border-color);
+}
+
+/* Status badge with dot indicator */
+.status-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* ==================== Action Buttons in Tables ==================== */
+.table-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.table-actions .btn {
+    padding: 6px 12px;
+    font-size: var(--text-xs);
+    min-height: 32px;
+}
+
+/* ==================== Sortable Headers ==================== */
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 32px;
+}
+
+th.sortable:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+th.sortable::after {
+    content: '⇅';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    font-size: 12px;
+}
+
+th.sortable.asc::after {
+    content: '↑';
+    opacity: 1;
+}
+
+th.sortable.desc::after {
+    content: '↓';
+    opacity: 1;
+}
+
+/* ==================== Responsive Table Enhancements ==================== */
+@media (max-width: 768px) {
+    .table-wrapper {
+        border-radius: var(--radius-sm);
+    }
+
+    table.modern th,
+    table.modern td {
+        padding: 12px;
+        font-size: var(--text-xs);
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
 }

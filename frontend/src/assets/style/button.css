@@ -1,32 +1,212 @@
+/* ==================== Button Component ==================== */
 .btn {
     cursor: pointer;
     background-color: var(--main-color);
     color: #ffffff;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     padding: 10px 20px;
-    font-size: 14px;
-    box-shadow: 0 0 10px var(--shadow-color);
-    transition: all 0.2s ease;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    min-height: 44px; /* Touch target size */
+    position: relative;
 }
 
 .btn:hover {
     background-color: var(--hover-color);
-    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
 }
 
+.btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn:focus-visible {
+    box-shadow: var(--focus-ring);
+}
+
+/* ==================== Button Variants ==================== */
+
+/* Red/Outline Button */
 .btn.r {
     color: var(--red-color);
-    background-color: #00000000;
-    box-shadow: inset 0 0 0 2px var(--red-color);
+    background-color: transparent;
+    box-shadow: none;
+    border: 2px solid var(--red-color);
 }
 
 .btn.r:hover {
-    color: var(--background-color);
+    color: #ffffff;
     background-color: var(--red-color);
+    border-color: var(--red-hover-color);
 }
 
+.btn.r:focus-visible {
+    box-shadow: var(--focus-ring-error);
+}
+
+/* Small Button */
 .btn.sm {
-    padding: 5px 10px;
-    font-size: 12px;
+    padding: 6px 12px;
+    font-size: var(--text-xs);
+    min-height: 32px;
+}
+
+/* Large Button */
+.btn.lg {
+    padding: 14px 28px;
+    font-size: var(--text-base);
+    min-height: 52px;
+}
+
+/* Secondary Button */
+.btn.secondary {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.btn.secondary:hover {
+    background-color: var(--light-color);
+    border-color: var(--tertiary-text-color);
+}
+
+/* Success Button */
+.btn.success {
+    background-color: var(--green-color);
+}
+
+.btn.success:hover {
+    background-color: var(--green-hover-color);
+}
+
+/* Info Button */
+.btn.info {
+    background-color: var(--blue-info);
+}
+
+.btn.info:hover {
+    background-color: var(--blue-info-hover);
+}
+
+/* Full Width Button */
+.btn.full {
+    width: 100%;
+}
+
+/* ==================== Modern Gradient Buttons ==================== */
+.btn.gradient {
+    background: var(--gradient-primary);
+    border: none;
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+.btn.gradient::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn.gradient:hover::before {
+    left: 100%;
+}
+
+.btn.gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Gradient variants */
+.btn.gradient-blue {
+    background: var(--gradient-blue);
+}
+
+.btn.gradient-success {
+    background: var(--gradient-success);
+}
+
+.btn.gradient-forest {
+    background: var(--gradient-forest);
+}
+
+.btn.gradient-sunset {
+    background: var(--gradient-sunset);
+}
+
+/* ==================== Glassmorphism Button ==================== */
+.btn.glass {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--text-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn.glass:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+/* ==================== Icon Button ==================== */
+.btn.icon-only {
+    padding: 10px;
+    min-height: 44px;
+    min-width: 44px;
+    aspect-ratio: 1;
+}
+
+.btn.icon-only .icon {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+}
+
+.btn.sm.icon-only {
+    min-height: 32px;
+    min-width: 32px;
+    padding: 6px;
+}
+
+.btn.sm.icon-only .icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* ==================== Button with Icon ==================== */
+.btn .icon {
+    width: 16px;
+    height: 16px;
+}
+
+.btn.sm .icon {
+    width: 14px;
+    height: 14px;
+}
+
+.btn.lg .icon {
+    width: 20px;
+    height: 20px;
 }

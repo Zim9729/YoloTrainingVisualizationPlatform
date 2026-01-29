@@ -1,8 +1,9 @@
+/* ==================== Form Component ==================== */
 .form-group,
 .form-group-title {
     display: flex;
     flex-direction: column;
-    margin-bottom: 16px;
+    margin-bottom: var(--spacing-md);
 }
 
 .form-group-title {
@@ -10,58 +11,342 @@
 }
 
 .form-group-title .step-tag {
-    font-size: 16px;
+    font-size: var(--text-sm);
     width: 25px;
     height: 25px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--background-color);
+    color: #ffffff;
     background-color: var(--main-color);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     margin-right: 10px;
     margin-bottom: -33px;
+    flex-shrink: 0;
 }
 
 .form-group-title .step-tag.nobg {
     color: var(--text-color);
-    background-color: #00000000 !important;
+    background-color: transparent !important;
 }
 
 .form-group-title .title {
-    font-size: 18px;
+    font-size: var(--text-lg);
     color: var(--text-color);
-    line-height: 1;
+    line-height: var(--leading-tight);
     margin-left: 35px;
+    font-weight: 500;
 }
 
+/* ==================== Form Controls ==================== */
 input[type="text"],
 input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="tel"],
 select,
 textarea,
 input[type="file"] {
-    padding: 8px 12px;
-    font-size: 14px;
-    border: 1px solid var(--secondary-color);
-    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: var(--text-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     background-color: var(--background-color);
     color: var(--text-color);
     outline: none;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    min-height: 44px; /* Touch target size */
+    width: 100%;
 }
 
 input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="url"]:focus,
+input[type="tel"]:focus,
+select:focus,
 textarea:focus {
     border-color: var(--main-color);
+    box-shadow: var(--focus-ring);
+}
+
+input[type="text"]:disabled,
+input[type="number"]:disabled,
+select:disabled,
+textarea:disabled {
+    background-color: var(--secondary-color);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+input[type="text"]::placeholder,
+input[type="number"]::placeholder,
+textarea::placeholder {
+    color: var(--tertiary-text-color);
+}
+
+select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23495057' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+    line-height: var(--leading-normal);
+}
+
+input[type="file"] {
+    padding: 8px;
+    cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+    padding: 6px 12px;
+    margin-right: 12px;
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+input[type="file"]::file-selector-button:hover {
+    background-color: var(--light-color);
 }
 
 button.btn.upload-btn {
     margin-top: 10px;
 }
 
+/* ==================== Form Labels ==================== */
 label {
     margin-bottom: 6px;
     font-weight: 500;
-    font-size: 14px;
+    font-size: var(--text-sm);
     color: var(--text-color);
+    display: block;
+}
+
+label.required::after {
+    content: " *";
+    color: var(--red-color);
+}
+
+/* ==================== Form Validation States ==================== */
+input.error,
+select.error,
+textarea.error {
+    border-color: var(--red-color);
+}
+
+input.error:focus,
+select.error:focus,
+textarea.error:focus {
+    box-shadow: var(--focus-ring-error);
+}
+
+.error-message {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--text-xs);
+    color: var(--red-color);
+}
+
+.helper-text {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--text-xs);
+    color: var(--tertiary-text-color);
+}
+
+/* ==================== Checkbox & Radio ==================== */
+input[type="checkbox"],
+input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--main-color);
+}
+
+/* ==================== Modern Floating Label Form ==================== */
+.form-group.modern {
+    position: relative;
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-group.modern input,
+.form-group.modern textarea,
+.form-group.modern select {
+    width: 100%;
+    padding: 16px 12px 8px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: var(--text-base);
+    transition: all var(--transition-base);
+    background: transparent;
+}
+
+.form-group.modern label {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--tertiary-text-color);
+    transition: all var(--transition-base);
+    pointer-events: none;
+    background: var(--background-color);
+    padding: 0 4px;
+    margin: 0;
+}
+
+.form-group.modern input:focus,
+.form-group.modern input:not(:placeholder-shown),
+.form-group.modern textarea:focus,
+.form-group.modern textarea:not(:placeholder-shown),
+.form-group.modern select:focus,
+.form-group.modern select:valid {
+    border-color: var(--main-color);
+}
+
+.form-group.modern input:focus + label,
+.form-group.modern input:not(:placeholder-shown) + label,
+.form-group.modern textarea:focus + label,
+.form-group.modern textarea:not(:placeholder-shown) + label,
+.form-group.modern select:focus + label,
+.form-group.modern select:valid + label {
+    top: 0;
+    font-size: var(--text-xs);
+    color: var(--main-color);
+    font-weight: 600;
+}
+
+/* Form group with icon */
+.form-group.with-icon {
+    position: relative;
+}
+
+.form-group.with-icon .form-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--tertiary-text-color);
+    pointer-events: none;
+}
+
+.form-group.with-icon input {
+    padding-left: 44px;
+}
+
+.form-group.with-icon label {
+    left: 44px;
+}
+
+/* ==================== Modern Search Input ==================== */
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-box input {
+    padding-left: 44px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--border-color);
+    transition: all var(--transition-base);
+}
+
+.search-box input:focus {
+    border-color: var(--main-color);
+    box-shadow: var(--focus-ring);
+}
+
+.search-box .search-icon {
+    position: absolute;
+    left: 16px;
+    color: var(--tertiary-text-color);
+    pointer-events: none;
+}
+
+/* ==================== Form Layout Enhancements ==================== */
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.form-section {
+    background: var(--background-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-section-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--border-color);
+}
+
+/* ==================== Toggle Switch ==================== */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: var(--transition-base);
+    border-radius: var(--radius-full);
+}
+
+.toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: var(--transition-base);
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--main-color);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+/* Focus state for accessibility */
+.toggle-switch input:focus + .toggle-slider {
+    box-shadow: var(--focus-ring);
 }
