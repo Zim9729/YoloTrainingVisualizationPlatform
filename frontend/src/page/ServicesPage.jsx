@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { getStatusColor, getStatusText } from '../tools';
 import '../styles/services.css';
 
-function ServicesPage({ setPageUrl }) {
+function ServicesPage() {
+    const navigate = useNavigate();
     const [services, setServices] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -16,7 +18,7 @@ function ServicesPage({ setPageUrl }) {
             type: 'tcp',
             icon: '🖼️',
             status: 'unknown',
-            pageUrl: 'services/tcp-image-processor',
+            path: '/services/tcp-processor',
             apiPath: '/IImageProcessor'
         },
         {
@@ -26,7 +28,7 @@ function ServicesPage({ setPageUrl }) {
             type: 'http',
             icon: '🚀',
             status: 'unknown',
-            pageUrl: 'tritonRepo',
+            path: '/triton',
             apiPath: '/triton'
         },
         {
@@ -36,7 +38,7 @@ function ServicesPage({ setPageUrl }) {
             type: 'http',
             icon: '🏷️',
             status: 'unknown',
-            pageUrl: 'labelStudioImport',
+            path: '/import/label-studio',
             apiPath: '/labelstudio'
         }
     ];
@@ -47,16 +49,16 @@ function ServicesPage({ setPageUrl }) {
 
     const checkServicesStatus = async () => {
         setIsLoading(true);
-        
+
         const statusPromises = serviceConfigs.map(async (service) => {
             try {
                 let response;
-                
+
                 if (service.id === 'tcp-image-processor') {
                     // TCP 图像处理服务
                     response = await api.get(`${service.apiPath}/getServiceStatus`);
-                    return { 
-                        ...service, 
+                    return {
+                        ...service,
                         status: response.data.status,
                         host: response.data.host,
                         port: response.data.port,
@@ -66,8 +68,8 @@ function ServicesPage({ setPageUrl }) {
                 } else if (service.id === 'triton-inference') {
                     // Triton 推理服务
                     response = await api.get('/IModel/getTritonServiceStatus');
-                    return { 
-                        ...service, 
+                    return {
+                        ...service,
                         status: response.data.status,
                         host: response.data.host,
                         port: response.data.port,
@@ -80,8 +82,8 @@ function ServicesPage({ setPageUrl }) {
                 } else if (service.id === 'label-studio') {
                     // Label Studio 标注服务
                     response = await api.get('/IDataset/getLabelStudioServiceStatus');
-                    return { 
-                        ...service, 
+                    return {
+                        ...service,
                         status: response.data.status,
                         host: response.data.host,
                         port: response.data.port,
@@ -94,14 +96,14 @@ function ServicesPage({ setPageUrl }) {
                     return { ...service, status: 'offline' };
                 }
             } catch (error) {
-                return { 
-                    ...service, 
+                return {
+                    ...service,
                     status: 'error',
                     error_message: error.message
                 };
             }
         });
-        
+
         const servicesWithStatus = await Promise.all(statusPromises);
         setServices(servicesWithStatus);
         setIsLoading(false);
@@ -117,9 +119,9 @@ function ServicesPage({ setPageUrl }) {
         };
 
         return (
-            <div 
-                className="card" 
-                style={{ 
+            <div
+                className="card"
+                style={{
                     marginBottom: '20px',
                     padding: '24px',
                     border: '1px solid #e0e0e0',
@@ -138,9 +140,9 @@ function ServicesPage({ setPageUrl }) {
                 }}
             >
                 <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '20px' }}>
-                    <div 
-                        style={{ 
-                            fontSize: '56px', 
+                    <div
+                        style={{
+                            fontSize: '56px',
                             marginRight: '20px',
                             padding: '12px',
                             backgroundColor: '#f8f9fa',
@@ -156,71 +158,71 @@ function ServicesPage({ setPageUrl }) {
                     </div>
                     <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                            <h3 style={{ 
-                                margin: '0', 
-                                fontSize: '22px', 
+                            <h3 style={{
+                                margin: '0',
+                                fontSize: '22px',
                                 fontWeight: '600',
                                 color: '#2c3e50'
                             }}>
                                 {service.name}
                             </h3>
-                            <div style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: '8px',
                                 marginLeft: '16px',
                                 padding: '6px 12px',
                                 borderRadius: '20px',
-                                backgroundColor: service.status === 'online' ? '#d4edda' : 
-                                               service.status === 'offline' ? '#f8d7da' : 
-                                               service.status === 'error' ? '#fff3cd' : '#e2e3e5'
+                                backgroundColor: service.status === 'online' ? '#d4edda' :
+                                    service.status === 'offline' ? '#f8d7da' :
+                                        service.status === 'error' ? '#fff3cd' : '#e2e3e5'
                             }}>
-                                <span 
-                                    style={{ 
-                                        width: '8px', 
-                                        height: '8px', 
+                                <span
+                                    style={{
+                                        width: '8px',
+                                        height: '8px',
                                         borderRadius: '50%',
                                         backgroundColor: getStatusColor(service.status),
                                         boxShadow: `0 0 0 2px ${getStatusColor(service.status)}33`
                                     }}
                                 ></span>
-                                <span style={{ 
-                                    fontSize: '13px', 
+                                <span style={{
+                                    fontSize: '13px',
                                     fontWeight: '600',
-                                    color: service.status === 'online' ? '#155724' : 
-                                           service.status === 'offline' ? '#721c24' : 
-                                           service.status === 'error' ? '#856404' : '#6c757d'
+                                    color: service.status === 'online' ? '#155724' :
+                                        service.status === 'offline' ? '#721c24' :
+                                            service.status === 'error' ? '#856404' : '#6c757d'
                                 }}>
                                     {getStatusText(service.status)}
                                 </span>
                             </div>
                         </div>
-                        
-                        <p style={{ 
-                            margin: '0 0 12px 0', 
-                            color: '#6c757d', 
+
+                        <p style={{
+                            margin: '0 0 12px 0',
+                            color: '#6c757d',
                             fontSize: '15px',
                             lineHeight: '1.5'
                         }}>
                             {service.description}
                         </p>
-                        
+
                         {service.host && service.port && (
-                            <div style={{ 
+                            <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
                                 marginBottom: '8px'
                             }}>
-                                <span style={{ 
+                                <span style={{
                                     fontSize: '12px',
                                     color: '#6c757d',
                                     fontWeight: '500'
                                 }}>
                                     服务地址:
                                 </span>
-                                <code style={{ 
-                                    fontSize: '13px', 
+                                <code style={{
+                                    fontSize: '13px',
                                     color: '#495057',
                                     backgroundColor: '#f8f9fa',
                                     padding: '2px 6px',
@@ -231,12 +233,12 @@ function ServicesPage({ setPageUrl }) {
                                 </code>
                             </div>
                         )}
-                        
+
                         {/* Triton 服务额外信息 */}
                         {service.id === 'triton-inference' && service.status === 'online' && (
                             <div style={{ marginBottom: '8px' }}>
                                 {service.server_info && (
-                                    <div style={{ 
+                                    <div style={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '8px',
@@ -245,8 +247,8 @@ function ServicesPage({ setPageUrl }) {
                                         <span style={{ fontSize: '12px', color: '#6c757d', fontWeight: '500' }}>
                                             服务器版本:
                                         </span>
-                                        <code style={{ 
-                                            fontSize: '13px', 
+                                        <code style={{
+                                            fontSize: '13px',
                                             color: '#28a745',
                                             backgroundColor: '#d4edda',
                                             padding: '2px 6px',
@@ -257,7 +259,7 @@ function ServicesPage({ setPageUrl }) {
                                         </code>
                                     </div>
                                 )}
-                                <div style={{ 
+                                <div style={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '16px',
@@ -277,15 +279,15 @@ function ServicesPage({ setPageUrl }) {
                                 </div>
                             </div>
                         )}
-                        
+
                         {service.error_message && (
-                            <div style={{ 
-                                margin: '8px 0 0 0', 
+                            <div style={{
+                                margin: '8px 0 0 0',
                                 padding: '8px 12px',
                                 backgroundColor: '#f8d7da',
                                 border: '1px solid #f5c6cb',
                                 borderRadius: '6px',
-                                fontSize: '13px', 
+                                fontSize: '13px',
                                 color: '#721c24'
                             }}>
                                 <strong>错误:</strong> {service.error_message}
@@ -293,15 +295,15 @@ function ServicesPage({ setPageUrl }) {
                         )}
                     </div>
                 </div>
-                
-                <div style={{ 
+
+                <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     paddingTop: '16px',
                     borderTop: '1px solid #e9ecef'
                 }}>
-                    <span 
+                    <span
                         style={{
                             padding: '6px 12px',
                             borderRadius: '6px',
@@ -314,13 +316,13 @@ function ServicesPage({ setPageUrl }) {
                     >
                         {service.type.toUpperCase()} 协议
                     </span>
-                    
+
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <button 
+                        <button
                             className="btn sm"
                             onClick={handleRefresh}
                             disabled={isRefreshing}
-                            style={{ 
+                            style={{
                                 backgroundColor: isRefreshing ? '#6c757d' : '#6c757d',
                                 color: 'white',
                                 border: 'none',
@@ -334,10 +336,10 @@ function ServicesPage({ setPageUrl }) {
                         >
                             {isRefreshing ? '🔄 检查中...' : '🔄 刷新状态'}
                         </button>
-                        <button 
+                        <button
                             className="btn sm"
                             onClick={onNavigate}
-                            style={{ 
+                            style={{
                                 backgroundColor: '#007bff',
                                 color: 'white',
                                 border: 'none',
@@ -366,7 +368,7 @@ function ServicesPage({ setPageUrl }) {
     if (isLoading) {
         return (
             <div className="main" style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-                <div style={{ 
+                <div style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -375,7 +377,7 @@ function ServicesPage({ setPageUrl }) {
                     textAlign: 'center'
                 }}>
                     <div className="loading-spinner"></div>
-                    <h2 style={{ 
+                    <h2 style={{
                         margin: '0 0 12px 0',
                         fontSize: '24px',
                         fontWeight: '600',
@@ -383,7 +385,7 @@ function ServicesPage({ setPageUrl }) {
                     }}>
                         正在检查服务状态
                     </h2>
-                    <p style={{ 
+                    <p style={{
                         margin: '0',
                         color: '#6c757d',
                         fontSize: '16px'
@@ -397,7 +399,7 @@ function ServicesPage({ setPageUrl }) {
 
     return (
         <div className="main" style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-            <div style={{ 
+            <div style={{
                 marginBottom: '40px',
                 padding: '32px',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -406,8 +408,8 @@ function ServicesPage({ setPageUrl }) {
                 boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-                    <div style={{ 
-                        fontSize: '48px', 
+                    <div style={{
+                        fontSize: '48px',
                         marginRight: '20px',
                         background: 'rgba(255,255,255,0.2)',
                         borderRadius: '12px',
@@ -419,16 +421,16 @@ function ServicesPage({ setPageUrl }) {
                         🛠️
                     </div>
                     <div>
-                        <h1 style={{ 
-                            margin: '0 0 8px 0', 
+                        <h1 style={{
+                            margin: '0 0 8px 0',
                             fontSize: '32px',
                             fontWeight: '700',
                             textShadow: '0 2px 4px rgba(0,0,0,0.3)'
                         }}>
                             服务管理中心
                         </h1>
-                        <p style={{ 
-                            margin: '0', 
+                        <p style={{
+                            margin: '0',
                             fontSize: '16px',
                             opacity: '0.9',
                             fontWeight: '400'
@@ -437,13 +439,13 @@ function ServicesPage({ setPageUrl }) {
                         </p>
                     </div>
                 </div>
-                
-                <div style={{ 
-                    display: 'flex', 
+
+                <div style={{
+                    display: 'flex',
                     gap: '24px',
                     marginTop: '20px'
                 }}>
-                    <div style={{ 
+                    <div style={{
                         background: 'rgba(255,255,255,0.15)',
                         padding: '12px 16px',
                         borderRadius: '8px',
@@ -456,7 +458,7 @@ function ServicesPage({ setPageUrl }) {
                             总服务数
                         </div>
                     </div>
-                    <div style={{ 
+                    <div style={{
                         background: 'rgba(255,255,255,0.15)',
                         padding: '12px 16px',
                         borderRadius: '8px',
@@ -469,7 +471,7 @@ function ServicesPage({ setPageUrl }) {
                             在线服务
                         </div>
                     </div>
-                    <div style={{ 
+                    <div style={{
                         background: 'rgba(255,255,255,0.15)',
                         padding: '12px 16px',
                         borderRadius: '8px',
@@ -484,26 +486,26 @@ function ServicesPage({ setPageUrl }) {
                     </div>
                 </div>
             </div>
-            
-            <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', 
+
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
                 gap: '24px',
                 marginBottom: '40px'
             }}>
                 {services.map(service => (
-                    <ServiceCard 
+                    <ServiceCard
                         key={service.id}
                         service={service}
-                        onNavigate={() => setPageUrl(service.pageUrl)}
+                        onNavigate={() => navigate(service.path)}
                         onRefreshStatus={checkServicesStatus}
                     />
                 ))}
             </div>
 
-            <div 
-                className="card" 
-                style={{ 
+            <div
+                className="card"
+                style={{
                     marginTop: '30px',
                     padding: '24px',
                     border: '1px solid #e0e0e0',
@@ -518,24 +520,24 @@ function ServicesPage({ setPageUrl }) {
                         服务状态说明
                     </h3>
                 </div>
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                     gap: '16px'
                 }}>
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         gap: '12px',
                         padding: '12px',
                         backgroundColor: '#d4edda',
                         borderRadius: '8px',
                         border: '1px solid #c3e6cb'
                     }}>
-                        <span style={{ 
-                            width: '12px', 
-                            height: '12px', 
-                            borderRadius: '50%', 
+                        <span style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
                             backgroundColor: '#28a745',
                             boxShadow: '0 0 0 3px #28a74533'
                         }}></span>
@@ -544,19 +546,19 @@ function ServicesPage({ setPageUrl }) {
                             <div style={{ fontSize: '12px', color: '#155724', opacity: '0.8' }}>服务正常运行</div>
                         </div>
                     </div>
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         gap: '12px',
                         padding: '12px',
                         backgroundColor: '#f8d7da',
                         borderRadius: '8px',
                         border: '1px solid #f5c6cb'
                     }}>
-                        <span style={{ 
-                            width: '12px', 
-                            height: '12px', 
-                            borderRadius: '50%', 
+                        <span style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
                             backgroundColor: '#dc3545',
                             boxShadow: '0 0 0 3px #dc354533'
                         }}></span>
@@ -565,19 +567,19 @@ function ServicesPage({ setPageUrl }) {
                             <div style={{ fontSize: '12px', color: '#721c24', opacity: '0.8' }}>服务无法连接</div>
                         </div>
                     </div>
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         gap: '12px',
                         padding: '12px',
                         backgroundColor: '#fff3cd',
                         borderRadius: '8px',
                         border: '1px solid #ffeaa7'
                     }}>
-                        <span style={{ 
-                            width: '12px', 
-                            height: '12px', 
-                            borderRadius: '50%', 
+                        <span style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
                             backgroundColor: '#fd7e14',
                             boxShadow: '0 0 0 3px #fd7e1433'
                         }}></span>
@@ -586,19 +588,19 @@ function ServicesPage({ setPageUrl }) {
                             <div style={{ fontSize: '12px', color: '#856404', opacity: '0.8' }}>服务连接异常</div>
                         </div>
                     </div>
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         gap: '12px',
                         padding: '12px',
                         backgroundColor: '#e2e3e5',
                         borderRadius: '8px',
                         border: '1px solid #d6d8db'
                     }}>
-                        <span style={{ 
-                            width: '12px', 
-                            height: '12px', 
-                            borderRadius: '50%', 
+                        <span style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
                             backgroundColor: '#6c757d',
                             boxShadow: '0 0 0 3px #6c757d33'
                         }}></span>

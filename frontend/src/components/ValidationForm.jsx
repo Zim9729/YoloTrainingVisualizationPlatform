@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useToast } from "../contexts/ToastContext";
 
 function ValidationForm({
     modelList,
     parameter,
-    setPageUrl,
     onValidationStart
 }) {
+    const navigate = useNavigate();
     const [modelName, setModelName] = useState("best.pt");
     const [datasetList, setDatasetList] = useState([]);
     const [datasetYamlPath, setDatasetYamlPath] = useState("");
@@ -91,15 +92,15 @@ function ValidationForm({
         try {
             const ts = parseInt(parameter.folder?.split('_')?.[2] || '0');
             const startedAtStr = ts ? new Date(ts * 1000).toLocaleString() : '';
-            return `modelTest?taskName=${encodeURIComponent(parameter.taskName || '')}&startedAt=${encodeURIComponent(startedAtStr)}&folder=${encodeURIComponent(parameter.folder || '')}&open=validation`;
+            return `/models/test?taskName=${encodeURIComponent(parameter.taskName || '')}&startedAt=${encodeURIComponent(startedAtStr)}&folder=${encodeURIComponent(parameter.folder || '')}&open=validation`;
         } catch (e) {
-            return `modelTest?taskName=${encodeURIComponent(parameter.taskName || '')}&folder=${encodeURIComponent(parameter.folder || '')}&open=validation`;
+            return `/models/test?taskName=${encodeURIComponent(parameter.taskName || '')}&folder=${encodeURIComponent(parameter.folder || '')}&open=validation`;
         }
     };
 
     return (
         <div className="main">
-            <a href="#" onClick={() => setPageUrl("models?type=trained")} style={{ textDecoration: 'none' }}>返回</a>
+            <a href="#" onClick={() => navigate("/models?type=trained")} style={{ textDecoration: 'none' }}>返回</a>
             <h1 className="page-title">模型验证</h1>
             <p className="page-des">来自任务「{parameter.taskName || "Unknown"}」</p>
 
@@ -156,10 +157,10 @@ function ValidationForm({
                 <button className="btn primary" onClick={handleStartValidation} disabled={loading || !datasetYamlPath}>
                     {loading ? "验证中..." : "开始验证"}
                 </button>
-                <button className="btn" onClick={() => setPageUrl(buildHistoryUrl())}>
+                <button className="btn" onClick={() => navigate(buildHistoryUrl())}>
                     查看验证历史记录
                 </button>
-                <button className="btn" onClick={() => setPageUrl("models?type=trained")}>
+                <button className="btn" onClick={() => navigate("/models?type=trained")}>
                     返回训练模型列表
                 </button>
             </div>

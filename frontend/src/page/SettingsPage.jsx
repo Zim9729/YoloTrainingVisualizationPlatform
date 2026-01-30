@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
-function SettingsPage({ setPageUrl }) {
+function SettingsPage() {
   const [repo, setRepo] = useState("");
   const [imgsz, setImgsz] = useState("");
   const [toast, setToast] = useState("");
@@ -9,7 +10,7 @@ function SettingsPage({ setPageUrl }) {
     try {
       setRepo(localStorage.getItem('triton_repo_path') || "");
       setImgsz(localStorage.getItem('triton_default_imgsz') || "");
-    } catch (_) {}
+    } catch (_) { }
   }, []);
 
   const save = () => {
@@ -30,18 +31,18 @@ function SettingsPage({ setPageUrl }) {
 
   return (
     <div className="main">
-      <a href="#" onClick={() => setPageUrl("home")} style={{ textDecoration: 'none' }}>返回</a>
+      <Link to="/" style={{ textDecoration: 'none' }}>返回</Link>
       <h1 className="page-title">设置</h1>
       <p className="page-des">全局默认参数</p>
 
       <div className="card" style={{ padding: '14px', maxWidth: 680 }}>
         <div className="form-group">
           <label className="label">Triton 模型仓库路径</label>
-          <input type="text" value={repo} onChange={(e)=>setRepo(e.target.value)} placeholder="/path/to/triton/model_repository" style={{ width: '100%' }} />
+          <input type="text" value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="/path/to/triton/model_repository" style={{ width: '100%' }} />
         </div>
         <div className="form-group">
           <label className="label">默认 imgsz（可选，留空则使用导出参数或 640）</label>
-          <input type="number" value={imgsz} onChange={(e)=>setImgsz(e.target.value)} placeholder="640" style={{ width: '160px' }} />
+          <input type="number" value={imgsz} onChange={(e) => setImgsz(e.target.value)} placeholder="640" style={{ width: '160px' }} />
         </div>
         <button className="btn" onClick={save}>保存</button>
         {toast && (

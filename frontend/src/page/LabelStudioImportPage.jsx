@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useToast } from "../contexts/ToastContext";
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 
-function LabelStudioImportPage({ setPageUrl, parameter }) {
-  const [baseUrl, setBaseUrl] = useState(parameter.base_url || "http://10.10.10.96:8080");
-  const [token, setToken] = useState(parameter.token || "Token c438e617f6488a1d77ee04208e4c917723e25a34");
+function LabelStudioImportPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const toast = useToast();
+
+  const [baseUrl, setBaseUrl] = useState(searchParams.get('base_url') || "http://10.10.10.96:8080");
+  const [token, setToken] = useState(searchParams.get('token') || "Token c438e617f6488a1d77ee04208e4c917723e25a34");
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -24,8 +29,6 @@ function LabelStudioImportPage({ setPageUrl, parameter }) {
   const sumSplits = useMemo(() => (
     Number(trainSplit) + Number(valSplit) + Number(testSplit)
   ).toFixed(2), [trainSplit, valSplit, testSplit]);
-
-  const toast = useToast();
 
   useEffect(() => {
     hljs.highlightAll();
@@ -86,7 +89,7 @@ function LabelStudioImportPage({ setPageUrl, parameter }) {
       });
       if (res.code === 200) {
         toast.success(res.msg || "构建成功");
-        setPageUrl("dataset");
+        navigate("/dataset");
       } else {
         toast.error(res.msg || "构建失败");
       }
@@ -176,7 +179,7 @@ function LabelStudioImportPage({ setPageUrl, parameter }) {
         <button className="btn sm" onClick={submitBuild} style={{ marginRight: '12px' }}>
           开始构建
         </button>
-        <button className="btn sm" onClick={() => setPageUrl('dataset')}>
+        <button className="btn sm" onClick={() => navigate('/dataset')}>
           返回数据集
         </button>
       </div>

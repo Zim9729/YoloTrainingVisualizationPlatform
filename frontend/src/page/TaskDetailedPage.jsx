@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { splitPath } from "../tools";
 import { useRunningTasks } from "../contexts/TaskContext";
@@ -14,7 +15,9 @@ import TerminalViewer from "../components/TerminalViewer";
 import Icon_Info_circle_fill from "../assets/icons/info-circle-fill.svg";
 import Icon_Terminal_fill from "../assets/icons/terminal-fill.svg";
 
-function TaskDetailedPage({ setPageUrl, parameter }) {
+function TaskDetailedPage() {
+    const navigate = useNavigate();
+    const { filename } = useParams();
     const [taskData, setTaskData] = useState({});
     const [taskHistory, setTaskHistory] = useState([]);
     const [infoCardShowDetails, setInfoCardShowDetails] = useState([]);
@@ -73,7 +76,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
         // 获取任务数据
         api.get("/ITraining/getTask", {
             params: {
-                filename: parameter.filename
+                filename: filename
             }
         })
             .then(data => {
@@ -87,8 +90,8 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
             });
 
         // 使用 Context 中的状态检查是否运行中
-        setIsRunning(isTaskRunning(parameter.filename));
-    }, [parameter.filename, isTaskRunning]);
+        setIsRunning(isTaskRunning(filename));
+    }, [filename, isTaskRunning]);
 
     useEffect(() => {
         if (taskData.trainingType === "0") {
@@ -159,10 +162,10 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     }
 
     const showLastTaskLog = () => {
-        console.log(parameter.filename);
+        console.log(filename);
 
         api.get("/ITraining/getTaskLog", {
-            params: { filename: parameter.filename },
+            params: { filename: filename },
         })
             .then(res => {
                 setShowLastLog(true);
@@ -201,7 +204,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
 
     return (
         <div className="main">
-            <a href="#" onClick={() => setPageUrl("tasks")} style={{ textDecoration: 'none' }}>返回</a>
+            <a href="#" onClick={() => navigate("/tasks")} style={{ textDecoration: 'none' }}>返回</a>
             <h1 className="page-title">{taskData.taskName || "unknown"}</h1>
             <p className="page-des">{taskData.taskDescription || "无描述"}</p>
             {isRunning &&
@@ -225,12 +228,12 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                         </h1>
                         <h1 className="title">终端</h1>
                     </div>
-                    <TerminalViewer filename={parameter.filename} setIsRunning={setIsRunning} trainingCompleted={onTrainingCompleted} />
+                    <TerminalViewer filename={filename} setIsRunning={setIsRunning} trainingCompleted={onTrainingCompleted} />
                 </div>
             )}
 
             {!isRunning &&
-                <button className="btn" onClick={() => startTask(parameter.filename, taskData.taskName, taskData.taskID)}>启动训练</button>
+                <button className="btn" onClick={() => startTask(filename, taskData.taskName, taskData.taskID)}>启动训练</button>
             }
 
             <div className="task-detail-box">
@@ -325,7 +328,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                         .map((item, index) => (
                             <div className="list-card" key={`task_history_${index}`} onClick={() => {
                                 if (item.completedAt != null) {
-                                    setPageUrl(`taskResultDetailed?taskID=${item.taskID}&startedAt=${item.startedAt}&taskName=${taskData.taskName}`);
+                                    navigate(`/tasks/${item.taskID}/result?startedAt=${item.startedAt}&taskName=${taskData.taskName}`);
                                 }
                             }}>
                                 <span style={{ fontWeight: 'bold', fontSize: '18px' }}>

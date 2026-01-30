@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import TritonRepoPage from "./TritonRepoPage";
 
 import Icon_Info_circle_fill from "../assets/icons/info-circle-fill.svg";
 
-function ModelsPage({ setPageUrl, parameter }) {
+function ModelsPage() {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [localModelList, setLocalModelList] = useState([]);
     const [trainedModelList, setTrainedModelList] = useState([]);
     const [showModelType, setShowModelType] = useState(0); // 0: 本地基础模型, 1: 训练结果模型, 2: Triton 仓库
@@ -34,16 +37,17 @@ function ModelsPage({ setPageUrl, parameter }) {
     }, []);
 
     useEffect(() => {
-        if (parameter.type == "base") {
+        const type = searchParams.get('type');
+        if (type == "base") {
             setShowModelType(0);
-        } else if (parameter.type == "trained") {
+        } else if (type == "trained") {
             setShowModelType(1);
         }
-    }, [parameter.type]);
+    }, [searchParams]);
 
     const startModelTest = (taskID, taskName, folder, weightsArray, outputDir) => {
         const weights = weightsArray.join(",");
-        setPageUrl(`modelTest?type=newTest&taskID=${taskID}&taskName=${taskName}&folder=${folder}&weights=${weights}&outputDir=${outputDir}`);
+        navigate(`/models/test?type=newTest&taskID=${taskID}&taskName=${taskName}&folder=${folder}&weights=${weights}&outputDir=${outputDir}`);
     };
 
     const startModelValidation = (model) => {
@@ -58,7 +62,7 @@ function ModelsPage({ setPageUrl, parameter }) {
                     datasetYamlPath = `${datasetPath}/${model.dataset.yaml_file_path}`;
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
         const qs = new URLSearchParams({
             type: 'newVal',
             taskID: model.task_id,
@@ -69,7 +73,7 @@ function ModelsPage({ setPageUrl, parameter }) {
             datasetPath,
             datasetYamlPath,
         }).toString();
-        setPageUrl(`modelTest?${qs}`);
+        navigate(`/models/test?${qs}`);
     };
 
     return (
@@ -161,15 +165,15 @@ function ModelsPage({ setPageUrl, parameter }) {
                                     folder: model.folder,
                                     outputDir: model.output_dir || '',
                                 }).toString();
-                                setPageUrl(`modelExport?${qs}`);
+                                navigate(`/models/export?${qs}`);
                             }} style={{ marginRight: '8px' }}>导出/转换</button>
                             <button className="btn sm" onClick={() => {
                                 try {
                                     const ts = parseInt(model.folder.split('_')[2]);
                                     const startedAtStr = new Date(ts * 1000).toLocaleString();
-                                    setPageUrl(`modelTest?taskID=${model.task_id}&taskName=${encodeURIComponent(model.task_name || '')}&startedAt=${encodeURIComponent(startedAtStr)}&folder=${model.folder}`);
+                                    navigate(`/models/test?taskID=${model.task_id}&taskName=${encodeURIComponent(model.task_name || '')}&startedAt=${encodeURIComponent(startedAtStr)}&folder=${model.folder}`);
                                 } catch (e) {
-                                    setPageUrl(`modelTest?taskID=${model.task_id}&taskName=${encodeURIComponent(model.task_name || '')}&folder=${model.folder}`);
+                                    navigate(`/models/test?taskID=${model.task_id}&taskName=${encodeURIComponent(model.task_name || '')}&folder=${model.folder}`);
                                 }
                             }}>查看测试/验证历史记录</button>
                         </div>
@@ -179,7 +183,7 @@ function ModelsPage({ setPageUrl, parameter }) {
 
             {showModelType === 2 && (
                 <div className="card" style={{ padding: '10px' }}>
-                    <TritonRepoPage setPageUrl={setPageUrl} embedded={true} />
+                    <TritonRepoPage embedded={true} />
                 </div>
             )}
         </div>

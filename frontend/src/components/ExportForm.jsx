@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useToast } from "../contexts/ToastContext";
 
-function ExportForm({ parameter, setPageUrl, onExportStart }) {
+function ExportForm({ parameter, onExportStart }) {
+  const navigate = useNavigate();
   const [modelType, setModelType] = useState("best");
   const [availableWeights, setAvailableWeights] = useState([]);
   const [formats, setFormats] = useState(["onnx"]);
@@ -174,7 +176,7 @@ function ExportForm({ parameter, setPageUrl, onExportStart }) {
           <button className={`btn ${loading ? 'disabled' : ''}`} disabled={loading} type="submit">
             {loading ? '启动中...' : '开始导出'}
           </button>
-          <button type="button" className="btn sm" style={{ marginLeft: '10px' }} onClick={() => setPageUrl('models?type=trained')}>返回</button>
+          <button type="button" className="btn sm" style={{ marginLeft: '10px' }} onClick={() => navigate('/models?type=trained')}>返回</button>
         </div>
       </form>
     </div>

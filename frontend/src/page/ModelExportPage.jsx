@@ -1,17 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ExportForm from "../components/ExportForm";
 import ExportLogPanel from "../components/ExportLogPanel";
 import { api } from "../api";
 import { useToast } from "../contexts/ToastContext";
 import { useConfirm } from "../contexts/ConfirmContext";
 
-function ModelExportPage({ setPageUrl, parameter }) {
+function ModelExportPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const taskID = searchParams.get('taskID') || '';
+  const taskName = searchParams.get('taskName') || '';
+  const folder = searchParams.get('folder') || '';
+  const outputDir = searchParams.get('outputDir') || '';
+
+  const parameter = useMemo(() => ({
+    taskID,
+    taskName,
+    folder,
+    outputDir
+  }), [taskID, taskName, folder, outputDir]);
+
   const [exportKey, setExportKey] = useState("");
   const [showLog, setShowLog] = useState(false);
   const [history, setHistory] = useState([]);
   const [deletingKey, setDeletingKey] = useState("");
-
-  const outputDir = useMemo(() => parameter.outputDir || "", [parameter.outputDir]);
 
   const handleExportStart = useCallback((key) => {
     setExportKey(key);
@@ -69,9 +83,9 @@ function ModelExportPage({ setPageUrl, parameter }) {
 
   return (
     <div className="main">
-      <a href="#" onClick={() => setPageUrl("models?type=trained")} style={{ textDecoration: 'none' }}>返回</a>
+      <a href="#" onClick={() => navigate("/models?type=trained")} style={{ textDecoration: 'none' }}>返回</a>
       <h1 className="page-title">模型导出 / 转换</h1>
-      <p className="page-des">任务「{parameter.taskName}」 - 选择权重与导出格式</p>
+      <p className="page-des">任务「{taskName}」 - 选择权重与导出格式</p>
 
       {/* 历史记录 */}
       <div className="card" style={{ padding: '14px', marginBottom: '12px' }}>
@@ -111,9 +125,9 @@ function ModelExportPage({ setPageUrl, parameter }) {
         )}
       </div>
 
-      <ExportForm parameter={parameter} setPageUrl={setPageUrl} onExportStart={handleExportStart} />
+      <ExportForm parameter={parameter} onExportStart={handleExportStart} />
 
-      <ExportLogPanel visible={showLog} onClose={() => setShowLog(false)} exportKey={exportKey} parameter={parameter} setPageUrl={setPageUrl} />
+      <ExportLogPanel visible={showLog} onClose={() => setShowLog(false)} exportKey={exportKey} parameter={parameter} />
     </div>
   );
 }

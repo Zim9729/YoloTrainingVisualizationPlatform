@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useToast } from "../contexts/ToastContext";
 import hljs from 'highlight.js';
@@ -143,7 +144,19 @@ function analyzeTrainingResults(csvData) {
     return analysisReport;
 }
 
-function TaskResultDetailedPage({ setPageUrl, parameter }) {
+function TaskResultDetailedPage() {
+    const navigate = useNavigate();
+    const { taskID } = useParams();
+    const [searchParams] = useSearchParams();
+    const startedAt = searchParams.get('startedAt');
+    const taskName = searchParams.get('taskName');
+
+    // Construct parameter object to maintain compatibility
+    const parameter = {
+        taskID: taskID || '',
+        taskName: taskName || '',
+    };
+
     const [taskResultData, setTaskResultData] = useState({});
     const [showImageIndex, setShowImageIndex] = useState([]);
     const [analyzeTrainingResultsData, setAnalyzeTrainingResultsData] = useState("");
@@ -159,12 +172,12 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
     useEffect(() => {
         api.get("/ITraining/getTrainingTasksHistory", {
             params: {
-                taskID: parameter.taskID
+                taskID: taskID
             }
         })
             .then(data => {
                 if (data.code == 200) {
-                    const d = data.data.history.find(item => item.startedAt == Number(parameter.startedAt));
+                    const d = data.data.history.find(item => item.startedAt == Number(startedAt));
                     setTaskResultData(d);
                     console.log(d);
                 } else {
@@ -175,13 +188,13 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                 console.error("获取任务信息失败: ", err);
                 toast.error('获取任务信息失败');
             });
-    }, [parameter.taskID]);
+    }, [taskID]);
 
     useEffect(() => {
         if (taskResultData.__taskResultFilePath) {
             api.get("/ITraining/getTrainingTaskOutputFile", {
                 params: {
-                    taskID: parameter.taskID,
+                    taskID: taskID,
                     filePath: "results.csv",
                     resultFilePath: taskResultData.__taskResultFilePath
                 }
@@ -205,7 +218,7 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                     console.error("获取results失败:", err);
                 });
         }
-    }, [parameter.taskID, taskResultData]);
+    }, [taskID, taskResultData]);
 
     const priorityImageFiles = [
         "confusion_matrix.png",
@@ -241,12 +254,12 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
 
     return (
         <div className="main">
-            <a href="#" onClick={() => setPageUrl(`tasksDetailed?filename=${taskResultData.filename}`)} style={{ textDecoration: 'none' }}>返回</a>
+            <a href="#" onClick={() => navigate(`/tasks/${encodeURIComponent(taskResultData.filename)}`)} style={{ textDecoration: 'none' }}>返回</a>
             <h1 className="page-title">
                 任务结果
             </h1>
             <p className="page-des">
-                来自任务「{parameter.taskName || "Unknown"}」
+                来自任务「{taskName || "Unknown"}」
             </p>
 
             <span style={{ fontSize: '18px', marginBottom: '8px' }}>
@@ -265,7 +278,7 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                         </h1>
                         <h1 className="title">
                             模型
-                            <button className="btn sm" style={{ position: 'relative', top: '-2px', marginLeft: '15px' }} onClick={() => setPageUrl(`models?type=trained`)}>进行测试</button>
+                            <button className="btn sm" style={{ position: 'relative', top: '-2px', marginLeft: '15px' }} onClick={() => navigate(`/models?type=trained`)}>进行测试</button>
                         </h1>
                     </div>
 

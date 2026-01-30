@@ -1,13 +1,14 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useToast } from "../contexts/ToastContext";
 
 function TestForm({
     modelList,
     parameter,
-    setPageUrl,
     onTestStart
 }) {
+    const navigate = useNavigate();
     const [modelName, setModelName] = useState("best.pt");
     const [inputPath, setInputPath] = useState("");
     const [loading, setLoading] = useState(false);
@@ -110,15 +111,15 @@ function TestForm({
         try {
             const ts = parseInt(parameter.folder?.split('_')?.[2] || '0');
             const startedAtStr = ts ? new Date(ts * 1000).toLocaleString() : '';
-            return `modelTest?taskName=${encodeURIComponent(parameter.taskName || '')}&startedAt=${encodeURIComponent(startedAtStr)}&folder=${encodeURIComponent(parameter.folder || '')}&open=test`;
+            return `/models/test?taskName=${encodeURIComponent(parameter.taskName || '')}&startedAt=${encodeURIComponent(startedAtStr)}&folder=${encodeURIComponent(parameter.folder || '')}&open=test`;
         } catch (e) {
-            return `modelTest?taskName=${encodeURIComponent(parameter.taskName || '')}&folder=${encodeURIComponent(parameter.folder || '')}&open=test`;
+            return `/models/test?taskName=${encodeURIComponent(parameter.taskName || '')}&folder=${encodeURIComponent(parameter.folder || '')}&open=test`;
         }
     };
 
     return (
         <div className="main">
-            <a href="#" onClick={() => setPageUrl("models?type=trained")} style={{ textDecoration: 'none' }}>返回</a>
+            <a href="#" onClick={() => navigate("/models?type=trained")} style={{ textDecoration: 'none' }}>返回</a>
             <h1 className="page-title">模型测试</h1>
             <p className="page-des">来自任务「{parameter.taskName || "Unknown"}」</p>
 
@@ -163,7 +164,7 @@ function TestForm({
                 <button className="btn primary" onClick={handleStartTest} disabled={loading || !inputPath}>
                     {loading ? "测试中..." : "开始测试"}
                 </button>
-                <button className="btn" onClick={() => setPageUrl(buildHistoryUrl())}>
+                <button className="btn" onClick={() => navigate(buildHistoryUrl())}>
                     查看测试历史记录
                 </button>
             </div>

@@ -1,5 +1,6 @@
 import { api } from "../api";
 import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import CONFIGS from "../config";
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
@@ -9,7 +10,16 @@ import { useConfirm } from "../contexts/ConfirmContext";
 import Logo_Coco from "../assets/logo/coco_sm.png";
 import Logo_Ultralytics from "../assets/logo/ultralytics.svg";
 
-function DatasetPage({ setPageUrl, parameter }) {
+function DatasetPage() {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    // Construct parameter object from URL search params to maintain compatibility
+    const parameter = {
+        type: searchParams.get('type') || '',
+        datasetPath: searchParams.get('datasetPath') || '',
+    };
+
     const [datasetsList, setDatasetsList] = useState([]);
     const [datasetType, setDatasetType] = useState("yolo");
     const [includeYaml, setIncludeYaml] = useState("1");
@@ -58,7 +68,7 @@ function DatasetPage({ setPageUrl, parameter }) {
                 .then(data => {
                     if (data.code === 200) {
                         toast.success(data.msg || '数据集已删除');
-                        setPageUrl("home");
+                        navigate("/");
                     } else {
                         toast.error(data.msg || '删除失败');
                     }
@@ -112,7 +122,7 @@ function DatasetPage({ setPageUrl, parameter }) {
                 setIsUploading(false);
                 if (data.code === 200) {
                     toast.success(data.msg || '数据集上传成功');
-                    setPageUrl("home");
+                    navigate("/");
                 } else {
                     toast.error(data.msg || '上传失败');
                 }
@@ -324,9 +334,9 @@ function DatasetPage({ setPageUrl, parameter }) {
                     <h1 className="page-title">数据集</h1>
                     <p className="page-des">查看和管理您的数据集。</p>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                        <button className="btn sm" onClick={() => setPageUrl("dataset?type=uploadDataset")}>上传数据集</button>
+                        <button className="btn sm" onClick={() => navigate("/dataset?type=uploadDataset")}>上传数据集</button>
                         <button className="btn sm" onClick={() => {
-                            setPageUrl(`labelStudioImport`);
+                            navigate(`/import/label-studio`);
                         }}>从 Label Studio 导入</button>
                     </div>
                     {datasetsList.map((dataset, index) => (
@@ -368,7 +378,7 @@ function DatasetPage({ setPageUrl, parameter }) {
                             }}>
                                 {showDetailsInfo.includes(index) ? <>隐藏详细</> : <>查看详情</>}
                             </a>
-                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { setPageUrl(`tasks?type=newTask&datasetPath=${dataset.path}`) }}>从该数据集开始创建任务</button>
+                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { navigate(`/tasks?type=newTask&datasetPath=${dataset.path}`) }}>从该数据集开始创建任务</button>
                             <button className="btn sm r" onClick={() => { deleteDataset(dataset.path) }}>删除数据集</button>
                         </div>
                     ))}

@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import CONFIGS from "../config";
 import Icon_Box_seam_fill from "../assets/icons/box-seam-fill.svg";
 
-function ExportLogPanel({ visible, onClose, exportKey, parameter, setPageUrl }) {
+function ExportLogPanel({ visible, onClose, exportKey, parameter }) {
+  const navigate = useNavigate();
   const [logText, setLogText] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [files, setFiles] = useState([]);
@@ -38,7 +40,7 @@ function ExportLogPanel({ visible, onClose, exportKey, parameter, setPageUrl }) 
     try {
       const s = Number(localStorage.getItem('triton_default_imgsz'));
       if (!Number.isNaN(s) && s > 0) return s;
-    } catch(_) {}
+    } catch (_) { }
     return 640;
   }, [meta, parameter]);
 
@@ -50,18 +52,20 @@ function ExportLogPanel({ visible, onClose, exportKey, parameter, setPageUrl }) 
   const onRegisterToTriton = async (filePath) => {
     try {
       // 记住最近一次的 Triton 仓库路径
-      const lastRepo = (() => { try { return localStorage.getItem('triton_repo_path') || ''; } catch(_) { return ''; } })();
+      const lastRepo = (() => { try { return localStorage.getItem('triton_repo_path') || ''; } catch (_) { return ''; } })();
       const repo = window.prompt('请输入 Triton 模型仓库路径', lastRepo);
       if (!repo) return;
-      try { localStorage.setItem('triton_repo_path', repo); } catch(_) {}
+      try { localStorage.setItem('triton_repo_path', repo); } catch (_) { }
       const name = window.prompt('可选：自定义模型名称（默认: <文件名>_<格式>）') || undefined;
-      const res = await api.post('/IModel/registerExportArtifactToTriton', { data: {
-        outputDir,
-        filePath,
-        tritonRepoPath: repo,
-        tritonModelName: name,
-        imgsz:  detectedImgSz,
-      }});
+      const res = await api.post('/IModel/registerExportArtifactToTriton', {
+        data: {
+          outputDir,
+          filePath,
+          tritonRepoPath: repo,
+          tritonModelName: name,
+          imgsz: detectedImgSz,
+        }
+      });
       if (res.code === 200) {
         setToast('已注册到 Triton: ' + (res.data?.model_name || ''));
         // 更新注册标记
@@ -72,12 +76,12 @@ function ExportLogPanel({ visible, onClose, exportKey, parameter, setPageUrl }) 
     } catch (e) {
       setToast('注册失败: ' + (e?.message || e));
     }
-    setTimeout(() => setToast("") , 1800);
+    setTimeout(() => setToast(""), 1800);
   };
 
   const refreshRegistered = async () => {
     try {
-      const repo = (() => { try { return localStorage.getItem('triton_repo_path') || ''; } catch(_) { return ''; } })();
+      const repo = (() => { try { return localStorage.getItem('triton_repo_path') || ''; } catch (_) { return ''; } })();
       if (!repo) return;
       if (!outputDir) return;
       const res = await api.post('/IModel/listRegisteredExportArtifacts', { data: { outputDir, tritonRepoPath: repo } });
@@ -100,7 +104,7 @@ function ExportLogPanel({ visible, onClose, exportKey, parameter, setPageUrl }) 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600, wordBreak: 'break-all' }}>{f.path}</div>
               <div style={{ color: 'var(--secondary-text-color)', fontSize: '12px' }}>
-                {formatBytes(f.size)} · {new Date((f.mtime||0)*1000).toLocaleString()} · {f.mime}
+                {formatBytes(f.size)} · {new Date((f.mtime || 0) * 1000).toLocaleString()} · {f.mime}
                 {registeredMap[f.path]?.registered && (
                   <span
                     style={{
@@ -272,7 +276,7 @@ function ExportLogPanel({ visible, onClose, exportKey, parameter, setPageUrl }) 
         <h1 className="step-tag nobg">2</h1>
         <h1 className="title">导出产物</h1>
         <div style={{ marginLeft: 'auto' }}>
-          <button className="btn sm" onClick={() => setPageUrl('settings')}>设置</button>
+          <button className="btn sm" onClick={() => navigate('/settings')}>设置</button>
           <button className="btn sm" style={{ marginLeft: 8 }} onClick={refreshRegistered}>刷新标记</button>
         </div>
       </div>
@@ -293,7 +297,7 @@ function ExportLogPanel({ visible, onClose, exportKey, parameter, setPageUrl }) 
         </span>
         {!isRunning && (
           <>
-            <button className="btn sm" onClick={() => setPageUrl("models?type=trained")}>
+            <button className="btn sm" onClick={() => navigate("/models?type=trained")}>
               返回训练模型列表
             </button>
           </>

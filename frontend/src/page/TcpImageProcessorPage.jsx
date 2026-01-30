@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { getStatusColor, getStatusText } from '../tools';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import '../styles/services.css';
 
-function TcpImageProcessorPage({ setPageUrl }) {
+function TcpImageProcessorPage() {
+    const navigate = useNavigate();
     const [serviceStatus, setServiceStatus] = useState('unknown');
     const [serviceInfo, setServiceInfo] = useState({});
     const [processingHistory, setProcessingHistory] = useState([]);
@@ -395,7 +397,7 @@ function TcpImageProcessorPage({ setPageUrl }) {
             }}>
                 <button
                     className="btn sm"
-                    onClick={() => setPageUrl('services')}
+                    onClick={() => navigate('/services')}
                     style={{
                         marginBottom: '20px',
                         backgroundColor: 'rgba(255,255,255,0.2)',

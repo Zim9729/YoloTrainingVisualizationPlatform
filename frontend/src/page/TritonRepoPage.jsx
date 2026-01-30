@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useConfirm } from "../contexts/ConfirmContext";
 
-function TritonRepoPage({ setPageUrl, embedded = false }) {
+function TritonRepoPage({ embedded = false }) {
+  const navigate = useNavigate();
   const [repo, setRepo] = useState("");
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -234,7 +236,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
   return (
     <div className="main">
       {!embedded && (
-        <a href="#" onClick={() => setPageUrl("home")} style={{ textDecoration: 'none' }}>返回</a>
+        <a href="#" onClick={() => navigate("/")} style={{ textDecoration: 'none' }}>返回</a>
       )}
       {!embedded && <h1 className="page-title">Triton 模型仓库</h1>}
       {!embedded && <p className="page-des">浏览 Triton 仓库中的模型与版本</p>}

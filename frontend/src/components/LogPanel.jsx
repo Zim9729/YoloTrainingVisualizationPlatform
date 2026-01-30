@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import Icon_Box_seam_fill from "../assets/icons/box-seam-fill.svg";
 
-function LogPanel({ 
-    visible, 
-    onClose, 
-    logFilename, 
-    taskType, 
+function LogPanel({
+    visible,
+    onClose,
+    logFilename,
+    taskType,
     onTaskComplete,
-    parameter,
-    setPageUrl 
+    parameter
 }) {
+    const navigate = useNavigate();
     const [logText, setLogText] = useState("");
     const [isRunning, setIsRunning] = useState(false);
 
@@ -26,9 +27,9 @@ function LogPanel({
                 const isVal = taskType === "validation";
                 const endpoint = isVal ? "/IModel/getValTaskLog" : "/IModel/getTaskLog";
                 const res = await api.get(`${endpoint}?filename=${encodeURIComponent(logFilename)}`);
-                
+
                 if (!isMounted) return;
-                
+
                 if (res.code === 200 && res.data) {
                     setLogText(res.data.log || "");
                     setIsRunning(!!res.data.is_running);
@@ -66,10 +67,10 @@ function LogPanel({
             const ts = parseInt(parameter.folder?.split('_')?.[2] || '0');
             const startedAtStr = ts ? new Date(ts * 1000).toLocaleString() : '';
             const openType = taskType === "validation" ? "validation" : "test";
-            return `modelTest?taskName=${encodeURIComponent(parameter.taskName || '')}&startedAt=${encodeURIComponent(startedAtStr)}&folder=${encodeURIComponent(parameter.folder || '')}&open=${openType}`;
+            return `/models/test?taskName=${encodeURIComponent(parameter.taskName || '')}&startedAt=${encodeURIComponent(startedAtStr)}&folder=${encodeURIComponent(parameter.folder || '')}&open=${openType}`;
         } catch (e) {
             const openType = taskType === "validation" ? "validation" : "test";
-            return `modelTest?taskName=${encodeURIComponent(parameter.taskName || '')}&folder=${encodeURIComponent(parameter.folder || '')}&open=${openType}`;
+            return `/models/test?taskName=${encodeURIComponent(parameter.taskName || '')}&folder=${encodeURIComponent(parameter.folder || '')}&open=${openType}`;
         }
     };
 
@@ -102,10 +103,10 @@ function LogPanel({
                 </span>
                 {!isRunning && (
                     <>
-                        <button className="btn sm" onClick={() => setPageUrl("models?type=trained")}>
+                        <button className="btn sm" onClick={() => navigate("/models?type=trained")}>
                             返回训练模型列表
                         </button>
-                        <button className="btn sm" onClick={() => setPageUrl(buildHistoryUrl())}>
+                        <button className="btn sm" onClick={() => navigate(buildHistoryUrl())}>
                             查看{taskType === "validation" ? "验证" : "测试"}历史记录
                         </button>
                     </>

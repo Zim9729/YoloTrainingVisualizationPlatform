@@ -1,11 +1,24 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useRunningTasks } from "../contexts/TaskContext";
 import { useToast } from "../contexts/ToastContext";
 import { useConfirm } from "../contexts/ConfirmContext";
 import CONFIGS from "../config";
 
-function TasksPage({ setPageUrl, parameter }) {
+function TasksPage() {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    // Construct parameter object from URL search params to maintain compatibility
+    const parameter = {
+        type: searchParams.get('type') || '',
+        datasetPath: searchParams.get('datasetPath') || '',
+        message: searchParams.get('message') || '',
+        folder: searchParams.get('folder') || '',
+        taskID: searchParams.get('taskID') || '',
+        taskName: searchParams.get('taskName') || '',
+    };
     const [tasksList, setTasksList] = useState([]);
 
     const [datasetsList, setDatasetsList] = useState([]);
@@ -186,7 +199,7 @@ function TasksPage({ setPageUrl, parameter }) {
                 setIsUploading(false);
                 if (data.code === 200) {
                     toast.success(data.msg || '任务创建成功');
-                    setPageUrl("home");
+                    navigate("/");
                 } else {
                     toast.error(data.msg || '创建失败');
                 }
@@ -217,7 +230,7 @@ function TasksPage({ setPageUrl, parameter }) {
                 .then(data => {
                     if (data.code === 200) {
                         refreshRunningTasks();
-                        setPageUrl(`tasksDetailed?filename=${filename}`);
+                        navigate(`/tasks/${encodeURIComponent(filename)}`);
                     } else {
                         toast.error(data.msg);
                     }
@@ -248,7 +261,7 @@ function TasksPage({ setPageUrl, parameter }) {
                 .then(data => {
                     if (data.code === 200) {
                         toast.success(data.msg || '任务已删除');
-                        setPageUrl("home");
+                        navigate("/");
                     } else {
                         toast.error(data.msg || '删除失败');
                     }
@@ -314,7 +327,7 @@ function TasksPage({ setPageUrl, parameter }) {
                             }
                             {datasetsList.length == 0 &&
                                 <div className="tip-box">
-                                    您还没有上传任何数据集，请点击<a href="#" onClick={() => { setPageUrl("dataset?type=uploadDataset") }}>这里</a>上传数据集
+                                    您还没有上传任何数据集，请点击<a href="#" onClick={() => { navigate("/dataset?type=uploadDataset") }}>这里</a>上传数据集
                                 </div>
                             }
                         </div>
@@ -723,7 +736,7 @@ function TasksPage({ setPageUrl, parameter }) {
                 <div className="main">
                     <h1 className="page-title">训练任务</h1>
                     <p className="page-des">管理所有模型训练任务。</p>
-                    <button className="btn sm" onClick={() => setPageUrl("tasks?type=newTask")} style={{ marginBottom: '10px' }}>新建训练任务</button>
+                    <button className="btn sm" onClick={() => navigate("/tasks?type=newTask")} style={{ marginBottom: '10px' }}>新建训练任务</button>
 
                     {tasksList.map((task, index) => (
                         <div key={index} className="card" style={{ marginBottom: '10px' }}>
@@ -791,7 +804,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                     启动训练
                                 </button>
                             }
-                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { setPageUrl(`tasksDetailed?filename=${task.__filename}`) }}>
+                            <button className="btn sm" style={{ marginRight: '10px' }} onClick={() => { navigate(`/tasks/${encodeURIComponent(task.__filename)}`) }}>
                                 进入任务页面
                             </button>
                             {!runningTasksList.includes(task.__filename) &&

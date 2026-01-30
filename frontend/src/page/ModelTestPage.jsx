@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import CONFIGS from "../config";
 import { splitPath } from "../tools";
@@ -138,7 +139,24 @@ function InlineLogViewer({ filename, taskType }) {
     );
 }
 
-function ModelTestPage({ setPageUrl, parameter }) {
+function ModelTestPage() {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    // 从 URL 查询参数构建 parameter 对象
+    const parameter = {
+        type: searchParams.get('type') || '',
+        taskID: searchParams.get('taskID') || '',
+        taskName: searchParams.get('taskName') || '',
+        folder: searchParams.get('folder') || '',
+        weights: searchParams.get('weights') || '',
+        outputDir: searchParams.get('outputDir') || '',
+        startedAt: searchParams.get('startedAt') || '',
+        open: searchParams.get('open') || '',
+        datasetPath: searchParams.get('datasetPath') || '',
+        datasetYamlPath: searchParams.get('datasetYamlPath') || '',
+    };
+
     const [modelList, setModelList] = useState([]);
     const [trainedModelList, setTrainedModelList] = useState([]);
     const [showTestResultImage, setShowTestResultImage] = useState([]);
@@ -316,7 +334,6 @@ function ModelTestPage({ setPageUrl, parameter }) {
                     <TestForm
                         modelList={modelList}
                         parameter={parameter}
-                        setPageUrl={setPageUrl}
                         onTestStart={handleTestStart}
                     />
                     <LogPanel
@@ -325,7 +342,6 @@ function ModelTestPage({ setPageUrl, parameter }) {
                         logFilename={logFilename}
                         taskType="test"
                         parameter={parameter}
-                        setPageUrl={setPageUrl}
                     />
                 </div>
             );
@@ -335,7 +351,6 @@ function ModelTestPage({ setPageUrl, parameter }) {
                     <ValidationForm
                         modelList={modelList}
                         parameter={parameter}
-                        setPageUrl={setPageUrl}
                         onValidationStart={handleValidationStart}
                     />
                     <LogPanel
@@ -344,14 +359,13 @@ function ModelTestPage({ setPageUrl, parameter }) {
                         logFilename={logFilename}
                         taskType="validation"
                         parameter={parameter}
-                        setPageUrl={setPageUrl}
                     />
                 </div>
             );
         default:
             return (
                 <div className="main">
-                    <a href="#" onClick={() => setPageUrl("models?type=trained")} style={{ textDecoration: 'none' }}>返回</a>
+                    <a href="#" onClick={() => navigate("/models?type=trained")} style={{ textDecoration: 'none' }}>返回</a>
                     <h1 className="page-title">
                         任务「{parameter.taskName}」模型
                         {parameter.open === 'test' ? '测试结果' :
