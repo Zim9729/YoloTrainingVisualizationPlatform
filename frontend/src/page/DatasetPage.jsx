@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import CONFIGS from "../config";
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import { useToast } from "../contexts/ToastContext";
+import { useConfirm } from "../contexts/ConfirmContext";
 
 import Logo_Coco from "../assets/logo/coco_sm.png";
 import Logo_Ultralytics from "../assets/logo/ultralytics.svg";
@@ -19,6 +21,10 @@ function DatasetPage({ setPageUrl, parameter }) {
     const [isUploading, setIsUploading] = useState(false);
     const [showDetailsInfo, setShowDetailsInfo] = useState([]);
 
+    // Toast 和 Confirm hooks
+    const toast = useToast();
+    const { confirm } = useConfirm();
+
     useEffect(() => {
         hljs.highlightAll();
     }, []);
@@ -31,25 +37,35 @@ function DatasetPage({ setPageUrl, parameter }) {
             })
             .catch(err => {
                 console.error("获取数据集失败:", err);
-                alert(err);
+                toast.error('获取数据集失败');
             });
     }, []);
 
-    const deleteDataset = (path) => {
-        if (confirm("您真的要删除该数据集吗？")) {
+    const deleteDataset = async (path) => {
+        const confirmed = await confirm({
+            title: '删除数据集',
+            message: '您真的要删除该数据集吗？此操作不可恢复。',
+            confirmText: '删除',
+            cancelText: '取消',
+            type: 'danger'
+        });
+
+        if (confirmed) {
             console.log("删除数据集: " + path);
-            const data = {
-                path: path
-            };
+            const data = { path: path };
 
             api.post("/IDataset/deleteDataset", { data: data, params: {} })
                 .then(data => {
-                    alert(data.msg);
-                    if (data.code === 200) setPageUrl("home");
+                    if (data.code === 200) {
+                        toast.success(data.msg || '数据集已删除');
+                        setPageUrl("home");
+                    } else {
+                        toast.error(data.msg || '删除失败');
+                    }
                 })
                 .catch(err => {
                     console.error("删除数据集失败:", err);
-                    alert(err);
+                    toast.error('删除数据集失败');
                 });
         } else {
             console.log("用户取消删除操作");
@@ -64,13 +80,13 @@ function DatasetPage({ setPageUrl, parameter }) {
         const file = document.querySelector('input[type="file"]').files[0];
 
         if (!name.trim()) {
-            alert("请输入数据集名称");
+            toast.warning("请输入数据集名称");
             setIsUploading(false);
             return;
         }
 
         if (!file) {
-            alert("请选择要上传的数据集文件");
+            toast.warning("请选择要上传的数据集文件");
             setIsUploading(false);
             return;
         }
@@ -94,12 +110,16 @@ function DatasetPage({ setPageUrl, parameter }) {
         api.upload("/IDataset/uploadDataset", formData, { params: {} })
             .then(data => {
                 setIsUploading(false);
-                alert(data.msg);
-                if (data.code === 200) setPageUrl("home");
+                if (data.code === 200) {
+                    toast.success(data.msg || '数据集上传成功');
+                    setPageUrl("home");
+                } else {
+                    toast.error(data.msg || '上传失败');
+                }
             })
             .catch(err => {
                 setIsUploading(false);
-                alert("上传失败：" + err.message);
+                toast.error("上传失败：" + err.message);
                 console.error("上传失败：", err);
             });
     };
@@ -278,7 +298,7 @@ function DatasetPage({ setPageUrl, parameter }) {
                                     </p>
                                     <pre>
                                         <code className="language-bash hljs">
-{`your_dataset/
+                                            {`your_dataset/
 ├── images/
 │   └── train/, val/
 ├── annotations/

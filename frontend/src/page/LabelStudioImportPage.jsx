@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import { useToast } from "../contexts/ToastContext";
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 
@@ -24,13 +25,15 @@ function LabelStudioImportPage({ setPageUrl, parameter }) {
     Number(trainSplit) + Number(valSplit) + Number(testSplit)
   ).toFixed(2), [trainSplit, valSplit, testSplit]);
 
+  const toast = useToast();
+
   useEffect(() => {
     hljs.highlightAll();
   }, []);
 
   const loadProjects = async () => {
     if (!baseUrl) {
-      alert("请填写 Label Studio base_url");
+      toast.warning("请填写 Label Studio base_url");
       return;
     }
     setLoadingProjects(true);
@@ -38,11 +41,11 @@ function LabelStudioImportPage({ setPageUrl, parameter }) {
       const res = await api.get("/IDataset/listLabelStudioProjects", { params: { base_url: baseUrl, token } });
       setProjects(res?.data?.projects || []);
       if ((res?.data?.projects || []).length === 0) {
-        alert("未获取到项目，请确认 base_url/token 是否正确，或项目是否存在。");
+        toast.warning("未获取到项目，请确认 base_url/token 是否正确，或项目是否存在。");
       }
     } catch (e) {
       console.error(e);
-      alert("获取项目失败：" + e);
+      toast.error("获取项目失败：" + e);
     } finally {
       setLoadingProjects(false);
     }
@@ -50,13 +53,13 @@ function LabelStudioImportPage({ setPageUrl, parameter }) {
 
   const submitBuild = async () => {
     if (!baseUrl || !selectedProjectId || !name || !version) {
-      alert("请完整填写 base_url、项目、数据集名称与版本");
+      toast.warning("请完整填写 base_url、项目、数据集名称与版本");
       return;
     }
     const splits = [Number(trainSplit), Number(valSplit), Number(testSplit)];
     const sum = splits.reduce((a, b) => a + b, 0);
     if (Math.abs(sum - 1.0) > 1e-6) {
-      alert("train/val/test 比例之和必须为 1.0");
+      toast.warning("train/val/test 比例之和必须为 1.0");
       return;
     }
 
@@ -81,13 +84,15 @@ function LabelStudioImportPage({ setPageUrl, parameter }) {
           class_names,
         },
       });
-      alert(res.msg || "构建成功");
       if (res.code === 200) {
+        toast.success(res.msg || "构建成功");
         setPageUrl("dataset");
+      } else {
+        toast.error(res.msg || "构建失败");
       }
     } catch (e) {
       console.error(e);
-      alert("构建失败：" + e);
+      toast.error("构建失败：" + e);
     }
   };
 

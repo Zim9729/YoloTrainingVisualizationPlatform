@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { api } from "../api";
 import { splitPath } from "../tools";
 import { useRunningTasks } from "../contexts/TaskContext";
+import { useToast } from "../contexts/ToastContext";
+import { useConfirm } from "../contexts/ConfirmContext";
 import confetti from 'canvas-confetti';
 import yaml from 'js-yaml';
 import hljs from 'highlight.js';
@@ -25,11 +27,22 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
     const [lastLog, setLastLog] = useState("");
 
     const [showModelInfoCardDetails, setShowModelInfoCardDetails] = useState([]);
-    
+
     const { isTaskRunning, refreshRunningTasks } = useRunningTasks();
 
-    const startTask = (filename, taskname, taskID) => {
-        if (confirm("真的要开始训练该任务吗？")) {
+    // Toast 和 Confirm hooks
+    const toast = useToast();
+    const { confirm } = useConfirm();
+
+    const startTask = async (filename, taskname, taskID) => {
+        const confirmed = await confirm({
+            title: '开始训练',
+            message: '真的要开始训练该任务吗？',
+            confirmText: '开始训练',
+            cancelText: '取消'
+        });
+
+        if (confirmed) {
             console.log("开始训练任务: " + filename + " " + taskname);
             const data = {
                 taskID: taskID,
@@ -42,14 +55,14 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
                     if (data.code === 200) {
                         setTrainingCompleted(false);
                         setIsRunning(true);
-                        refreshRunningTasks(); // 刷新运行任务列表
+                        refreshRunningTasks();
                     } else {
-                        alert(data.msg);
+                        toast.error(data.msg);
                     }
                 })
                 .catch(err => {
                     console.error("训练任务失败:", err);
-                    alert(err);
+                    toast.error('启动训练任务失败');
                 });
         } else {
             console.log("用户取消开始训练操作");
@@ -70,7 +83,7 @@ function TaskDetailedPage({ setPageUrl, parameter }) {
             })
             .catch(err => {
                 console.error("获取任务信息失败: ", err);
-                alert(err);
+                toast.error('获取任务信息失败');
             });
 
         // 使用 Context 中的状态检查是否运行中

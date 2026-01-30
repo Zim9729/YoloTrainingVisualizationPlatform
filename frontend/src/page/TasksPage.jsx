@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
 import { useRunningTasks } from "../contexts/TaskContext";
+import { useToast } from "../contexts/ToastContext";
+import { useConfirm } from "../contexts/ConfirmContext";
 import CONFIGS from "../config";
 
 function TasksPage({ setPageUrl, parameter }) {
@@ -45,6 +47,10 @@ function TasksPage({ setPageUrl, parameter }) {
     const { getRunningFilenames, refreshRunningTasks } = useRunningTasks();
     const runningTasksList = getRunningFilenames();
 
+    // Toast 和 Confirm hooks
+    const toast = useToast();
+    const { confirm } = useConfirm();
+
     useEffect(() => {
         api.get("/ITraining/getAllTasks", { params: {} })
             .then(data => {
@@ -53,7 +59,7 @@ function TasksPage({ setPageUrl, parameter }) {
             })
             .catch(err => {
                 console.error("获取训练任务失败:", err);
-                alert(err);
+                toast.error('获取训练任务失败');
             });
     }, [])
 
@@ -68,7 +74,7 @@ function TasksPage({ setPageUrl, parameter }) {
             })
             .catch(err => {
                 console.error("获取数据集失败:", err);
-                alert(err);
+                toast.error('获取数据集失败');
             });
     }, [parameter.datasetPath])
 
@@ -112,7 +118,7 @@ function TasksPage({ setPageUrl, parameter }) {
     // 表单验证函数
     const validateForm = () => {
         const errors = [];
-        
+
         if (taskName.trim() === "") {
             errors.push("taskName");
         }
@@ -143,7 +149,7 @@ function TasksPage({ setPageUrl, parameter }) {
         if (trainingType === "0" && !selectedBaseModel) {
             errors.push("baseModelID");
         }
-        
+
         return errors;
     };
 
@@ -176,19 +182,30 @@ function TasksPage({ setPageUrl, parameter }) {
         };
 
         api.post("/ITraining/createTask", { data: data, params: {} })
-                .then(data => {
+            .then(data => {
                 setIsUploading(false);
-                alert(data.msg);
-                if (data.code === 200) setPageUrl("home");
+                if (data.code === 200) {
+                    toast.success(data.msg || '任务创建成功');
+                    setPageUrl("home");
+                } else {
+                    toast.error(data.msg || '创建失败');
+                }
             })
             .catch(err => {
-                alert("创建失败：" + err.message);
+                toast.error("创建失败：" + err.message);
                 setIsUploading(false);
             });
     };
 
-    const startTask = (filename, taskname, taskID) => {
-        if (confirm("真的要开始训练该任务吗？")) {
+    const startTask = async (filename, taskname, taskID) => {
+        const confirmed = await confirm({
+            title: '开始训练',
+            message: '真的要开始训练该任务吗？',
+            confirmText: '开始训练',
+            cancelText: '取消'
+        });
+
+        if (confirmed) {
             console.log("开始训练任务: " + filename + " " + taskname);
             const data = {
                 taskID: taskID,
@@ -199,36 +216,46 @@ function TasksPage({ setPageUrl, parameter }) {
             api.post("/ITraining/startTask", { data: data, params: {} })
                 .then(data => {
                     if (data.code === 200) {
-                        refreshRunningTasks(); // 刷新运行任务列表
-                        setPageUrl(`tasksDetailed?filename=${filename}`)
+                        refreshRunningTasks();
+                        setPageUrl(`tasksDetailed?filename=${filename}`);
                     } else {
-                        alert(data.msg);
+                        toast.error(data.msg);
                     }
                 })
                 .catch(err => {
                     console.error("训练任务失败:", err);
-                    alert(err);
+                    toast.error('启动训练任务失败');
                 });
         } else {
             console.log("用户取消开始训练操作");
         }
     }
 
-    const deleteTask = (path) => {
-        if (confirm("真的要删除该训练任务吗？")) {
+    const deleteTask = async (path) => {
+        const confirmed = await confirm({
+            title: '删除任务',
+            message: '真的要删除该训练任务吗？此操作不可恢复。',
+            confirmText: '删除',
+            cancelText: '取消',
+            type: 'danger'
+        });
+
+        if (confirmed) {
             console.log("删除训练任务: " + path);
-            const data = {
-                path: path
-            };
+            const data = { path: path };
 
             api.post("/ITraining/deleteTask", { data: data, params: {} })
                 .then(data => {
-                    alert(data.msg);
-                    if (data.code === 200) setPageUrl("home");
+                    if (data.code === 200) {
+                        toast.success(data.msg || '任务已删除');
+                        setPageUrl("home");
+                    } else {
+                        toast.error(data.msg || '删除失败');
+                    }
                 })
                 .catch(err => {
                     console.error("删除训练任务失败:", err);
-                    alert(err);
+                    toast.error('删除训练任务失败');
                 });
         } else {
             console.log("用户取消删除操作");
@@ -683,7 +710,7 @@ function TasksPage({ setPageUrl, parameter }) {
                                 setTabIndex(Math.min(tabIndex + 1, tabIndexCount));
                             }
                         }}>
-                                        {isUploading ? "正在上传中" : ((tabIndex === tabIndexCount && !isUploading) ? "完成" : "下一步")}
+                            {isUploading ? "正在上传中" : ((tabIndex === tabIndexCount && !isUploading) ? "完成" : "下一步")}
                         </button>
                         {canBackLastTab &&
                             <button className="btn" style={{ flex: '1' }} onClick={() => { setTabIndex(5) }}>返回配置确认</button>
@@ -697,7 +724,7 @@ function TasksPage({ setPageUrl, parameter }) {
                     <h1 className="page-title">训练任务</h1>
                     <p className="page-des">管理所有模型训练任务。</p>
                     <button className="btn sm" onClick={() => setPageUrl("tasks?type=newTask")} style={{ marginBottom: '10px' }}>新建训练任务</button>
-                    
+
                     {tasksList.map((task, index) => (
                         <div key={index} className="card" style={{ marginBottom: '10px' }}>
                             <p className="tag-group">

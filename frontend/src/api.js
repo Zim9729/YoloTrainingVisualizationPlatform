@@ -13,9 +13,9 @@ async function checkApiHealth() {
     if (now - lastHealthCheck < HEALTH_CHECK_INTERVAL) {
         return apiHealthy;
     }
-    
+
     try {
-        const response = await fetch(`${BASE_URL}/`, { 
+        const response = await fetch(`${BASE_URL}/`, {
             method: 'GET',
             signal: AbortSignal.timeout(5000) // 5秒超时
         });
@@ -26,7 +26,7 @@ async function checkApiHealth() {
         lastHealthCheck = now;
         console.warn('[API HEALTH] Backend appears to be down:', error.message);
     }
-    
+
     return apiHealthy;
 }
 
@@ -56,23 +56,23 @@ async function request(method, endpoint, { data, params, headers, signal, timeou
     // 创建超时控制器
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
+
     // 如果有外部signal，监听其abort事件并传播到内部controller
     if (signal) {
         signal.addEventListener('abort', () => {
             controller.abort();
         }, { once: true });
     }
-    
+
     // 始终使用内部controller的signal（这样超时和外部取消都能工作）
     options.signal = controller.signal;
 
     try {
         const response = await fetch(url, options);
-        
+
         const contentType = response.headers.get("content-type");
         const isJson = contentType && contentType.includes("application/json");
-        
+
         let result;
         try {
             result = isJson ? await response.json() : await response.text();
@@ -95,17 +95,35 @@ async function request(method, endpoint, { data, params, headers, signal, timeou
             const timeoutError = new Error(wasTimeout ? '请求超时，请检查网络连接' : '请求已取消');
             timeoutError.code = wasTimeout ? 'TIMEOUT' : 'CANCELLED';
             console.error(`[API ${timeoutError.code}] ${method} ${endpoint}:`, timeoutError);
+
+            // 只对非取消的超时错误触发全局事件
+            if (wasTimeout) {
+                window.dispatchEvent(new CustomEvent('api-error', {
+                    detail: { message: timeoutError.message, code: timeoutError.code }
+                }));
+            }
             throw timeoutError;
         }
-        
+
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             const networkError = new Error('网络连接失败，请检查网络设置');
             networkError.code = 'NETWORK_ERROR';
             console.error(`[API NETWORK ERROR] ${method} ${endpoint}:`, networkError);
+
+            // 触发全局错误事件
+            window.dispatchEvent(new CustomEvent('api-error', {
+                detail: { message: networkError.message, code: networkError.code }
+            }));
             throw networkError;
         }
-        
+
         console.error(`[API ERROR] ${method} ${endpoint}:`, error);
+
+        // 触发全局错误事件（用于 Toast 显示）
+        window.dispatchEvent(new CustomEvent('api-error', {
+            detail: { message: error.message, code: error.code || 'UNKNOWN' }
+        }));
+
         throw error;
     } finally {
         // 确保超时定时器总是被清理
@@ -115,18 +133,18 @@ async function request(method, endpoint, { data, params, headers, signal, timeou
 
 async function upload(endpoint, formData, { params, signal, timeout = 60000 } = {}) {
     const url = `${BASE_URL}${endpoint}${buildQuery(params)}`;
-    
+
     // 创建超时控制器
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
+
     // 如果有外部signal，监听其abort事件
     if (signal) {
         signal.addEventListener('abort', () => {
             controller.abort();
         }, { once: true });
     }
-    
+
     try {
         const response = await fetch(url, {
             method: "POST",
@@ -134,10 +152,10 @@ async function upload(endpoint, formData, { params, signal, timeout = 60000 } = 
             body: formData,
             signal: controller.signal,
         });
-        
+
         const contentType = response.headers.get("content-type");
         const isJson = contentType && contentType.includes("application/json");
-        
+
         let result;
         try {
             result = isJson ? await response.json() : await response.text();
@@ -160,14 +178,14 @@ async function upload(endpoint, formData, { params, signal, timeout = 60000 } = 
             console.error(`[API ${timeoutError.code}] ${endpoint}:`, timeoutError);
             throw timeoutError;
         }
-        
+
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             const networkError = new Error('上传网络连接失败');
             networkError.code = 'UPLOAD_NETWORK_ERROR';
             console.error(`[API UPLOAD NETWORK ERROR] ${endpoint}:`, networkError);
             throw networkError;
         }
-        
+
         console.error(`[API ERROR] UPLOAD ${endpoint}:`, error);
         throw error;
     } finally {
@@ -179,19 +197,19 @@ async function upload(endpoint, formData, { params, signal, timeout = 60000 } = 
 // 添加重试功能的包装函数
 async function requestWithRetry(method, url, options = {}, maxRetries = 2) {
     const { retries = maxRetries, retryDelay = 1000, ...requestOptions } = options;
-    
+
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
             return await request(method, url, requestOptions);
         } catch (error) {
             // 只对网络错误和超时进行重试
-            const shouldRetry = attempt < retries && 
+            const shouldRetry = attempt < retries &&
                 (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT');
-            
+
             if (!shouldRetry) {
                 throw error;
             }
-            
+
             console.warn(`[API RETRY] ${method} ${url} - Attempt ${attempt + 1}/${retries + 1} failed, retrying in ${retryDelay}ms...`);
             await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
         }

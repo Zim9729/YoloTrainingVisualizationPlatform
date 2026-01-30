@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import ExportForm from "../components/ExportForm";
 import ExportLogPanel from "../components/ExportLogPanel";
 import { api } from "../api";
+import { useToast } from "../contexts/ToastContext";
+import { useConfirm } from "../contexts/ConfirmContext";
 
 function ModelExportPage({ setPageUrl, parameter }) {
   const [exportKey, setExportKey] = useState("");
@@ -15,6 +17,9 @@ function ModelExportPage({ setPageUrl, parameter }) {
     setExportKey(key);
     setShowLog(true);
   }, []);
+
+  const toast = useToast();
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -33,26 +38,30 @@ function ModelExportPage({ setPageUrl, parameter }) {
 
   const handleDeleteHistory = async (exportKey) => {
     if (!outputDir || !exportKey) return;
-    if (!confirm && typeof window !== 'undefined') {
-      // if confirm is undefined in environment, skip prompt
-    } else {
-      const ok = window.confirm('确定删除该导出历史及其日志文件吗？');
-      if (!ok) return;
-    }
+
+    const ok = await confirm({
+      title: '删除导出记录',
+      message: '确定删除该导出历史及其日志文件吗？',
+      confirmText: '删除',
+      cancelText: '取消',
+      type: 'danger'
+    });
+    if (!ok) return;
+
     try {
       setDeletingKey(exportKey);
       const res = await api.post('/IModel/deleteExportHistory', { data: { outputDir, exportKey } });
       if (res.code === 200) {
-        // refresh
+        toast.success('删除成功');
         const res2 = await api.get(`/IModel/getExportHistory?outputDir=${encodeURIComponent(outputDir)}`);
         if (res2.code === 200) {
           setHistory(Array.isArray(res2.data?.history) ? res2.data.history : []);
         }
       } else {
-        alert(res.msg || '删除失败');
+        toast.error(res.msg || '删除失败');
       }
     } catch (e) {
-      alert('删除失败: ' + (e?.message || e));
+      toast.error('删除失败: ' + (e?.message || e));
     } finally {
       setDeletingKey("");
     }
@@ -77,18 +86,18 @@ function ModelExportPage({ setPageUrl, parameter }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {history.map((h, idx) => (
                   <div key={idx} style={{ borderBottom: '1px dashed var(--border-color)', padding: '6px 0' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontWeight:600, wordBreak:'break-all' }}>{h.model_choice || 'best'}.pt → {Array.isArray(h.formats) ? h.formats.join(', ') : ''}</div>
-                        <div style={{ color:'var(--secondary-text-color)', fontSize:'12px' }}>
-                          {new Date((h.startedAt||0) * 1000).toLocaleString()} · exportKey: {h.exportKey}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, wordBreak: 'break-all' }}>{h.model_choice || 'best'}.pt → {Array.isArray(h.formats) ? h.formats.join(', ') : ''}</div>
+                        <div style={{ color: 'var(--secondary-text-color)', fontSize: '12px' }}>
+                          {new Date((h.startedAt || 0) * 1000).toLocaleString()} · exportKey: {h.exportKey}
                         </div>
                       </div>
-                      <div style={{ whiteSpace:'nowrap', display:'flex', gap:'8px' }}>
+                      <div style={{ whiteSpace: 'nowrap', display: 'flex', gap: '8px' }}>
                         <button className="btn sm" onClick={() => { setExportKey(h.exportKey); setShowLog(true); }}>查看历史记录</button>
-                        <button className={`btn sm danger ${deletingKey===h.exportKey?'disabled':''}`} disabled={deletingKey===h.exportKey}
+                        <button className={`btn sm danger ${deletingKey === h.exportKey ? 'disabled' : ''}`} disabled={deletingKey === h.exportKey}
                           onClick={() => handleDeleteHistory(h.exportKey)}>
-                          {deletingKey===h.exportKey ? '删除中...' : '删除历史记录'}
+                          {deletingKey === h.exportKey ? '删除中...' : '删除历史记录'}
                         </button>
                       </div>
                     </div>

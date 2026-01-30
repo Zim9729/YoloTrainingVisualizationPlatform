@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
+import { useToast } from "../contexts/ToastContext";
 
-function ValidationForm({ 
-    modelList, 
-    parameter, 
-    setPageUrl, 
-    onValidationStart 
+function ValidationForm({
+    modelList,
+    parameter,
+    setPageUrl,
+    onValidationStart
 }) {
     const [modelName, setModelName] = useState("best.pt");
     const [datasetList, setDatasetList] = useState([]);
     const [datasetYamlPath, setDatasetYamlPath] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const toast = useToast();
 
     useEffect(() => {
         // 设置默认模型
@@ -51,7 +54,7 @@ function ValidationForm({
 
     const handleStartValidation = async () => {
         if (!datasetYamlPath || !modelName) {
-            alert("请选择数据集和模型");
+            toast.warning("请选择数据集和模型");
             return;
         }
         setLoading(true);
@@ -68,8 +71,12 @@ function ValidationForm({
             });
 
             console.log("启动验证任务成功: ", data);
-            alert(data.msg);
-            
+            if (data.code === 200) {
+                toast.success(data.msg || '验证任务已启动');
+            } else {
+                toast.error(data.msg || '启动验证失败');
+            }
+
             if (data.code === 200 && data.data?.filename && onValidationStart) {
                 onValidationStart(data.data.filename);
             }

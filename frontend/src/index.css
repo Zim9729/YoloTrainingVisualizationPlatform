@@ -9,12 +9,18 @@ body {
 
 :root {
     /* ==================== Color Palette ==================== */
-    /* Primary Colors - Enhanced Blue Scheme */
-    --main-color: #234B7E;
-    --main-light: #3B5F94;
-    --main-lighter: #5A7BA8;
-    --hover-color: #1A3A6D;
-    --active-color: #162A4D;
+    /* Primary Colors - Youthful Violet Scheme */
+    --main-color: #7C3AED;
+    /* Electric Violet */
+    --main-light: #8B5CF6;
+    --main-lighter: #A78BFA;
+    --hover-color: #6D28D9;
+    --active-color: #5B21B6;
+
+    /* Accent Color - Hot Pink for CTA */
+    --accent-color: #EC4899;
+    --accent-hover: #DB2777;
+    --accent-light: #FCE7F3;
 
     /* Neutral Colors - Better Contrast */
     --background-color: #ffffff;
@@ -25,30 +31,60 @@ body {
     --secondary-text-color: #495057;
     --tertiary-text-color: #6C757D;
 
-    /* Semantic Colors */
-    --red-color: #DC3545;
-    --red-hover-color: #C82333;
-    --red-light: #F8D7DA;
-    --green-color: #28A745;
-    --green-hover-color: #218838;
-    --green-light: #D4EDDA;
-    --yellow-color: #FFC107;
-    --yellow-hover-color: #E0A800;
-    --yellow-light: #FFF3CD;
-    --blue-info: #17A2B8;
-    --blue-info-hover: #138496;
+    /* Semantic Colors - More Vibrant */
+    --red-color: #EF4444;
+    /* Rose */
+    --red-hover-color: #DC2626;
+    --red-light: #FEE2E2;
+    --green-color: #10B981;
+    /* Emerald */
+    --green-hover-color: #059669;
+    --green-light: #D1FAE5;
+    --yellow-color: #F59E0B;
+    /* Amber */
+    --yellow-hover-color: #D97706;
+    --yellow-light: #FEF3C7;
+    --blue-info: #06B6D4;
+    /* Cyan */
+    --blue-info-hover: #0891B2;
+    --blue-info-light: #CFFAFE;
 
     /* Legacy Support */
     --turquoise-color: #58b4f5;
 
     /* ==================== Modern Gradients ==================== */
-    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Primary Gradient - Purple Pink (Most Used) */
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+
+    /* Tech Gradient - Blue Purple Pink */
+    --gradient-tech: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
+
+    /* Energy Gradient - Orange Pink */
+    --gradient-energy: linear-gradient(135deg, #F59E0B 0%, #EF4444 50%, #EC4899 100%);
+
+    /* Fresh Gradient - Cyan Emerald */
+    --gradient-fresh: linear-gradient(135deg, #06B6D4 0%, #10B981 100%);
+
+    /* Night Sky Gradient - Dark Theme Background */
+    --gradient-night: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+
+    /* Aurora Gradient - Light Dreamy */
+    --gradient-aurora: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+
+    /* Legacy Gradients */
     --gradient-success: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
     --gradient-warning: linear-gradient(135deg, #fccb90 0%, #d57eeb 100%);
-    --gradient-blue: linear-gradient(135deg, #234B7E 0%, #3B5F94 50%, #5A7BA8 100%);
+    --gradient-blue: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 50%, #A78BFA 100%);
     --gradient-ocean: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --gradient-sunset: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     --gradient-forest: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+
+    /* ==================== Glassmorphism ==================== */
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-bg-light: rgba(255, 255, 255, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --backdrop-blur: blur(20px);
 
     /* Shadows - More refined system */
     --shadow-color: rgba(0, 0, 0, 0.08);
@@ -59,9 +95,9 @@ body {
     --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.15);
     --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
 
-    /* Focus Ring - Accessibility */
-    --focus-ring: 0 0 0 3px rgba(35, 75, 126, 0.3);
-    --focus-ring-error: 0 0 0 3px rgba(220, 53, 69, 0.3);
+    /* Focus Ring - Accessibility (Updated for new primary color) */
+    --focus-ring: 0 0 0 3px rgba(124, 58, 237, 0.3);
+    --focus-ring-error: 0 0 0 3px rgba(239, 68, 68, 0.3);
 
     /* ==================== Spacing System ==================== */
     --spacing-xs: 4px;
@@ -72,11 +108,17 @@ body {
     --spacing-2xl: 48px;
     --spacing-3xl: 64px;
 
-    /* ==================== Border Radius ==================== */
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 20px;
+    /* ==================== Border Radius (More Rounded) ==================== */
+    --radius-sm: 8px;
+    /* Was 6px */
+    --radius-md: 14px;
+    /* Was 10px */
+    --radius-lg: 20px;
+    /* Was 14px */
+    --radius-xl: 28px;
+    /* Was 20px */
+    --radius-2xl: 36px;
+    /* New */
     --radius-full: 9999px;
 
     /* ==================== Transitions ==================== */
@@ -85,8 +127,8 @@ body {
     --transition-slow: 300ms ease;
 
     /* ==================== Typography ==================== */
-    --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-family-mono: "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --font-family-base: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-family-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
 
     /* Font Sizes */
     --text-xs: 12px;
@@ -97,6 +139,9 @@ body {
     --text-2xl: 24px;
     --text-3xl: 30px;
     --text-4xl: 36px;
+    --text-5xl: 48px;
+    /* New - Hero titles */
+
 
     /* Line Heights */
     --leading-tight: 1.25;
@@ -274,7 +319,7 @@ textarea:focus-visible.error {
     font-weight: bold;
 }
 
-.home-page-title .icon{
+.home-page-title .icon {
     margin-right: 8px;
 }
 
@@ -328,8 +373,13 @@ body.dark-mode {
 
 /* ==================== Additional Modern Animations ==================== */
 @keyframes shimmer {
-    0% { background-position: -1000px 0; }
-    100% { background-position: 1000px 0; }
+    0% {
+        background-position: -1000px 0;
+    }
+
+    100% {
+        background-position: 1000px 0;
+    }
 }
 
 @keyframes pulse-ring {
@@ -337,6 +387,7 @@ body.dark-mode {
         transform: scale(0.8);
         opacity: 1;
     }
+
     100% {
         transform: scale(1.5);
         opacity: 0;
@@ -344,7 +395,9 @@ body.dark-mode {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes slideInRight {
@@ -352,6 +405,7 @@ body.dark-mode {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -363,6 +417,7 @@ body.dark-mode {
         transform: translateX(-100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -374,6 +429,7 @@ body.dark-mode {
         transform: scale(0.9);
         opacity: 0;
     }
+
     to {
         transform: scale(1);
         opacity: 1;
@@ -382,6 +438,7 @@ body.dark-mode {
 
 /* ==================== Reduced Motion Support ==================== */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {

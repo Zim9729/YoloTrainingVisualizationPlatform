@@ -1,21 +1,34 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, lazy, Suspense } from "react";
 import hljs from 'highlight.js';
 
 import Bottombar from "./Bottombar";
 
-import HomePage from "../page/HomePage";
-import DatasetPage from "../page/DatasetPage";
-import TasksPage from "../page/TasksPage";
-import TaskDetailedPage from "../page/TaskDetailedPage";
-import ModelsPage from "../page/ModelsPage";
-import TaskResultDetailedPage from "../page/TaskResultDetailedPage";
-import ModelTestPage from "../page/ModelTestPage";
-import LabelStudioImportPage from "../page/LabelStudioImportPage";
-import ModelExportPage from "../page/ModelExportPage";
-import SettingsPage from "../page/SettingsPage";
-import TritonRepoPage from "../page/TritonRepoPage";
-import ServicesPage from "../page/ServicesPage";
-import TcpImageProcessorPage from "../page/TcpImageProcessorPage";
+// 懒加载页面组件 - 代码分割
+const HomePage = lazy(() => import("../page/HomePage"));
+const DatasetPage = lazy(() => import("../page/DatasetPage"));
+const TasksPage = lazy(() => import("../page/TasksPage"));
+const TaskDetailedPage = lazy(() => import("../page/TaskDetailedPage"));
+const ModelsPage = lazy(() => import("../page/ModelsPage"));
+const TaskResultDetailedPage = lazy(() => import("../page/TaskResultDetailedPage"));
+const ModelTestPage = lazy(() => import("../page/ModelTestPage"));
+const LabelStudioImportPage = lazy(() => import("../page/LabelStudioImportPage"));
+const ModelExportPage = lazy(() => import("../page/ModelExportPage"));
+const SettingsPage = lazy(() => import("../page/SettingsPage"));
+const TritonRepoPage = lazy(() => import("../page/TritonRepoPage"));
+const ServicesPage = lazy(() => import("../page/ServicesPage"));
+const TcpImageProcessorPage = lazy(() => import("../page/TcpImageProcessorPage"));
+
+// 页面加载中的占位组件
+function PageLoadingFallback() {
+    return (
+        <div className="main" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+            <div className="loading-state">
+                <div className="spinner"></div>
+                <span style={{ marginTop: '12px', color: 'var(--secondary-text-color)' }}>加载中...</span>
+            </div>
+        </div>
+    );
+}
 
 function Main({ pageUrl = "home", setPageUrl }) {
     // 识别页面类型并提取参数
@@ -61,10 +74,10 @@ function Main({ pageUrl = "home", setPageUrl }) {
     return (
         <>
             {PageComponent ? (
-                <>
+                <Suspense fallback={<PageLoadingFallback />}>
                     <PageComponent key={pageUrl} setPageUrl={setPageUrl} parameter={parameter} />
                     <Bottombar setPageUrl={setPageUrl} />
-                </>
+                </Suspense>
             ) : (
                 <div className="main">
                     <h1 style={{ marginBottom: '-13px' }}>ERROR</h1>
@@ -81,3 +94,4 @@ function Main({ pageUrl = "home", setPageUrl }) {
 }
 
 export default Main;
+

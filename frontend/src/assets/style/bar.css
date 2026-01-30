@@ -36,25 +36,27 @@
     border-radius: 8px;
     text-decoration: none;
 
-    transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .navbar-item:hover {
     color: var(--background-color);
     background-color: var(--hover-color);
 
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .navbar-item.clicked {
     color: var(--background-color);
     background-color: var(--main-color);
 
-    transform: scale(1.03);
+    transform: translateY(-1px);
 }
 
 .navbar-item:active {
-    transform: scale(0.96);
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
 }
 
 .navbar .icon {
@@ -63,11 +65,13 @@
 }
 
 .navbar-version {
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
+    position: absolute;
+    /* Changed from fixed to absolute */
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
     font-size: 12px;
-    color: var(--light-color);
+    color: var(--tertiary-text-color);
 }
 
 .bottombar {
@@ -89,4 +93,77 @@
 .bottombar .info-text {
     font-size: 14px;
     color: var(--text-color);
+}
+
+/* ==================== Responsive Design ==================== */
+
+/* Tablet (768px - 1023px) */
+@media (max-width: 1023px) {
+    .navbar {
+        width: 200px;
+        padding: 60px 16px;
+    }
+
+    .main {
+        padding: 32px 40px;
+        margin-left: 200px;
+    }
+
+    .bottombar {
+        left: 200px;
+    }
+}
+
+/* Mobile (< 768px) */
+@media (max-width: 767px) {
+    .title-bar {
+        display: none;
+        /* Hide title bar on mobile */
+    }
+
+    .app {
+        flex-direction: column;
+    }
+
+    .navbar {
+        width: 100%;
+        height: auto;
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        z-index: 999;
+        gap: 8px;
+        box-shadow: 0 -2px 12px var(--shadow-color);
+    }
+
+    .navbar-item {
+        display: inline-flex;
+        flex-shrink: 0;
+        white-space: nowrap;
+        margin-bottom: 0;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .navbar-version {
+        display: none;
+    }
+
+    .main {
+        padding: 16px;
+        padding-bottom: 80px;
+        /* Space for bottom navbar */
+        margin-left: 0;
+        margin-top: 0;
+    }
+
+    .bottombar {
+        display: none;
+    }
 }

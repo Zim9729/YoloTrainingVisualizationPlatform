@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
 import { api } from "../api";
+import { useToast } from "../contexts/ToastContext";
 
-function TestForm({ 
-    modelList, 
-    parameter, 
-    setPageUrl, 
-    onTestStart 
+function TestForm({
+    modelList,
+    parameter,
+    setPageUrl,
+    onTestStart
 }) {
     const [modelName, setModelName] = useState("best.pt");
     const [inputPath, setInputPath] = useState("");
@@ -13,6 +14,8 @@ function TestForm({
     const [browseBusy, setBrowseBusy] = useState(false);
     const [hasElectron, setHasElectron] = useState(false);
     const fileInputRef = useRef(null);
+
+    const toast = useToast();
 
     // 检测Electron环境
     useState(() => {
@@ -25,7 +28,7 @@ function TestForm({
 
     const handleStartTest = async () => {
         if (!inputPath || !modelName) {
-            alert("请填写文件路径和选择模型");
+            toast.warning("请填写文件路径和选择模型");
             return;
         }
 
@@ -44,8 +47,12 @@ function TestForm({
             });
 
             console.log("启动测试任务成功: ", data);
-            alert(data.msg);
-            
+            if (data.code === 200) {
+                toast.success(data.msg || '测试任务已启动');
+            } else {
+                toast.error(data.msg || '启动测试失败');
+            }
+
             if (data.code === 200 && data.data?.filename && onTestStart) {
                 onTestStart(data.data.filename);
             }
@@ -88,11 +95,11 @@ function TestForm({
             if (res.code === 200 && res.data?.path) {
                 setInputPath(res.data.path);
             } else {
-                alert(res.msg || "上传失败");
+                toast.error(res.msg || "上传失败");
             }
         } catch (err) {
             console.error("上传测试文件失败", err);
-            alert("上传失败");
+            toast.error("上传失败");
         } finally {
             setBrowseBusy(false);
             if (fileInputRef.current) fileInputRef.current.value = "";

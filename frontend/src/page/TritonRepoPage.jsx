@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { api } from "../api";
+import { useConfirm } from "../contexts/ConfirmContext";
 
 function TritonRepoPage({ setPageUrl, embedded = false }) {
   const [repo, setRepo] = useState("");
@@ -15,6 +16,8 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
   const [openMenuVersion, setOpenMenuVersion] = useState({}); // { [modelName]: version }
   const toastTimerRef = useRef(null);
 
+  const { confirm } = useConfirm();
+
   // Enhanced UI helpers
   const Chip = ({ color = '#64748b', bg = '#e2e8f0', children, title, variant = 'default' }) => {
     const variants = {
@@ -25,7 +28,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
       default: { bg, color, border: 'rgba(0,0,0,0.1)' }
     };
     const style = variants[variant] || variants.default;
-    
+
     return (
       <span
         title={title}
@@ -41,44 +44,44 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
   };
 
   const IconDot = ({ color = '#94a3b8', size = 6 }) => (
-    <span style={{ 
-      width: size, height: size, background: color, borderRadius: '50%', 
-      display: 'inline-block', flexShrink: 0 
+    <span style={{
+      width: size, height: size, background: color, borderRadius: '50%',
+      display: 'inline-block', flexShrink: 0
     }} />
   );
 
   // Icons
   const FolderIcon = ({ size = 16, color = '#6b7280' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
     </svg>
   );
 
   const FileIcon = ({ size = 16, color = '#6b7280' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14,2 14,8 20,8"/>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14,2 14,8 20,8" />
     </svg>
   );
 
   const ChevronIcon = ({ expanded, size = 16, color = '#6b7280' }) => (
-    <svg 
+    <svg
       width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"
       style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
     >
-      <polyline points="9,18 15,12 9,6"/>
+      <polyline points="9,18 15,12 9,6" />
     </svg>
   );
 
   const SearchIcon = ({ size = 16, color = '#6b7280' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-      <circle cx="11" cy="11" r="8"/>
-      <path d="m21 21-4.35-4.35"/>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
     </svg>
   );
 
   useEffect(() => {
-    try { setRepo(localStorage.getItem('triton_repo_path') || ""); } catch(_) {}
+    try { setRepo(localStorage.getItem('triton_repo_path') || ""); } catch (_) { }
   }, []);
 
   // 清理toast定时器
@@ -135,11 +138,11 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
     const s = search.trim().toLowerCase();
     if (s) arr = arr.filter(m => (m.name || '').toLowerCase().includes(s));
     if (sortKey === 'name') {
-      arr.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+      arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     } else if (sortKey === 'config') {
-      arr.sort((a,b) => (b.config_exists?1:0) - (a.config_exists?1:0));
+      arr.sort((a, b) => (b.config_exists ? 1 : 0) - (a.config_exists ? 1 : 0));
     } else if (sortKey === 'versions') {
-      arr.sort((a,b) => (Array.isArray(b.versions)?b.versions.length:0) - (Array.isArray(a.versions)?a.versions.length:0));
+      arr.sort((a, b) => (Array.isArray(b.versions) ? b.versions.length : 0) - (Array.isArray(a.versions) ? a.versions.length : 0));
     }
     return arr;
   }, [models, search, sortKey]);
@@ -147,7 +150,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
   useEffect(() => { load(); }, [repo]);
 
   const saveRepo = () => {
-    try { localStorage.setItem('triton_repo_path', repo || ""); } catch(_) {}
+    try { localStorage.setItem('triton_repo_path', repo || ""); } catch (_) { }
     load();
   };
 
@@ -206,7 +209,13 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
   const handleDelete = async ({ modelName, version }) => {
     if (!repo) return;
     const label = version ? `模型 ${modelName} 的版本 ${version}` : `模型 ${modelName}`;
-    const ok = window.confirm(`确定删除 ${label} 吗？此操作不可恢复。`);
+    const ok = await confirm({
+      title: '删除确认',
+      message: `确定删除 ${label} 吗？此操作不可恢复。`,
+      confirmText: '删除',
+      cancelText: '取消',
+      type: 'danger'
+    });
     if (!ok) return;
     try {
       const res = await api.post('/IModel/deleteTritonModel', { data: { tritonRepoPath: repo, modelName, version } });
@@ -230,8 +239,8 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
       {!embedded && <h1 className="page-title">Triton 模型仓库</h1>}
       {!embedded && <p className="page-des">浏览 Triton 仓库中的模型与版本</p>}
 
-      <div className="card" style={{ 
-        padding: 20, 
+      <div className="card" style={{
+        padding: 20,
         background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
         border: '1px solid #e2e8f0',
         borderRadius: 12,
@@ -244,13 +253,13 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
               <FolderIcon size={18} color="#4f46e5" />
               <label className="label" style={{ fontWeight: 600, color: '#374151' }}>仓库路径</label>
             </div>
-            <input 
-              type="text" 
-              value={repo} 
-              onChange={(e)=>setRepo(e.target.value)} 
-              placeholder="/path/to/triton/model_repository" 
-              style={{ 
-                flex: '1 1 400px', 
+            <input
+              type="text"
+              value={repo}
+              onChange={(e) => setRepo(e.target.value)}
+              placeholder="/path/to/triton/model_repository"
+              style={{
+                flex: '1 1 400px',
                 minWidth: 300,
                 padding: '10px 12px',
                 border: '2px solid #e5e7eb',
@@ -258,10 +267,10 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                 fontSize: 14,
                 transition: 'border-color 0.2s',
                 ':focus': { borderColor: '#4f46e5', outline: 'none' }
-              }} 
+              }}
             />
-            <button 
-              className="btn sm" 
+            <button
+              className="btn sm"
               onClick={saveRepo}
               style={{
                 background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
@@ -286,34 +295,34 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                 共 {filteredModels.length} 个模型
               </Chip>
             </div>
-            
+
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ position: 'relative' }}>
-                <SearchIcon 
-                  size={16} 
-                  color="#9ca3af" 
+                <SearchIcon
+                  size={16}
+                  color="#9ca3af"
                   style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
                 />
-                <input 
-                  type="text" 
-                  value={search} 
-                  onChange={(e)=>setSearch(e.target.value)} 
-                  placeholder="搜索模型名..." 
-                  style={{ 
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="搜索模型名..."
+                  style={{
                     width: 220,
                     padding: '8px 12px 8px 36px',
                     border: '2px solid #e5e7eb',
                     borderRadius: 8,
                     fontSize: 14,
                     transition: 'border-color 0.2s'
-                  }} 
+                  }}
                 />
               </div>
-              
-              <select 
-                value={sortKey} 
-                onChange={(e)=>setSortKey(e.target.value)} 
-                style={{ 
+
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value)}
+                style={{
                   padding: '8px 12px',
                   border: '2px solid #e5e7eb',
                   borderRadius: 8,
@@ -372,16 +381,16 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
             <div style={{ color: '#6b7280', fontSize: 16 }}>加载模型中...</div>
           </div>
         ) : (Array.isArray(filteredModels) && filteredModels.length > 0 ? (
-          <div style={{ 
+          <div style={{
             display: 'flex',
             flexDirection: 'column',
             gap: 16,
             alignItems: 'stretch'
           }}>
             {filteredModels.map((m, idx) => (
-              <div 
-                key={idx} 
-                style={{ 
+              <div
+                key={idx}
+                style={{
                   background: 'white',
                   border: '1px solid #e5e7eb',
                   borderRadius: 12,
@@ -393,7 +402,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                 }}
               >
                 {/* Model Header */}
-                <div style={{ 
+                <div style={{
                   padding: 20,
                   borderBottom: expanded[m.name]?.open ? '1px solid #f3f4f6' : 'none'
                 }}>
@@ -401,7 +410,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Model Name and Icon */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                        <button 
+                        <button
                           onClick={() => toggleModel(m.name)}
                           style={{
                             background: 'none',
@@ -417,7 +426,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                           <ChevronIcon expanded={expanded[m.name]?.open} size={18} color="#6b7280" />
                         </button>
                         <FolderIcon size={20} color="#4f46e5" />
-                        <h3 style={{ 
+                        <h3 style={{
                           margin: 0,
                           fontSize: 18,
                           fontWeight: 600,
@@ -436,7 +445,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                           <IconDot color={m.config_exists ? '#22c55e' : '#f59e0b'} size={6} />
                           {m.config_exists ? 'Config 已配置' : 'Config 缺失'}
                         </Chip>
-                        
+
                         {Array.isArray(m.versions) && m.versions.length > 0 && (
                           <Chip variant="info">
                             {m.versions.length} 个版本
@@ -445,7 +454,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                       </div>
 
                       {/* Path Info */}
-                      <div style={{ 
+                      <div style={{
                         fontSize: 12,
                         color: '#6b7280',
                         fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
@@ -460,7 +469,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
 
                     {/* Actions Menu */}
                     <div style={{ position: 'relative' }}>
-                      <button 
+                      <button
                         onClick={() => setOpenMenuModel(openMenuModel === m.name ? null : m.name)}
                         style={{
                           background: '#f9fafb',
@@ -489,7 +498,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                           minWidth: 160
                         }}>
-                          <button 
+                          <button
                             onClick={() => { copyText(m.name, '已复制模型名称'); setOpenMenuModel(null); }}
                             style={{
                               width: '100%',
@@ -506,7 +515,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                           >
                             复制名称
                           </button>
-                          <button 
+                          <button
                             onClick={() => { copyText(m.path, '已复制模型路径'); setOpenMenuModel(null); }}
                             style={{
                               width: '100%',
@@ -524,7 +533,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                             复制路径
                           </button>
                           <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
-                          <button 
+                          <button
                             onClick={() => { setOpenMenuModel(null); handleDelete({ modelName: m.name }); }}
                             style={{
                               width: '100%',
@@ -552,9 +561,9 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                     {Array.isArray(m.versions) && m.versions.length > 0 ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {m.versions.map((ver) => (
-                          <div 
-                            key={ver} 
-                            style={{ 
+                          <div
+                            key={ver}
+                            style={{
                               background: '#f8fafc',
                               border: '1px solid #e2e8f0',
                               borderRadius: 8,
@@ -569,8 +578,8 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                                   <IconDot color="#3b82f6" size={6} />
                                   版本 {ver}
                                 </Chip>
-                                
-                                <button 
+
+                                <button
                                   onClick={() => {
                                     const hasFiles = Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length > 0;
                                     if (hasFiles) {
@@ -603,9 +612,9 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                                   {(Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length > 0) ? '收起文件' : '查看文件'}
                                 </button>
                               </div>
-                              
+
                               <div style={{ position: 'relative' }}>
-                                <button 
+                                <button
                                   onClick={() => setOpenMenuVersion(prev => ({ ...prev, [m.name]: (prev[m.name] === ver ? null : ver) }))}
                                   style={{
                                     background: 'white',
@@ -634,7 +643,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                                     minWidth: 140
                                   }}>
-                                    <button 
+                                    <button
                                       onClick={() => { setOpenMenuVersion(prev => ({ ...prev, [m.name]: null })); handleDelete({ modelName: m.name, version: ver }); }}
                                       style={{
                                         width: '100%',
@@ -683,9 +692,9 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                             {Array.isArray(expanded[m.name]?.files?.[ver]) && expanded[m.name]?.files?.[ver].length > 0 && (
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
                                 {expanded[m.name]?.files?.[ver].map((fItem, i) => (
-                                  <div 
-                                    key={i} 
-                                    style={{ 
+                                  <div
+                                    key={i}
+                                    style={{
                                       background: 'white',
                                       border: '1px solid #e5e7eb',
                                       borderRadius: 6,
@@ -699,7 +708,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                         <FileIcon size={16} color="#6b7280" />
-                                        <span style={{ 
+                                        <span style={{
                                           fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                                           fontSize: 13,
                                           fontWeight: /^(model\.(onnx|plan|pt))$/i.test(fItem.name) ? 600 : 400,
@@ -713,7 +722,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                                           </Chip>
                                         )}
                                       </div>
-                                      <div style={{ 
+                                      <div style={{
                                         fontSize: 11,
                                         color: '#6b7280',
                                         display: 'flex',
@@ -725,8 +734,8 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
                                         <span>{new Date((fItem.mtime || 0) * 1000).toLocaleString()}</span>
                                       </div>
                                     </div>
-                                    
-                                    <button 
+
+                                    <button
                                       onClick={() => copyText(fItem.path, '已复制文件路径')}
                                       style={{
                                         background: '#f9fafb',
@@ -798,7 +807,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
           }}>
             <FolderIcon size={48} color="#d1d5db" />
-            <div style={{ 
+            <div style={{
               marginTop: 16,
               fontSize: 16,
               fontWeight: 500,
@@ -807,7 +816,7 @@ function TritonRepoPage({ setPageUrl, embedded = false }) {
             }}>
               {search ? `未找到匹配 "${search}" 的模型` : '未发现模型'}
             </div>
-            <div style={{ 
+            <div style={{
               marginTop: 8,
               fontSize: 14,
               color: '#9ca3af',

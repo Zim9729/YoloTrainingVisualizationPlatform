@@ -8,6 +8,10 @@ import './assets/style/form.css';
 import './assets/style/tab-content.css';
 import './assets/style/table.css';
 import './assets/style/tag.css';
+import './assets/style/animation.css';
+import './assets/style/toast.css';
+import './assets/style/modal.css';
+import './assets/style/glassmorphism.css';
 
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';

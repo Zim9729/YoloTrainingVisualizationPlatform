@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { useToast } from "../contexts/ToastContext";
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import path from "path";
@@ -149,6 +150,8 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
     const [csvData, setCsvData] = useState([]);
     const [headers, setHeaders] = useState([]);
 
+    const toast = useToast();
+
     useEffect(() => {
         hljs.highlightAll();
     });
@@ -165,12 +168,12 @@ function TaskResultDetailedPage({ setPageUrl, parameter }) {
                     setTaskResultData(d);
                     console.log(d);
                 } else {
-                    alert(data.msg);
+                    toast.error(data.msg);
                 }
             })
             .catch(err => {
                 console.error("获取任务信息失败: ", err);
-                alert(err);
+                toast.error('获取任务信息失败');
             });
     }, [parameter.taskID]);
 

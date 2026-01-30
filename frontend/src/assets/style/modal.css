@@ -1,0 +1,116 @@
+/* ==================== Modal Component ==================== */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal-backdrop);
+    animation: fadeIn 0.2s ease;
+}
+
+.modal {
+    background: var(--background-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    min-width: 320px;
+    max-width: 480px;
+    box-shadow: var(--shadow-xl);
+    animation: scaleIn 0.2s ease;
+    border: 1px solid var(--border-color);
+}
+
+.modal-title {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-color);
+}
+
+.modal-message {
+    font-size: var(--text-sm);
+    color: var(--secondary-text-color);
+    margin-bottom: var(--spacing-lg);
+    line-height: var(--leading-normal);
+}
+
+.modal-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+}
+
+.modal-actions .btn.danger {
+    background-color: var(--red-color);
+}
+
+.modal-actions .btn.danger:hover {
+    background-color: var(--red-hover-color);
+}
+
+/* ==================== Modal Variants ==================== */
+.modal.glass {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Dark mode - class toggle */
+body.dark-mode .modal {
+    background: var(--secondary-color);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .modal.glass {
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Dark mode - prefers-color-scheme */
+@media (prefers-color-scheme: dark) {
+    .modal {
+        background: var(--secondary-color);
+        border-color: var(--border-color);
+    }
+
+    .modal.glass {
+        background: rgba(30, 41, 59, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* ==================== Animations ==================== */
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ==================== Responsive ==================== */
+@media (max-width: 480px) {
+    .modal {
+        min-width: auto;
+        margin: 16px;
+        width: calc(100% - 32px);
+    }
+}
