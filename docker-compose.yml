@@ -1,0 +1,90 @@
+# ===========================================
+# YOLO Training Visualization Platform
+# Docker Compose 配置文件
+# ===========================================
+#
+# 使用方法:
+#   构建镜像:    docker-compose build
+#   启动服务:    docker-compose up -d
+#   查看日志:    docker-compose logs -f
+#   停止服务:    docker-compose down
+#
+# GPU 支持:
+#   需要安装 NVIDIA Container Toolkit
+#   https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+#
+# ===========================================
+
+version: '3.8'
+
+services:
+  # ========== 后端服务 ==========
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: yolo-backend
+    ports:
+      - "10799:10799"
+    volumes:
+      # 数据持久化 - 存储数据集、模型、训练结果
+      - ./data:/data
+      # 可选: 挂载本地数据目录
+      # - ~/.yolo_training_visualization_platform:/data
+    environment:
+      # 基础配置
+      - PYTHONUNBUFFERED=1
+      - DATA_PATH=/data
+      # GPU 配置
+      - NVIDIA_VISIBLE_DEVICES=all
+      # 外部服务配置 (使用 host.docker.internal 访问宿主机服务)
+      - TCP_IMAGE_SERVICE_HOST=${TCP_IMAGE_SERVICE_HOST:-host.docker.internal}
+      - TCP_IMAGE_SERVICE_PORT=${TCP_IMAGE_SERVICE_PORT:-16000}
+      - TRITON_SERVER_HOST=${TRITON_SERVER_HOST:-host.docker.internal}
+      - TRITON_SERVER_PORT=${TRITON_SERVER_PORT:-8000}
+      - LABEL_STUDIO_HOST=${LABEL_STUDIO_HOST:-host.docker.internal}
+      - LABEL_STUDIO_PORT=${LABEL_STUDIO_PORT:-8080}
+      - LABEL_STUDIO_API_TOKEN=${LABEL_STUDIO_API_TOKEN:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:10799/" ]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    networks:
+      - yolo-network
+
+  # ========== 前端服务 ==========
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        # 构建时指定 API 地址
+        # 如果使用 Nginx 代理，设置为相对路径
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:10799}
+    container_name: yolo-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - yolo-network
+
+networks:
+  yolo-network:
+    driver: bridge
+
+# 可选: 命名卷用于持久化 (替代绑定挂载)
+# volumes:
+#   yolo-data:

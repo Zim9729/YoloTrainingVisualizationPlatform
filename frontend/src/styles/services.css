@@ -1,8 +1,13 @@
 /* 服务页面样式 */
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .loading-spinner {
@@ -15,29 +20,359 @@
     margin-bottom: 24px;
 }
 
+/* 服务卡片容器 */
+.service-card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+/* 服务卡片 */
 .service-card {
-    transition: all 0.3s ease;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* 卡片头部 */
+.service-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+/* 服务图标 */
+.service-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0ff 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.service-icon.tcp {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.service-icon.http {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+}
+
+/* 服务信息 */
+.service-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.service-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.service-description {
+    font-size: 15px;
+    color: #475569;
+    margin: 0 0 16px 0;
+    line-height: 1.6;
+}
+
+/* 状态徽章 */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.online {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    color: #15803d;
+}
+
+.status-badge.offline {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #dc2626;
+}
+
+.status-badge.error {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #d97706;
+}
+
+.status-badge.unknown {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    color: #64748b;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+}
+
+.status-dot.online {
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+}
+
+.status-dot.offline {
+    background: #ef4444;
+    animation: none;
+}
+
+.status-dot.error {
+    background: #f59e0b;
+    animation: none;
+}
+
+.status-dot.unknown {
+    background: #94a3b8;
+    animation: none;
+}
+
+@keyframes pulse-dot {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
+}
+
+/* 服务地址 */
+.service-address {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    border: none;
+}
+
+.service-address-label {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.service-address-value {
+    font-size: 14px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    color: #334155;
+    font-weight: 500;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* 协议标签 */
+.protocol-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.protocol-tag.tcp {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1d4ed8;
+}
+
+.protocol-tag.http {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+    color: #7c3aed;
+}
+
+/* 卡片底部操作区 */
+.service-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* 操作按钮组 */
+.service-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* 按钮基础样式 */
+.service-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
     cursor: pointer;
-}
-
-.service-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
-}
-
-.service-status-badge {
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
-.service-button {
-    transition: all 0.2s ease;
+.service-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
-.service-button:hover {
+.service-btn-config {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+}
+
+.service-btn-config:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
 }
 
+.service-btn-refresh {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.service-btn-refresh:hover:not(:disabled) {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.service-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.service-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+/* 额外信息区域 */
+.service-extra-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 12px;
+    padding: 12px;
+    background: #fafafb;
+    border-radius: 10px;
+}
+
+.service-extra-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.service-extra-item strong {
+    color: #334155;
+}
+
+/* 错误消息 */
+.service-error {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #dc2626;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.service-error-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .service-card-container {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .service-card {
+        padding: 20px;
+    }
+
+    .service-card-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .service-icon {
+        width: 56px;
+        height: 56px;
+        font-size: 28px;
+    }
+
+    .service-name {
+        font-size: 16px;
+    }
+
+    .service-card-footer {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+
+    .service-actions {
+        justify-content: stretch;
+    }
+
+    .service-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* 渐变头部 */
 .gradient-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     position: relative;
@@ -58,70 +393,4 @@
 .stats-card {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .service-card {
-        margin-bottom: 16px;
-    }
-    
-    .gradient-header {
-        padding: 24px 16px !important;
-    }
-    
-    .stats-container {
-        flex-direction: column;
-        gap: 12px !important;
-    }
-    
-    .stats-card {
-        width: 100%;
-    }
-}
-
-/* 状态指示器动画 */
-.status-indicator {
-    position: relative;
-}
-
-.status-indicator.online::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: inherit;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-    }
-    70% {
-        transform: translate(-50%, -50%) scale(1.4);
-        opacity: 0;
-    }
-    100% {
-        transform: translate(-50%, -50%) scale(1.4);
-        opacity: 0;
-    }
-}
-
-/* 卡片阴影效果 */
-.card-shadow {
-    box-shadow: 
-        0 1px 3px rgba(0,0,0,0.12),
-        0 1px 2px rgba(0,0,0,0.24);
-}
-
-.card-shadow:hover {
-    box-shadow: 
-        0 14px 28px rgba(0,0,0,0.25),
-        0 10px 10px rgba(0,0,0,0.22);
 }

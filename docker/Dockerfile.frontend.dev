@@ -1,0 +1,16 @@
+# 前端开发环境 Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 安装依赖
+COPY frontend/package.json frontend/yarn.lock ./
+RUN yarn install
+
+# 源代码通过 volume 挂载，这里不需要 COPY
+
+# 暴露 Vite 开发服务器端口
+EXPOSE 5173
+
+# 使用 Vite 开发服务器，支持 HMR 热更新
+CMD ["yarn", "dev", "--host", "0.0.0.0"]

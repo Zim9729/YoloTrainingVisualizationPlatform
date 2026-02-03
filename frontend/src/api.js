@@ -227,4 +227,16 @@ export const api = {
     postRaw: (url, options = {}) => request("POST", url, options),
     putRaw: (url, options = {}) => request("PUT", url, options),
     delRaw: (url, options = {}) => request("DELETE", url, options),
+
+    // 服务配置 API
+    getServiceConfig: () => request("GET", "/getServiceConfig"),
+    updateServiceConfig: (serviceId, host, port, apiToken) =>
+        request("POST", "/updateServiceConfig", {
+            data: {
+                service_id: serviceId,
+                host,
+                port,
+                api_token: apiToken
+            }
+        }),
 };

@@ -1,14 +1,25 @@
 import os
 
-USER_HOME = os.path.expanduser("~")   # 用户主目录
+# 支持 Docker 容器化部署: 优先使用 DATA_PATH 环境变量
+_DATA_PATH_ENV = os.getenv('DATA_PATH')
+if _DATA_PATH_ENV:
+    # Docker 环境: 使用环境变量指定的数据目录
+    _BASE_DIR = _DATA_PATH_ENV
+else:
+    # 本地环境: 使用用户主目录
+    USER_HOME = os.path.expanduser("~")
+    _BASE_DIR = os.path.join(USER_HOME, ".yolo_training_visualization_platform")
 
-DATASET_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "dataset")   # 数据集存放路径
-TASKS_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "tasks")
-MODELS_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "models")
-TASKS_RESULT_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "tasks_result_files")
-TASKS_RESULT_YAML_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "tasks", "t")
-TEST_RESULT_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "test_result_files")
-VALIDATION_RESULT_FILES_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "validation_result_files")
+# 兼容性: 保留 USER_HOME 变量供其他模块使用
+USER_HOME = os.path.expanduser("~")
+
+DATASET_PATH = os.path.join(_BASE_DIR, "dataset")   # 数据集存放路径
+TASKS_PATH = os.path.join(_BASE_DIR, "tasks")
+MODELS_PATH = os.path.join(_BASE_DIR, "models")
+TASKS_RESULT_FILES_PATH = os.path.join(_BASE_DIR, "tasks_result_files")
+TASKS_RESULT_YAML_FILES_PATH = os.path.join(_BASE_DIR, "tasks", "t")
+TEST_RESULT_FILES_PATH = os.path.join(_BASE_DIR, "test_result_files")
+VALIDATION_RESULT_FILES_PATH = os.path.join(_BASE_DIR, "validation_result_files")
 
 def _safe_int_env(key: str, default: int) -> int:
     """
@@ -34,7 +45,7 @@ TCP_CONNECTION_TIMEOUT = _safe_int_env('TCP_CONNECTION_TIMEOUT', 5)
 TCP_MAX_RETRIES = _safe_int_env('TCP_MAX_RETRIES', 3)
 
 # 图像处理历史存储路径
-IMAGE_PROCESSING_HISTORY_PATH = os.path.join(USER_HOME, ".yolo_training_visualization_platform", "image_processing_history")
+IMAGE_PROCESSING_HISTORY_PATH = os.path.join(_BASE_DIR, "image_processing_history")
 
 # 图像处理配置
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
@@ -134,13 +145,25 @@ def get_yolo_model_cache_expiration_time():
 def get_tcp_image_service_config():
     """
     获取TCP图像服务配置
+    优先从用户保存的配置读取，否则使用环境变量
     """
-    return {
-        "host": TCP_IMAGE_SERVICE_HOST,
-        "port": TCP_IMAGE_SERVICE_PORT,
-        "timeout": TCP_CONNECTION_TIMEOUT,
-        "max_retries": TCP_MAX_RETRIES
-    }
+    try:
+        from tools.service_config import load_service_config
+        saved_config = load_service_config()
+        tcp_config = saved_config.get("tcp_image_service", {})
+        return {
+            "host": tcp_config.get("host", TCP_IMAGE_SERVICE_HOST),
+            "port": tcp_config.get("port", TCP_IMAGE_SERVICE_PORT),
+            "timeout": TCP_CONNECTION_TIMEOUT,
+            "max_retries": TCP_MAX_RETRIES
+        }
+    except Exception:
+        return {
+            "host": TCP_IMAGE_SERVICE_HOST,
+            "port": TCP_IMAGE_SERVICE_PORT,
+            "timeout": TCP_CONNECTION_TIMEOUT,
+            "max_retries": TCP_MAX_RETRIES
+        }
 
 def get_image_processing_history_path():
     """
@@ -163,20 +186,43 @@ def get_image_processing_config():
 def get_triton_server_config():
     """
     获取Triton服务器配置
+    优先从用户保存的配置读取，否则使用环境变量
     """
-    return {
-        "host": TRITON_SERVER_HOST,
-        "port": TRITON_SERVER_PORT,
-        "timeout": TRITON_CONNECTION_TIMEOUT
-    }
+    try:
+        from tools.service_config import load_service_config
+        saved_config = load_service_config()
+        triton_config = saved_config.get("triton_server", {})
+        return {
+            "host": triton_config.get("host", TRITON_SERVER_HOST),
+            "port": triton_config.get("port", TRITON_SERVER_PORT),
+            "timeout": TRITON_CONNECTION_TIMEOUT
+        }
+    except Exception:
+        return {
+            "host": TRITON_SERVER_HOST,
+            "port": TRITON_SERVER_PORT,
+            "timeout": TRITON_CONNECTION_TIMEOUT
+        }
 
 def get_label_studio_config():
     """
     获取Label Studio服务配置
+    优先从用户保存的配置读取，否则使用环境变量
     """
-    return {
-        "host": LABEL_STUDIO_HOST,
-        "port": LABEL_STUDIO_PORT,
-        "api_token": LABEL_STUDIO_API_TOKEN,
-        "timeout": LABEL_STUDIO_CONNECTION_TIMEOUT
-    }
+    try:
+        from tools.service_config import load_service_config
+        saved_config = load_service_config()
+        ls_config = saved_config.get("label_studio", {})
+        return {
+            "host": ls_config.get("host", LABEL_STUDIO_HOST),
+            "port": ls_config.get("port", LABEL_STUDIO_PORT),
+            "api_token": ls_config.get("api_token", LABEL_STUDIO_API_TOKEN),
+            "timeout": LABEL_STUDIO_CONNECTION_TIMEOUT
+        }
+    except Exception:
+        return {
+            "host": LABEL_STUDIO_HOST,
+            "port": LABEL_STUDIO_PORT,
+            "api_token": LABEL_STUDIO_API_TOKEN,
+            "timeout": LABEL_STUDIO_CONNECTION_TIMEOUT
+        }

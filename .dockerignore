@@ -1,0 +1,92 @@
+# ===========================================
+# Docker 忽略文件
+# 减少构建上下文大小，加快构建速度
+# ===========================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+backend/.venv
+backend/build
+backend/dist
+*.egg-info
+.eggs
+.pytest_cache
+.coverage
+htmlcov
+
+# Node.js
+node_modules
+frontend/node_modules
+app/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+dist
+build
+*.egg
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.docker
+
+# Documentation
+*.md
+!README.md
+docs/
+screenshot/
+
+# Test data
+test/
+
+# PyInstaller
+*.spec
+
+# Large binary files (挂载进容器)
+*.pt
+*.pth
+*.onnx
+*.engine
+*.plan
+*.trt
+
+# Data directories (通过 volume 挂载)
+data/
+Tritonmodel/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.bak
+*~
+
+# Electron app (不需要在 Docker 中)
+app/
+
+# Gemini/IDE configs
+.antigravity/
+.gemini/

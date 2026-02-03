@@ -27,10 +27,11 @@ IImageProcessor_bp = Blueprint('IImageProcessor', __name__)
 
 # 全局TCP客户端实例
 tcp_client = None
+_tcp_client_config = None  # 记录客户端创建时的配置
 
 def cleanup_tcp_client():
     """清理TCP客户端资源"""
-    global tcp_client
+    global tcp_client, _tcp_client_config
     if tcp_client:
         try:
             tcp_client.close()
@@ -38,19 +39,32 @@ def cleanup_tcp_client():
         except Exception as e:
             print(f"关闭TCP客户端时出错: {e}")
         tcp_client = None
+        _tcp_client_config = None
 
-def get_tcp_client():
-    """获取TCP客户端实例（单例模式）"""
-    global tcp_client
-    if tcp_client is None:
-        from config import get_tcp_image_service_config
-        config = get_tcp_image_service_config()
+def get_tcp_client(force_refresh=False):
+    """获取TCP客户端实例（单例模式，配置变更时自动重建）"""
+    global tcp_client, _tcp_client_config
+    
+    from config import get_tcp_image_service_config
+    config = get_tcp_image_service_config()
+    current_config_key = f"{config['host']}:{config['port']}"
+    
+    # 如果配置发生变化，重建客户端
+    if tcp_client is None or _tcp_client_config != current_config_key or force_refresh:
+        # 清理旧客户端
+        if tcp_client is not None:
+            try:
+                tcp_client.close()
+            except:
+                pass
+        
         tcp_client = TCPImageClient(
             host=config['host'],
             port=config['port']
         )
         tcp_client.connection_timeout = config['timeout']
         tcp_client.max_retries = config['max_retries']
+        _tcp_client_config = current_config_key
         
         # 注册清理函数（仅注册一次）
         atexit.register(cleanup_tcp_client)

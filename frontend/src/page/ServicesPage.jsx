@@ -8,6 +8,10 @@ function ServicesPage() {
     const navigate = useNavigate();
     const [services, setServices] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [editingService, setEditingService] = useState(null);
+    const [editForm, setEditForm] = useState({ host: '', port: '', api_token: '' });
+    const [isSaving, setIsSaving] = useState(false);
+    const [serviceConfig, setServiceConfig] = useState({});
 
     // 服务配置
     const serviceConfigs = [
@@ -43,9 +47,73 @@ function ServicesPage() {
         }
     ];
 
+    // 加载服务配置
+    const loadServiceConfig = async () => {
+        try {
+            const response = await api.getServiceConfig();
+            if (response.code === 200 && response.data) {
+                setServiceConfig(response.data);
+            }
+        } catch (error) {
+            console.error('加载服务配置失败:', error);
+        }
+    };
+
     useEffect(() => {
+        loadServiceConfig();
         checkServicesStatus();
     }, []);
+
+    // 开始编辑服务配置
+    const handleEditService = (serviceId) => {
+        const configMap = {
+            'tcp-image-processor': 'tcp_image_service',
+            'triton-inference': 'triton_server',
+            'label-studio': 'label_studio'
+        };
+        const configKey = configMap[serviceId];
+        const config = serviceConfig[configKey] || {};
+
+        setEditForm({
+            host: config.host || '',
+            port: config.port || '',
+            api_token: config.api_token || ''
+        });
+        setEditingService(serviceId);
+    };
+
+    // 保存服务配置
+    const handleSaveConfig = async () => {
+        const configMap = {
+            'tcp-image-processor': 'tcp_image_service',
+            'triton-inference': 'triton_server',
+            'label-studio': 'label_studio'
+        };
+        const configKey = configMap[editingService];
+
+        setIsSaving(true);
+        try {
+            const response = await api.updateServiceConfig(
+                configKey,
+                editForm.host,
+                parseInt(editForm.port),
+                editForm.api_token
+            );
+
+            if (response.code === 200) {
+                setServiceConfig(response.data);
+                setEditingService(null);
+                // 刷新服务状态
+                checkServicesStatus();
+            } else {
+                alert('保存失败: ' + response.msg);
+            }
+        } catch (error) {
+            alert('保存失败: ' + error.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const checkServicesStatus = async () => {
         setIsLoading(true);
@@ -118,244 +186,89 @@ function ServicesPage() {
             setIsRefreshing(false);
         };
 
+        const statusClass = service.status || 'unknown';
+
         return (
-            <div
-                className="card"
-                style={{
-                    marginBottom: '20px',
-                    padding: '24px',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '12px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    transition: 'all 0.3s ease',
-                    backgroundColor: '#ffffff'
-                }}
-                onMouseEnter={(e) => {
-                    e.target.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
-                    e.target.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={(e) => {
-                    e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                    e.target.style.transform = 'translateY(0)';
-                }}
-            >
-                <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '20px' }}>
-                    <div
-                        style={{
-                            fontSize: '56px',
-                            marginRight: '20px',
-                            padding: '12px',
-                            backgroundColor: '#f8f9fa',
-                            borderRadius: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minWidth: '80px',
-                            height: '80px'
-                        }}
-                    >
+            <div className="service-card">
+                {/* 卡片头部 */}
+                <div className="service-card-header">
+                    <div className={`service-icon ${service.type}`}>
                         {service.icon}
                     </div>
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                            <h3 style={{
-                                margin: '0',
-                                fontSize: '22px',
-                                fontWeight: '600',
-                                color: '#2c3e50'
-                            }}>
-                                {service.name}
-                            </h3>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                marginLeft: '16px',
-                                padding: '6px 12px',
-                                borderRadius: '20px',
-                                backgroundColor: service.status === 'online' ? '#d4edda' :
-                                    service.status === 'offline' ? '#f8d7da' :
-                                        service.status === 'error' ? '#fff3cd' : '#e2e3e5'
-                            }}>
-                                <span
-                                    style={{
-                                        width: '8px',
-                                        height: '8px',
-                                        borderRadius: '50%',
-                                        backgroundColor: getStatusColor(service.status),
-                                        boxShadow: `0 0 0 2px ${getStatusColor(service.status)}33`
-                                    }}
-                                ></span>
-                                <span style={{
-                                    fontSize: '13px',
-                                    fontWeight: '600',
-                                    color: service.status === 'online' ? '#155724' :
-                                        service.status === 'offline' ? '#721c24' :
-                                            service.status === 'error' ? '#856404' : '#6c757d'
-                                }}>
-                                    {getStatusText(service.status)}
-                                </span>
-                            </div>
-                        </div>
+                    <div className="service-info">
+                        <h3 className="service-name">
+                            {service.name}
+                            <span className={`status-badge ${statusClass}`}>
+                                <span className={`status-dot ${statusClass}`}></span>
+                                {getStatusText(service.status)}
+                            </span>
+                        </h3>
+                        <p className="service-description">{service.description}</p>
 
-                        <p style={{
-                            margin: '0 0 12px 0',
-                            color: '#6c757d',
-                            fontSize: '15px',
-                            lineHeight: '1.5'
-                        }}>
-                            {service.description}
-                        </p>
-
+                        {/* 服务地址 */}
                         {service.host && service.port && (
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                marginBottom: '8px'
-                            }}>
-                                <span style={{
-                                    fontSize: '12px',
-                                    color: '#6c757d',
-                                    fontWeight: '500'
-                                }}>
-                                    服务地址:
-                                </span>
-                                <code style={{
-                                    fontSize: '13px',
-                                    color: '#495057',
-                                    backgroundColor: '#f8f9fa',
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    fontFamily: 'Monaco, Consolas, monospace'
-                                }}>
+                            <div className="service-address">
+                                <span className="service-address-label">地址</span>
+                                <span className="service-address-value">
                                     {service.host}:{service.port}
-                                </code>
+                                </span>
                             </div>
                         )}
 
                         {/* Triton 服务额外信息 */}
                         {service.id === 'triton-inference' && service.status === 'online' && (
-                            <div style={{ marginBottom: '8px' }}>
+                            <div className="service-extra-info">
                                 {service.server_info && (
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        marginBottom: '4px'
-                                    }}>
-                                        <span style={{ fontSize: '12px', color: '#6c757d', fontWeight: '500' }}>
-                                            服务器版本:
-                                        </span>
-                                        <code style={{
-                                            fontSize: '13px',
-                                            color: '#28a745',
-                                            backgroundColor: '#d4edda',
-                                            padding: '2px 6px',
-                                            borderRadius: '4px',
-                                            fontFamily: 'Monaco, Consolas, monospace'
-                                        }}>
-                                            {service.server_info.version}
-                                        </code>
+                                    <div className="service-extra-item">
+                                        🔧 版本: <strong>{service.server_info.version}</strong>
                                     </div>
                                 )}
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '16px',
-                                    fontSize: '12px',
-                                    color: '#6c757d'
-                                }}>
-                                    {service.models_count !== undefined && (
-                                        <span>
-                                            📦 已加载模型: <strong style={{ color: '#495057' }}>{service.models_count}</strong>
-                                        </span>
-                                    )}
-                                    {service.response_time && (
-                                        <span>
-                                            ⚡ 响应时间: <strong style={{ color: '#495057' }}>{service.response_time}ms</strong>
-                                        </span>
-                                    )}
-                                </div>
+                                {service.models_count !== undefined && (
+                                    <div className="service-extra-item">
+                                        📦 模型: <strong>{service.models_count}</strong>
+                                    </div>
+                                )}
+                                {service.response_time && (
+                                    <div className="service-extra-item">
+                                        ⚡ 响应: <strong>{service.response_time}ms</strong>
+                                    </div>
+                                )}
                             </div>
                         )}
 
+                        {/* 错误消息 */}
                         {service.error_message && (
-                            <div style={{
-                                margin: '8px 0 0 0',
-                                padding: '8px 12px',
-                                backgroundColor: '#f8d7da',
-                                border: '1px solid #f5c6cb',
-                                borderRadius: '6px',
-                                fontSize: '13px',
-                                color: '#721c24'
-                            }}>
-                                <strong>错误:</strong> {service.error_message}
+                            <div className="service-error">
+                                <span className="service-error-icon">⚠️</span>
+                                <span>{service.error_message}</span>
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingTop: '16px',
-                    borderTop: '1px solid #e9ecef'
-                }}>
-                    <span
-                        style={{
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            backgroundColor: service.type === 'tcp' ? '#e3f2fd' : '#f3e5f5',
-                            color: service.type === 'tcp' ? '#1976d2' : '#7b1fa2',
-                            border: `1px solid ${service.type === 'tcp' ? '#bbdefb' : '#e1bee7'}`
-                        }}
-                    >
-                        {service.type.toUpperCase()} 协议
+                {/* 卡片底部 */}
+                <div className="service-card-footer">
+                    <span className={`protocol-tag ${service.type}`}>
+                        {service.type.toUpperCase()}
                     </span>
 
-                    <div style={{ display: 'flex', gap: '12px' }}>
+                    <div className="service-actions">
                         <button
-                            className="btn sm"
-                            onClick={handleRefresh}
-                            disabled={isRefreshing}
-                            style={{
-                                backgroundColor: isRefreshing ? '#6c757d' : '#6c757d',
-                                color: 'white',
-                                border: 'none',
-                                padding: '8px 16px',
-                                borderRadius: '6px',
-                                fontSize: '13px',
-                                fontWeight: '500',
-                                cursor: isRefreshing ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s ease'
-                            }}
+                            className="service-btn service-btn-config"
+                            onClick={() => handleEditService(service.id)}
                         >
-                            {isRefreshing ? '🔄 检查中...' : '🔄 刷新状态'}
+                            ⚙️ 配置
                         </button>
                         <button
-                            className="btn sm"
+                            className="service-btn service-btn-refresh"
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                        >
+                            {isRefreshing ? '🔄 检测中...' : '🔄 刷新'}
+                        </button>
+                        <button
+                            className="service-btn service-btn-primary"
                             onClick={onNavigate}
-                            style={{
-                                backgroundColor: '#007bff',
-                                color: 'white',
-                                border: 'none',
-                                padding: '8px 16px',
-                                borderRadius: '6px',
-                                fontSize: '13px',
-                                fontWeight: '500',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.target.style.backgroundColor = '#0056b3';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.backgroundColor = '#007bff';
-                            }}
                         >
                             🚀 进入服务
                         </button>
@@ -399,6 +312,131 @@ function ServicesPage() {
 
     return (
         <div className="main" style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+            {/* 配置编辑模态框 */}
+            {editingService && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        padding: '24px',
+                        width: '400px',
+                        maxWidth: '90%',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+                    }}>
+                        <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: '600' }}>
+                            ⚙️ 配置服务地址
+                        </h3>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#495057' }}>
+                                主机地址
+                            </label>
+                            <input
+                                type="text"
+                                value={editForm.host}
+                                onChange={(e) => setEditForm({ ...editForm, host: e.target.value })}
+                                placeholder="例如: 192.168.1.100"
+                                style={{
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    border: '1px solid #ced4da',
+                                    borderRadius: '6px',
+                                    fontSize: '14px',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#495057' }}>
+                                端口
+                            </label>
+                            <input
+                                type="number"
+                                value={editForm.port}
+                                onChange={(e) => setEditForm({ ...editForm, port: e.target.value })}
+                                placeholder="例如: 8080"
+                                style={{
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    border: '1px solid #ced4da',
+                                    borderRadius: '6px',
+                                    fontSize: '14px',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+                        </div>
+
+                        {editingService === 'label-studio' && (
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#495057' }}>
+                                    API Token
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editForm.api_token}
+                                    onChange={(e) => setEditForm({ ...editForm, api_token: e.target.value })}
+                                    placeholder="Token xxxxx"
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 12px',
+                                        border: '1px solid #ced4da',
+                                        borderRadius: '6px',
+                                        fontSize: '14px',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+                            <button
+                                onClick={() => setEditingService(null)}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #ced4da',
+                                    backgroundColor: 'white',
+                                    color: '#495057',
+                                    fontSize: '14px',
+                                    fontWeight: '500',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                取消
+                            </button>
+                            <button
+                                onClick={handleSaveConfig}
+                                disabled={isSaving}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    backgroundColor: isSaving ? '#6c757d' : '#28a745',
+                                    color: 'white',
+                                    fontSize: '14px',
+                                    fontWeight: '500',
+                                    cursor: isSaving ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {isSaving ? '保存中...' : '保存'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div style={{
                 marginBottom: '40px',
                 padding: '32px',
@@ -487,12 +525,7 @@ function ServicesPage() {
                 </div>
             </div>
 
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
-                gap: '24px',
-                marginBottom: '40px'
-            }}>
+            <div className="service-card-container">
                 {services.map(service => (
                     <ServiceCard
                         key={service.id}

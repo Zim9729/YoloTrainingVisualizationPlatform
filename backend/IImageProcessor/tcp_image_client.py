@@ -45,13 +45,58 @@ class TCPImageClient:
                 except:
                     pass
     
-    def test_connection(self) -> bool:
-        """测试TCP连接"""
+    def test_connection(self, quick_check: bool = True) -> bool:
+        """
+        测试TCP连接
+        
+        Args:
+            quick_check: 是否使用快速检测（短超时）
+            
+        Note:
+            在Docker环境中，socket.connect可能会成功即使目标不可达，
+            因此需要尝试发送/接收数据来真正验证连接
+        """
+        sock = None
         try:
-            with self.get_connection() as sock:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # 快速检测使用2秒超时，正常使用配置的超时
+            timeout = 2 if quick_check else self.connection_timeout
+            sock.settimeout(timeout)
+            sock.connect((self.host, self.port))
+            
+            # 发送一个探测数据包（使用协议头，服务端会识别）
+            # 由于不是有效请求，服务端可能会关闭连接或返回错误，但这说明连接是通的
+            try:
+                # 发送协议头作为探测
+                sock.sendall(self.TCP_HEADER)
+                # 尝试接收任何数据（即使是错误响应）
+                sock.settimeout(1)  # 1秒读取超时
+                sock.recv(1)
+            except socket.timeout:
+                # 读取超时说明连接不可用或服务无响应
+                print(f"TCP连接探测超时 {self.host}:{self.port}")
+                return False
+            except (ConnectionResetError, BrokenPipeError):
+                # 连接被重置说明服务端存在（拒绝了无效请求）
                 return True
-        except Exception:
+            except Exception as e:
+                # 其他发送/接收错误
+                print(f"TCP连接探测失败 {self.host}:{self.port} - {e}")
+                return False
+            
+            return True
+        except (socket.timeout, socket.error, ConnectionRefusedError, OSError) as e:
+            print(f"TCP连接测试失败 {self.host}:{self.port} - {e}")
             return False
+        except Exception as e:
+            print(f"TCP连接测试异常 {self.host}:{self.port} - {e}")
+            return False
+        finally:
+            if sock:
+                try:
+                    sock.close()
+                except:
+                    pass
     
     def send_image(self, img, image_id: int, camera_id: int = 203) -> Dict[str, Any]:
         """

@@ -1,0 +1,15 @@
+{
+  "tcp_image_service": {
+    "host": "10.10.21.224",
+    "port": 16000
+  },
+  "triton_server": {
+    "host": "192.168.1.100",
+    "port": 8000
+  },
+  "label_studio": {
+    "host": "10.10.10.96",
+    "port": 8080,
+    "api_token": "Token c438e617f6488a1d77ee04208e4c917723e25a34"
+  }
+}
